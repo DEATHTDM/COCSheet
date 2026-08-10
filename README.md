@@ -41,6 +41,14 @@ pnpm test
 
 这些包本轮不包含完整职业、技能或装备数据库。
 
+## Project documentation
+
+- [Project context](docs/PROJECT_CONTEXT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Product decisions](docs/PRODUCT_DECISIONS.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Current state](docs/CURRENT_STATE.md)
+
 ## 许可证与第三方代码
 
 项目代码以 `GPL-3.0-only` 授权。
