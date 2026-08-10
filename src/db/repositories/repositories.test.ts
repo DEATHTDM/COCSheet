@@ -73,6 +73,29 @@ describe("CharacterRepository", () => {
     await characterRepository.remove(character.id);
     expect(await characterRepository.getById(character.id)).toBeUndefined();
   });
+
+  it("保存、重新载入并更新 Character resources", async () => {
+    const character = makeCharacter();
+    const withResources: Character = {
+      ...character,
+      age: 25,
+      characteristics: { STR: 50, CON: 55, SIZ: 65, DEX: 60, APP: 50, INT: 60, POW: 65, EDU: 70 },
+      luck: 60,
+      resources: { hp: { current: 12 }, mp: { current: 13 }, san: { current: 65 } },
+    };
+    await characterRepository.create(withResources);
+    expect((await new CharacterRepository(database).getById(character.id))?.data.resources).toEqual(
+      withResources.resources,
+    );
+
+    const resources = withResources.resources;
+    if (!resources) throw new Error("测试 resources 未初始化");
+    await characterRepository.update({
+      ...withResources,
+      resources: { ...resources, hp: { current: 5 } },
+    });
+    expect((await new CharacterRepository(database).getById(character.id))?.data.resources?.hp.current).toBe(5);
+  });
 });
 
 describe("CreationSessionRepository", () => {
@@ -140,6 +163,31 @@ describe("CreationSessionRepository", () => {
     expect(refreshedCharacter?.data.characteristics?.STR).toBe(60);
     expect(refreshedSession?.data.attributes?.generationMethod).toBe("manual");
     expect(refreshedSession?.data.currentStep).toBe("occupation");
+  });
+
+  it("Character 与 Session 更新在同一事务中回滚", async () => {
+    const character = makeCharacter();
+    const session: CreationSession = { ...makeSession(character.id), currentStep: "attributes" };
+    await creationWorkflowRepository.createCharacterWithSession(character, session);
+
+    const failSessionUpdate = (): never => {
+      throw new Error("模拟 Session 写入失败");
+    };
+    database.creationSessions.hook("updating", failSessionUpdate);
+    await expect(creationWorkflowRepository.updateCharacterWithSession(
+      {
+        ...character,
+        age: 25,
+        characteristics: { STR: 50, CON: 50, SIZ: 50, DEX: 50, APP: 50, INT: 50, POW: 50, EDU: 50 },
+        luck: 50,
+        resources: { hp: { current: 10 }, mp: { current: 10 }, san: { current: 50 } },
+      },
+      { ...session, currentStep: "occupation" },
+    )).rejects.toThrow("模拟 Session 写入失败");
+    database.creationSessions.hook("updating").unsubscribe(failSessionUpdate);
+
+    expect((await characterRepository.getById(character.id))?.data.resources).toBeUndefined();
+    expect((await creationSessionRepository.getByCharacterId(character.id))?.data.currentStep).toBe("attributes");
   });
 });
 

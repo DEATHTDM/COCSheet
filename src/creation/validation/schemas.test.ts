@@ -35,6 +35,47 @@ describe("持久化 Zod Schema", () => {
     ).toBe(false);
   });
 
+  it("兼容没有 resources 的 Phase 2 Character", () => {
+    expect(characterSchema.safeParse({
+      version: 1,
+      id: crypto.randomUUID(),
+      name: "旧调查员",
+      settingId: "standard",
+      age: 25,
+      characteristics: { STR: 50, CON: 50, SIZ: 50, DEX: 50, APP: 50, INT: 50, POW: 50, EDU: 50 },
+      luck: 55,
+    }).success).toBe(true);
+  });
+
+  it("resources 一旦存在就要求完整、严格且 current 合法", () => {
+    const base = {
+      version: 1,
+      id: crypto.randomUUID(),
+      name: "新调查员",
+      settingId: "standard",
+    };
+    expect(characterSchema.safeParse({
+      ...base,
+      resources: { hp: { current: 10 }, mp: { current: 12 }, san: { current: 65 } },
+    }).success).toBe(true);
+    expect(characterSchema.safeParse({
+      ...base,
+      resources: { hp: { current: 10 }, mp: { current: 12 } },
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...base,
+      resources: { hp: { current: -1 }, mp: { current: 12 }, san: { current: 65 } },
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...base,
+      resources: { hp: { current: 10, max: 10 }, mp: { current: 12 }, san: { current: 65 } },
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...base,
+      resources: { hp: { current: 10 }, mp: { current: 12 }, san: { current: 100 } },
+    }).success).toBe(false);
+  });
+
   it("拒绝非法 CreationSession", () => {
     expect(
       creationSessionSchema.safeParse({

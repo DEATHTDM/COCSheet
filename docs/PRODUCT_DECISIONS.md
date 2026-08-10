@@ -56,6 +56,12 @@ Base Characteristics
 
 需要玩家分配的年龄减值由玩家自己选择，软件不能随机或隐式决定。
 
+### A004 — Derived values and mutable resources
+
+Maximum HP、Maximum MP、Initial SAN、MOV、Damage Bonus 与 Build 是由当前人物数据实时计算的纯派生结果，不持久化到 `Character` 或 `CreationSession`。
+
+游戏中会变化的 current HP、current MP 与 current SAN 作为一个整体可选的 resources 结构持久化到 `Character`。Maximum SAN 在技能阶段能够结合 Cthulhu Mythos 后再实现，不以 POW 伪造。
+
 ## Occupations
 
 ### O001 — Source, category, and tags

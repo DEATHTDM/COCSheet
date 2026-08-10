@@ -21,7 +21,7 @@ Status: Completed
 
 ## Phase 2 — Standard Attributes & Age
 
-Status: Next
+Status: Completed
 
 - Attribute generation
 - Age adjustment
@@ -32,9 +32,7 @@ Status: Next
 
 ## Phase 3 — Derived Character Values
 
-Status: Planned
-
-Examples:
+Status: Completed
 
 - HP
 - MP
@@ -42,9 +40,8 @@ Examples:
 - MOV
 - Damage Bonus
 - Build
-- attribute-derived skill bases
-
-Exact scope must be confirmed before implementation.
+- current HP / MP / SAN resources
+- persistence, legacy compatibility, and resource restoration
 
 ## Phase 4 — Skills
 

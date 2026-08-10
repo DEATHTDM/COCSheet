@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 ## Current completed phase
 
-Phase 2 — Standard Attributes & Age
+Phase 3 — Standard Derived Character Values & Resources
 
 ## Git baseline
 
@@ -40,6 +40,12 @@ Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
 - restorable incomplete Manual drafts and minimum-allocation Point Buy drafts without premature Base Characteristics
 - cross-field age consistency plus semantic validation for EDU improvement history and rolled Luck
 - overwrite confirmations for regenerated attribute rolls, EDU history, and Luck rolls
+- pure Standard COC7 derived rules for Maximum HP, Maximum MP, Initial SAN, age-adjusted MOV, structured Damage Bonus, and Build
+- read-only derived previews during attributes and current/maximum resource summaries in the occupation placeholder
+- optional strict Character resources containing only current HP, current MP, and current SAN
+- atomic resource initialization when attributes complete, plus reset from new final characteristics after returning to edit
+- explicit legacy Phase 2 resource initialization without Repository read side effects or Dexie version changes
+- Character Store APIs for bounded current HP/MP/SAN updates with refresh persistence
 
 ## Foundation hardening
 
@@ -74,7 +80,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-No later phase is authorized by this document. Phase 3 remains planned only and requires a new explicit task.
+No later phase is authorized by this document. Phase 4 remains planned only and requires a new explicit task.
 
 ## Known technical risks
 
