@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 ## Current completed phase
 
-Project Foundation
+Phase 2 — Standard Attributes & Age
 
 ## Git baseline
 
@@ -27,6 +27,15 @@ Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
+- Standard COC7 age input and six attribute generation methods: standard roll, low-roll boost, assign roll, multi roll, point buy, and manual
+- injectable random source with testable D6, D10, D100, and general dice helpers
+- player-controlled low-roll boost allocation and age reduction allocation
+- pure age-band rules, sequential EDU improvement checks, Luck generation, and Half / Fifth calculation
+- Base Characteristics → Age Adjustment → Final Characteristics derivation without destructive repeated deductions
+- final `Character.age`, `Character.characteristics`, and `Character.luck` persistence
+- strongly typed `CreationSession` attribute state with raw rolls, candidates, allocations, age processing, EDU history, and Luck source
+- structured `CreationPreset.attributeGeneration` configuration with legacy `attributeMethods` read compatibility
+- attribute workflow UI with basic information, attributes, occupation placeholder, restoration, and return-to-edit support
 
 ## Foundation hardening
 
@@ -37,23 +46,19 @@ Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
 - the attribute generation enum foundation is present.
 - `OccupationSkillRequirement` is explicitly marked unfrozen pending real-data pressure tests.
 
-## AttributeGenerationMethod currently known
+## AttributeGenerationMethod implemented
 
 Merged in the current enum:
 
 - `standard-roll`
+- `low-roll-boost`
 - `assign-roll`
 - `multi-roll`
 - `point-buy`
 - `manual`
 
-`low-roll-boost` is planned but is not present in the current enum or merged implementation.
-
 ## Not implemented
 
-- real attribute generation
-- age adjustment
-- Character attribute fields and derived values
 - skills and skill allocation
 - occupation data and occupation UI
 - independent final character sheet UI/module
@@ -65,9 +70,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Standard COC7: Attributes + Age.
-
-This is intent only. Implementation requires a new explicit task.
+No later phase is authorized by this document. Phase 3 remains planned only and requires a new explicit task.
 
 ## Known technical risks
 

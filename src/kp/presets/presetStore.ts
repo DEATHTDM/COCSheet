@@ -25,7 +25,12 @@ export const usePresetStore = defineStore("presets", () => {
       id: crypto.randomUUID(),
       name: "新建预设",
       settingId: "standard",
-      attributeMethods: ["manual"],
+      attributeGeneration: {
+        allowedMethods: ["standard-roll", "low-roll-boost", "assign-roll", "multi-roll", "point-buy", "manual"],
+        multiRoll: { count: 3 },
+        assignRoll: { intMin: 40, sizMin: 40 },
+        pointBuy: { total: 460, min: 15, max: 90, intMin: 40, sizMin: 40 },
+      },
       allowCustomOccupation: "keeper-approval",
     };
     const record = await kpPresetRepository.create(preset);

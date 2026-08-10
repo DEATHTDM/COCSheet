@@ -36,11 +36,13 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 仅包含 `version`、`id`、`name` 与 `settingId`，后续正式人物字段尚未实现。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`，以及完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`。Half / Fifth 由纯函数实时计算，不进入持久化字段。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
-`CreationSession` 负责建卡流程状态。当前 Schema 已包含 `version`、`characterId`、`settingId`、`currentStep` 与可选 `presetSnapshot`；创建方法、中间选择、候选数据和验证状态属于该边界，但相应字段尚未实现。
+`CreationSession` 负责建卡流程状态。当前 Schema 包含 `version`、`characterId`、`settingId`、`currentStep`、可选 `presetSnapshot`、草稿年龄及强类型属性阶段状态。属性状态以 discriminated union 区分六种生成方式，并保存原始骰值、分配、候选组、Base Characteristics、年龄减值、EDU 成长记录与 Luck 来源。
+
+属性完成时，`Character` 最终值与 `CreationSession` 流程推进在同一 Dexie 事务中写入。年龄改变只清除并重建年龄相关过程，始终从保存的 Base Characteristics 重新推导 Final Characteristics。
 
 创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 
@@ -67,6 +69,8 @@ Dexie / IndexedDB
 ```
 
 Component 不直接访问 Dexie。持久化记录在写入和读取时经过 Zod 校验，顶层记录元数据与嵌套领域数据必须保持一致。
+
+`CreationPreset` 的属性配置使用结构化 `attributeGeneration`。旧 version 1 记录中的 `attributeMethods` 仍可读取，并在 Zod 解析后规范化为新结构；表和索引未改变，因此本阶段不提升 IndexedDB version。
 
 ## Setting architecture
 

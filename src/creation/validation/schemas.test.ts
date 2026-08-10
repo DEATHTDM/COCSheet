@@ -76,9 +76,10 @@ describe("持久化 Zod Schema", () => {
 });
 
 describe("CreationPreset", () => {
-  it("五种属性生成方式均合法", () => {
+  it("六种属性生成方式均合法", () => {
     const methods = [
       "standard-roll",
+      "low-roll-boost",
       "assign-roll",
       "multi-roll",
       "point-buy",
@@ -97,7 +98,11 @@ describe("CreationPreset", () => {
       id: crypto.randomUUID(),
       name: "1920 年代标准建卡",
       settingId: "standard",
-      attributeMethods: ["manual"],
+      attributeGeneration: {
+        allowedMethods: ["manual"],
+        multiRoll: { count: 3 },
+        pointBuy: { total: 460, min: 15, max: 90, intMin: 40, sizMin: 40 },
+      },
       skillCaps: { occupation: 80, overall: 90 },
       occupationPolicy: { bannedOccupationIds: ["assassin"] },
       allowCustomOccupation: "keeper-approval",
@@ -108,6 +113,19 @@ describe("CreationPreset", () => {
     expect(parsed).toEqual(preset);
   });
 
+  it("兼容读取旧 attributeMethods 并规范化为新结构", () => {
+    const parsed = creationPresetSchema.parse({
+      version: 1,
+      id: crypto.randomUUID(),
+      name: "旧预设",
+      settingId: "standard",
+      attributeMethods: ["manual", "point-buy"],
+      allowCustomOccupation: true,
+    });
+    expect(parsed.attributeGeneration.allowedMethods).toEqual(["manual", "point-buy"]);
+    expect("attributeMethods" in parsed).toBe(false);
+  });
+
   it("拒绝年龄范围倒置的预设", () => {
     expect(
       creationPresetSchema.safeParse({
@@ -115,7 +133,7 @@ describe("CreationPreset", () => {
         id: crypto.randomUUID(),
         name: "错误预设",
         settingId: "standard",
-        attributeMethods: ["manual"],
+        attributeGeneration: { allowedMethods: ["manual"] },
         allowCustomOccupation: false,
         age: { min: 80, max: 18 },
       }).success,
@@ -177,7 +195,7 @@ describe("Record 冗余元数据一致性", () => {
           id,
           name: "最新预设名",
           settingId: "standard",
-          attributeMethods: ["manual"],
+          attributeGeneration: { allowedMethods: ["manual"] },
           allowCustomOccupation: "keeper-approval",
         },
       }).success,
