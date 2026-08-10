@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { RandomSource } from "./random";
-import { rollLuck } from "./luck";
+import { rollLuck, validateRolledLuck } from "./luck";
 
 class QueueRandomSource implements RandomSource {
   constructor(private readonly values: number[]) {}
@@ -20,5 +20,22 @@ describe("Luck", () => {
     const result = rollLuck(2, new QueueRandomSource([1, 1, 1, 6, 6, 6]));
     expect(result.rolls).toHaveLength(2);
     expect(result.value).toBe(90);
+  });
+
+  it("接受符合年龄次数与 3D6×5 语义的 Luck", () => {
+    const oneRoll = rollLuck(1, new QueueRandomSource([1, 2, 3]));
+    const twoRolls = rollLuck(2, new QueueRandomSource([1, 1, 1, 6, 6, 6]));
+    expect(validateRolledLuck(1, oneRoll.rolls, oneRoll.value).valid).toBe(true);
+    expect(validateRolledLuck(2, twoRolls.rolls, twoRolls.value).valid).toBe(true);
+  });
+
+  it("拒绝错误次数、骰式、计算结果和非最高值", () => {
+    expect(validateRolledLuck(2, [{ dice: [1, 2, 3], modifier: 0, total: 30 }], 30).valid).toBe(false);
+    expect(validateRolledLuck(1, [{ dice: [1, 2], modifier: 0, total: 15 }], 15).valid).toBe(false);
+    expect(validateRolledLuck(1, [{ dice: [1, 2, 3], modifier: 0, total: 35 }], 35).valid).toBe(false);
+    expect(validateRolledLuck(2, [
+      { dice: [1, 1, 1], modifier: 0, total: 15 },
+      { dice: [6, 6, 6], modifier: 0, total: 90 },
+    ], 15).valid).toBe(false);
   });
 });

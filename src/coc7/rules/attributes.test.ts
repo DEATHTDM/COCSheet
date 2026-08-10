@@ -5,6 +5,8 @@ import {
   applyLowRollBoost,
   getFifthValue,
   getHalfValue,
+  getMinimumPointBuyValues,
+  getPointBuyAllocationSummary,
   rollAssignResults,
   rollLowRollBoost,
   rollMultipleCharacteristics,
@@ -106,6 +108,12 @@ describe("Point Buy 与派生值", () => {
   it("支持自定义购点配置", () => {
     const values = { STR: 30, CON: 30, SIZ: 30, DEX: 30, APP: 30, INT: 30, POW: 30, EDU: 30 };
     expect(validatePointBuy(values, { total: 240, min: 20, max: 40, intMin: 20, sizMin: 20 }).valid).toBe(true);
+  });
+  it("从预设最低合法值初始化并计算已分配与剩余", () => {
+    const minimum = getMinimumPointBuyValues({ total: 460, min: 15, max: 90, intMin: 40, sizMin: 40 });
+    expect(minimum).toEqual({ STR: 15, CON: 15, SIZ: 40, DEX: 15, APP: 15, INT: 40, POW: 15, EDU: 15 });
+    expect(getPointBuyAllocationSummary(minimum)).toEqual({ total: 460, allocated: 170, remaining: 290 });
+    expect(validatePointBuy(minimum).valid).toBe(false);
   });
   it("Half 与 Fifth 向下取整", () => {
     expect(getHalfValue(55)).toBe(27);

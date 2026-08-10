@@ -101,8 +101,8 @@ async function removePreset(): Promise<void> {
 
       <fieldset class="panel config-grid"><legend>属性方式配置</legend>
         <label class="field"><span>多组数量（2～10）</span><input v-model.number="multiCount" type="number" min="2" max="10" /></label>
-        <label class="field"><span>Assign INT 下限</span><input v-model.number="assignIntMin" type="number" min="0" max="99" /></label>
-        <label class="field"><span>Assign SIZ 下限</span><input v-model.number="assignSizMin" type="number" min="0" max="99" /></label>
+        <label class="field"><span>Assign INT 下限</span><input v-model.number="assignIntMin" type="number" min="0" max="90" /></label>
+        <label class="field"><span>Assign SIZ 下限</span><input v-model.number="assignSizMin" type="number" min="0" max="90" /></label>
         <label class="field"><span>Point Buy 总点数</span><input v-model.number="pointTotal" type="number" min="1" /></label>
         <label class="field"><span>Point Buy 最小值</span><input v-model.number="pointMin" type="number" min="0" max="99" /></label>
         <label class="field"><span>Point Buy 最大值</span><input v-model.number="pointMax" type="number" min="0" max="99" /></label>

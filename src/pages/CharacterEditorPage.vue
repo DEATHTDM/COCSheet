@@ -4,7 +4,7 @@ import { useRoute } from "vue-router";
 
 import { useCharacterStore } from "../app/stores/characterStore";
 import { deriveFinalCharacteristics, getAgeAdjustmentRule } from "../coc7/rules/age";
-import { applyLowRollBoost, getFifthValue, getHalfValue, validateAssignRoll, validatePointBuy } from "../coc7/rules/attributes";
+import { applyLowRollBoost, getFifthValue, getHalfValue, getPointBuyAllocationSummary, validateAssignRoll, validatePointBuy } from "../coc7/rules/attributes";
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
@@ -46,6 +46,18 @@ const reductionAllocated = computed(() =>
   characteristicIds.reduce((total, id) => total + (ageAdjustment.value?.reductionAllocation[id] ?? 0), 0),
 );
 const reductionRemaining = computed(() => ageRule.value.reduction.total - reductionAllocated.value);
+const manualEnteredCount = computed(() => {
+  const state = generation.value;
+  return state?.method === "manual"
+    ? characteristicIds.filter((id) => state.values?.[id] !== undefined).length
+    : 0;
+});
+const pointBuySummary = computed(() => {
+  const state = generation.value;
+  return state?.method === "point-buy" && state.values
+    ? getPointBuyAllocationSummary(state.values, creationStore.config.pointBuy)
+    : undefined;
+});
 const generationErrors = computed<readonly string[]>(() => {
   const state = generation.value;
   if (!state) return [];
@@ -147,7 +159,8 @@ function numberFromEvent(event: Event): number {
 }
 
 async function setEnteredValue(id: CharacteristicId, event: Event): Promise<void> {
-  await creationStore.setEnteredValue(id, numberFromEvent(event));
+  const raw = (event.target as HTMLInputElement).value;
+  await creationStore.setEnteredValue(id, raw === "" ? undefined : Number(raw));
 }
 
 async function setLowAllocation(id: CharacteristicId, event: Event): Promise<void> {
@@ -160,6 +173,31 @@ async function setReduction(id: CharacteristicId, event: Event): Promise<void> {
 
 async function setAssignment(id: CharacteristicId, event: Event): Promise<void> {
   await creationStore.setAssignment(id, (event.target as HTMLSelectElement).value);
+}
+
+function hasGeneratedResult(): boolean {
+  const state = generation.value;
+  if (!state) return false;
+  if (state.method === "standard-roll" || state.method === "low-roll-boost") return state.result !== undefined;
+  if (state.method === "assign-roll") return (state.rolls?.length ?? 0) > 0;
+  if (state.method === "multi-roll") return (state.candidates?.length ?? 0) > 0;
+  return false;
+}
+
+async function generateAttributes(): Promise<void> {
+  if (hasGeneratedResult() && !window.confirm("重新生成将覆盖当前属性骰值，是否继续？")) return;
+  await creationStore.generateCurrentMethod();
+}
+
+async function rollEduWithConfirmation(): Promise<void> {
+  if ((ageAdjustment.value?.eduImprovements.length ?? 0) > 0 &&
+    !window.confirm("重新进行 EDU 成长将覆盖当前成长记录，是否继续？")) return;
+  await creationStore.rollEdu();
+}
+
+async function rollLuckWithConfirmation(): Promise<void> {
+  if (attributes.value?.luck && !window.confirm("重新掷 Luck 将覆盖当前 Luck 结果，是否继续？")) return;
+  await creationStore.rollCurrentLuck();
 }
 
 async function complete(): Promise<void> {
@@ -235,7 +273,7 @@ async function complete(): Promise<void> {
         <section v-if="generation" class="panel form-stack">
           <div class="section-heading"><h2>{{ methodLabels[generation.method] }}</h2></div>
 
-          <button v-if="['standard-roll','low-roll-boost','assign-roll','multi-roll'].includes(generation.method)" class="button primary" type="button" @click="creationStore.generateCurrentMethod">
+          <button v-if="['standard-roll','low-roll-boost','assign-roll','multi-roll'].includes(generation.method)" class="button primary" type="button" @click="generateAttributes">
             {{ generation.method === 'multi-roll' ? `生成 ${creationStore.config.multiRoll?.count ?? 3} 组` : '掷骰生成' }}
           </button>
 
@@ -257,7 +295,7 @@ async function complete(): Promise<void> {
                   v-if="roll.raw < 10 && generation.bonusRoll"
                   type="number" min="0" :max="generation.bonusRoll"
                   :value="generation.allocation?.[roll.characteristic] ?? 0"
-                  @change="setLowAllocation(roll.characteristic, $event)"
+                  @input="setLowAllocation(roll.characteristic, $event)"
                 />
                 <strong v-else>{{ roll.value }}</strong>
               </label>
@@ -287,11 +325,20 @@ async function complete(): Promise<void> {
 
           <template v-if="generation.method === 'point-buy' || generation.method === 'manual'">
             <p v-if="generation.method === 'point-buy'">总和 {{ creationStore.config.pointBuy?.total ?? 460 }}；范围 {{ creationStore.config.pointBuy?.min ?? 15 }}～{{ creationStore.config.pointBuy?.max ?? 90 }}；INT/SIZ 下限 {{ creationStore.config.pointBuy?.intMin ?? 40 }}/{{ creationStore.config.pointBuy?.sizMin ?? 40 }}。</p>
-            <p v-else>输入年龄调整前的八项基础属性。</p>
+            <p v-else>输入年龄调整前的八项基础属性。已填写 {{ manualEnteredCount }}/8。</p>
+            <div v-if="generation.method === 'point-buy' && pointBuySummary" class="allocation-summary">
+              <strong>总点数：{{ pointBuySummary.total }}</strong><span>已分配：{{ pointBuySummary.allocated }}</span><span>剩余：{{ pointBuySummary.remaining }}</span>
+            </div>
             <div class="attribute-grid">
               <label v-for="id in characteristicIds" :key="id" class="field attribute-card">
                 <span>{{ id }}</span>
-                <input type="number" min="0" max="99" :value="generation.values?.[id] ?? 0" @change="setEnteredValue(id, $event)" />
+                <input
+                  type="number"
+                  :min="generation.method === 'point-buy' ? creationStore.config.pointBuy?.min ?? 15 : 0"
+                  :max="generation.method === 'point-buy' ? creationStore.config.pointBuy?.max ?? 90 : 99"
+                  :value="generation.values?.[id] ?? ''"
+                  @input="setEnteredValue(id, $event)"
+                />
               </label>
             </div>
           </template>
@@ -313,14 +360,14 @@ async function complete(): Promise<void> {
               </label>
             </div>
             <div class="form-stack compact-stack">
-              <button v-if="ageRule.eduImprovementCount > 0" class="button" type="button" @click="creationStore.rollEdu">进行 EDU 成长判定 ×{{ ageRule.eduImprovementCount }}</button>
+              <button v-if="ageRule.eduImprovementCount > 0" class="button" type="button" @click="rollEduWithConfirmation">进行 EDU 成长判定 ×{{ ageRule.eduImprovementCount }}</button>
               <p v-else>本年龄段没有 EDU 成长判定。</p>
               <ol v-if="ageAdjustment?.eduImprovements.length" class="result-list">
                 <li v-for="(result, index) in ageAdjustment.eduImprovements" :key="index">第 {{ index + 1 }} 次：D100={{ result.checkRoll }}，EDU {{ result.eduBefore }} → {{ result.eduAfter }}（{{ result.success ? `成功${result.improvementRoll ? `，+${result.improvementRoll}` : ''}` : '失败' }}）</li>
               </ol>
             </div>
             <div class="luck-controls">
-              <button class="button" type="button" @click="creationStore.rollCurrentLuck">掷 Luck（{{ ageRule.luckRollCount }} 次取高）</button>
+              <button class="button" type="button" @click="rollLuckWithConfirmation">掷 Luck（{{ ageRule.luckRollCount }} 次取高）</button>
               <span>或手动输入</span>
               <input type="number" min="0" max="99" :value="attributes?.luck?.source === 'manual' ? attributes.luck.value : ''" @change="creationStore.setManualLuck(numberFromEvent($event))" />
             </div>

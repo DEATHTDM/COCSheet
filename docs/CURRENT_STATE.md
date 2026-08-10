@@ -36,6 +36,10 @@ Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
 - strongly typed `CreationSession` attribute state with raw rolls, candidates, allocations, age processing, EDU history, and Luck source
 - structured `CreationPreset.attributeGeneration` configuration with legacy `attributeMethods` read compatibility
 - attribute workflow UI with basic information, attributes, occupation placeholder, restoration, and return-to-edit support
+- hardening for mathematically feasible Assign Roll / Point Buy preset constraints
+- restorable incomplete Manual drafts and minimum-allocation Point Buy drafts without premature Base Characteristics
+- cross-field age consistency plus semantic validation for EDU improvement history and rolled Luck
+- overwrite confirmations for regenerated attribute rolls, EDU history, and Luck rolls
 
 ## Foundation hardening
 

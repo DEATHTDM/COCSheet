@@ -20,8 +20,8 @@ export const attributeGenerationConfigSchema = z
       .optional(),
     assignRoll: z
       .object({
-        intMin: z.number().int().min(0).max(99),
-        sizMin: z.number().int().min(0).max(99),
+        intMin: z.number().int().min(0).max(90),
+        sizMin: z.number().int().min(0).max(90),
       })
       .strict()
       .optional(),
@@ -34,9 +34,26 @@ export const attributeGenerationConfigSchema = z
         sizMin: z.number().int().min(0).max(99),
       })
       .strict()
-      .refine((value) => value.min <= value.max, {
-        message: "属性最小值不能高于最大值",
-        path: ["min"],
+      .superRefine((value, context) => {
+        if (value.min > value.max) {
+          context.addIssue({ code: "custom", message: "属性最小值不能高于最大值", path: ["min"] });
+        }
+        if (value.intMin > value.max) {
+          context.addIssue({ code: "custom", message: "INT 下限不能高于属性最大值", path: ["intMin"] });
+        }
+        if (value.sizMin > value.max) {
+          context.addIssue({ code: "custom", message: "SIZ 下限不能高于属性最大值", path: ["sizMin"] });
+        }
+
+        const minimumTotal = (6 * value.min) + Math.max(value.min, value.intMin) + Math.max(value.min, value.sizMin);
+        const maximumTotal = 8 * value.max;
+        if (value.total < minimumTotal || value.total > maximumTotal) {
+          context.addIssue({
+            code: "custom",
+            message: `总点数必须在可实现范围 ${minimumTotal}～${maximumTotal} 内`,
+            path: ["total"],
+          });
+        }
       })
       .optional(),
   })

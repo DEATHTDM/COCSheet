@@ -103,6 +103,47 @@ export interface EduImprovementResult {
   readonly eduAfter: number;
 }
 
+export function validateEduImprovementHistory(
+  startingEdu: number,
+  requiredCount: number,
+  history: readonly EduImprovementResult[],
+): ValidationResult {
+  const errors: string[] = [];
+  if (history.length !== requiredCount) {
+    errors.push(`EDU 成长记录必须有 ${requiredCount} 项，当前为 ${history.length} 项`);
+  }
+
+  let expectedEdu = startingEdu;
+  history.forEach((result, index) => {
+    const label = `第 ${index + 1} 次 EDU 成长`;
+    if (!Number.isInteger(result.checkRoll) || result.checkRoll < 1 || result.checkRoll > 100) {
+      errors.push(`${label}的 1D100 判定骰不合法`);
+    }
+    if (!Number.isInteger(result.eduBefore) || result.eduBefore < 0 || result.eduBefore > 99 ||
+      !Number.isInteger(result.eduAfter) || result.eduAfter < 0 || result.eduAfter > 99) {
+      errors.push(`${label}的 EDU 数值不合法`);
+    }
+    if (result.eduBefore !== expectedEdu) errors.push(`${label}的起始 EDU 与上一状态不连续`);
+    const expectedSuccess = result.checkRoll > result.eduBefore;
+    if (result.success !== expectedSuccess) errors.push(`${label}的成功状态与判定骰不一致`);
+
+    if (result.success) {
+      const improvement = result.improvementRoll;
+      if (improvement === undefined || !Number.isInteger(improvement) || improvement < 1 || improvement > 10) {
+        errors.push(`${label}成功时必须保存合法的 1D10 成长骰`);
+      } else if (result.eduAfter !== Math.min(99, result.eduBefore + improvement)) {
+        errors.push(`${label}的成长后 EDU 不正确`);
+      }
+    } else {
+      if (result.improvementRoll !== undefined) errors.push(`${label}失败时不得包含成长骰`);
+      if (result.eduAfter !== result.eduBefore) errors.push(`${label}失败时 EDU 不得改变`);
+    }
+    expectedEdu = result.eduAfter;
+  });
+
+  return { valid: errors.length === 0, errors };
+}
+
 export function runEduImprovements(
   startingEdu: number,
   count: number,
@@ -136,7 +177,8 @@ export function deriveFinalCharacteristics(
 ): CharacteristicValues {
   const reductionValidation = validateReductionAllocation(base, rule, allocation);
   if (!reductionValidation.valid) throw new Error(reductionValidation.errors.join("；"));
-  if (eduImprovements.length !== rule.eduImprovementCount) throw new Error("EDU 成长次数尚未完成");
+  const eduValidation = validateEduImprovementHistory(base.EDU, rule.eduImprovementCount, eduImprovements);
+  if (!eduValidation.valid) throw new Error(eduValidation.errors.join("；"));
 
   const values = Object.fromEntries(
     characteristicIds.map((id) => [id, base[id] - (allocation[id] ?? 0) + (rule.fixed[id] ?? 0)]),

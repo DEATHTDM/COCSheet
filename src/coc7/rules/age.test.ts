@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveFinalCharacteristics, getAgeAdjustmentRule, runEduImprovements, validateReductionAllocation } from "./age";
+import { deriveFinalCharacteristics, getAgeAdjustmentRule, runEduImprovements, validateEduImprovementHistory, validateReductionAllocation } from "./age";
 import type { RandomSource } from "./random";
 
 class QueueRandomSource implements RandomSource {
@@ -50,6 +50,32 @@ describe("年龄减值与 EDU 成长", () => {
 
   it("EDU 上限为 99", () => {
     expect(runEduImprovements(98, 1, new QueueRandomSource([100, 10]))[0]?.eduAfter).toBe(99);
+  });
+
+  it("验证合法 EDU 历史的数量、成功语义和连续链条", () => {
+    const history = runEduImprovements(60, 3, new QueueRandomSource([70, 7, 50, 80, 4]));
+    expect(validateEduImprovementHistory(60, 3, history)).toEqual({ valid: true, errors: [] });
+  });
+
+  it("拒绝被篡改的 EDU 成功、成长骰和结果", () => {
+    expect(validateEduImprovementHistory(60, 1, [
+      { checkRoll: 70, eduBefore: 60, success: false, improvementRoll: 7, eduAfter: 67 },
+    ]).valid).toBe(false);
+    expect(validateEduImprovementHistory(60, 1, [
+      { checkRoll: 70, eduBefore: 60, success: true, eduAfter: 67 },
+    ]).valid).toBe(false);
+    expect(validateEduImprovementHistory(60, 1, [
+      { checkRoll: 70, eduBefore: 60, success: true, improvementRoll: 7, eduAfter: 68 },
+    ]).valid).toBe(false);
+  });
+
+  it("拒绝中断的 EDU 历史链条并阻止最终值推导", () => {
+    const broken = [
+      { checkRoll: 70, eduBefore: 60, success: true, improvementRoll: 7, eduAfter: 67 },
+      { checkRoll: 80, eduBefore: 60, success: true, improvementRoll: 4, eduAfter: 64 },
+    ];
+    expect(validateEduImprovementHistory(60, 2, broken).valid).toBe(false);
+    expect(() => deriveFinalCharacteristics(base, getAgeAdjustmentRule(45), { STR: 5 }, broken)).toThrow();
   });
 
   it("从 Base 推导最终值，不叠加旧 Final", () => {

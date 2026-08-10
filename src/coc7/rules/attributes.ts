@@ -173,12 +173,33 @@ export const defaultPointBuyConfig: PointBuyConfig = {
   sizMin: 40,
 };
 
+export function getMinimumPointBuyValues(config: PointBuyConfig): CharacteristicValues {
+  return characteristicValuesSchema.parse({
+    STR: config.min,
+    CON: config.min,
+    SIZ: Math.max(config.min, config.sizMin),
+    DEX: config.min,
+    APP: config.min,
+    INT: Math.max(config.min, config.intMin),
+    POW: config.min,
+    EDU: config.min,
+  });
+}
+
+export function getPointBuyAllocationSummary(
+  values: CharacteristicValues,
+  config: PointBuyConfig = defaultPointBuyConfig,
+): { readonly total: number; readonly allocated: number; readonly remaining: number } {
+  const allocated = characteristicIds.reduce((current, id) => current + values[id], 0);
+  return { total: config.total, allocated, remaining: config.total - allocated };
+}
+
 export function validatePointBuy(
   values: CharacteristicValues,
   config: PointBuyConfig = defaultPointBuyConfig,
 ): ValidationResult {
   const errors: string[] = [];
-  const total = characteristicIds.reduce((current, id) => current + values[id], 0);
+  const total = getPointBuyAllocationSummary(values, config).allocated;
   if (total !== config.total) errors.push(`属性总和必须为 ${config.total}，当前为 ${total}`);
   for (const id of characteristicIds) {
     if (!Number.isInteger(values[id]) || values[id] < config.min || values[id] > config.max) {

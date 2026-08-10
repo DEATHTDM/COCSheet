@@ -72,7 +72,7 @@ const pointBuyGenerationSchema = z
 const manualGenerationSchema = z
   .object({
     method: z.literal("manual"),
-    values: characteristicValuesSchema.optional(),
+    values: partialCharacteristicValuesSchema.optional(),
     baseCharacteristics: characteristicValuesSchema.optional(),
   })
   .strict();
@@ -132,7 +132,17 @@ export const creationSessionSchema = z
     draftAge: z.number().int().nonnegative().optional(),
     attributes: attributeStateSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    const adjustmentAge = value.attributes?.ageAdjustment?.age;
+    if (value.draftAge !== undefined && adjustmentAge !== undefined && value.draftAge !== adjustmentAge) {
+      context.addIssue({
+        code: "custom",
+        message: "草稿年龄与属性年龄调整状态不一致",
+        path: ["attributes", "ageAdjustment", "age"],
+      });
+    }
+  });
 
 export type CreationStepId = z.infer<typeof creationStepIdSchema>;
 export type AttributeGenerationState = z.infer<typeof attributeGenerationStateSchema>;

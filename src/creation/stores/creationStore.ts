@@ -1,10 +1,11 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 
-import { deriveFinalCharacteristics, getAgeAdjustmentRule, runEduImprovements, validateReductionAllocation } from "../../coc7/rules/age";
+import { deriveFinalCharacteristics, getAgeAdjustmentRule, runEduImprovements, validateEduImprovementHistory, validateReductionAllocation } from "../../coc7/rules/age";
 import {
   applyLowRollBoost,
   defaultPointBuyConfig,
+  getMinimumPointBuyValues,
   rollAssignResults,
   rollLowRollBoost,
   rollMultipleCharacteristics,
@@ -12,13 +13,14 @@ import {
   validateAssignRoll,
   validatePointBuy,
 } from "../../coc7/rules/attributes";
-import { rollLuck } from "../../coc7/rules/luck";
+import { rollLuck, validateRolledLuck } from "../../coc7/rules/luck";
 import { systemRandomSource, type RandomSource } from "../../coc7/rules/random";
 import {
-  characteristicIds,
+  characteristicValueSchema,
   characteristicValuesSchema,
   type CharacteristicId,
   type CharacteristicValues,
+  type PartialCharacteristicValues,
 } from "../../coc7/types/attribute";
 import type { Character } from "../../coc7/types/character";
 import type { SettingId } from "../../coc7/types/setting";
@@ -28,6 +30,7 @@ import { creationWorkflowRepository } from "../../db/repositories/creationWorkfl
 import type { CharacterRecord, CreationSessionRecord } from "../../db/records";
 import {
   resolveAttributeGenerationConfig,
+  type AttributeGenerationConfig,
   type AttributeGenerationMethod,
   type CreationPreset,
 } from "../types/creationPreset";
@@ -43,7 +46,10 @@ function emptyAgeAdjustment(age: number): AgeAdjustmentState {
   return { age, reductionAllocation: {}, eduImprovements: [] };
 }
 
-function makeGeneration(method: AttributeGenerationMethod): AttributeGenerationState {
+function makeGeneration(
+  method: AttributeGenerationMethod,
+  generationConfig: AttributeGenerationConfig,
+): AttributeGenerationState {
   switch (method) {
     case "standard-roll": return { method };
     case "low-roll-boost": return { method, allocation: {} };
@@ -51,12 +57,9 @@ function makeGeneration(method: AttributeGenerationMethod): AttributeGenerationS
     case "multi-roll": return { method };
     case "point-buy": return {
       method,
-      values: { STR: 50, CON: 50, SIZ: 60, DEX: 50, APP: 50, INT: 60, POW: 50, EDU: 90 },
+      values: getMinimumPointBuyValues(generationConfig.pointBuy ?? defaultPointBuyConfig),
     };
-    case "manual": return {
-      method,
-      values: { STR: 50, CON: 50, SIZ: 50, DEX: 50, APP: 50, INT: 50, POW: 50, EDU: 50 },
-    };
+    case "manual": return { method, values: {} };
   }
 }
 
@@ -136,14 +139,7 @@ export const useCreationStore = defineStore("creation", () => {
     const session = requireSession();
     if (session.settingId !== "standard") throw new Error("当前仅实现 Standard COC7 属性规则");
     if (!config.value.allowedMethods.includes(method)) throw new Error("该预设不允许此属性生成方式");
-    let generation = makeGeneration(method);
-    if (generation.method === "manual" && generation.values) {
-      generation = { ...generation, baseCharacteristics: generation.values };
-    }
-    if (generation.method === "point-buy" && generation.values &&
-      validatePointBuy(generation.values, config.value.pointBuy ?? defaultPointBuyConfig).valid) {
-      generation = { ...generation, baseCharacteristics: generation.values };
-    }
+    const generation = makeGeneration(method, config.value);
     const attributes: AttributeState = {
       generationMethod: method,
       generation,
@@ -224,20 +220,33 @@ export const useCreationStore = defineStore("creation", () => {
     await replaceGeneration({ ...generation, selectedIndex: index, baseCharacteristics: generation.candidates[index].values });
   }
 
-  async function setEnteredValue(id: CharacteristicId, value: number): Promise<void> {
+  async function setEnteredValue(id: CharacteristicId, value: number | undefined): Promise<void> {
     const session = requireSession();
     const generation = session.attributes?.generation;
     if (generation?.method !== "point-buy" && generation?.method !== "manual") return;
-    const currentValues = generation.values ?? Object.fromEntries(characteristicIds.map((key) => [key, 0]));
-    const values = characteristicValuesSchema.parse({ ...currentValues, [id]: value });
-    let valid = true;
-    if (generation.method === "point-buy") {
-      valid = validatePointBuy(values, config.value.pointBuy ?? defaultPointBuyConfig).valid;
+    if (generation.method === "manual") {
+      const values: PartialCharacteristicValues = { ...generation.values };
+      if (value === undefined) {
+        delete values[id];
+      } else {
+        values[id] = characteristicValueSchema.parse(value);
+      }
+      const completed = characteristicValuesSchema.safeParse(values);
+      await replaceGeneration({
+        method: "manual",
+        values,
+        ...(completed.success ? { baseCharacteristics: completed.data } : {}),
+      });
+      return;
     }
+
+    if (value === undefined || !generation.values) return;
+    const values = characteristicValuesSchema.parse({ ...generation.values, [id]: value });
+    const valid = validatePointBuy(values, config.value.pointBuy ?? defaultPointBuyConfig).valid;
     await replaceGeneration({
-      ...generation,
+      method: "point-buy",
       values,
-      ...(valid ? { baseCharacteristics: values } : { baseCharacteristics: undefined }),
+      ...(valid ? { baseCharacteristics: values } : {}),
     });
   }
 
@@ -296,8 +305,16 @@ export const useCreationStore = defineStore("creation", () => {
     if (ageLimit?.min !== undefined && session.draftAge < ageLimit.min) errors.push(`年龄不得低于预设下限 ${ageLimit.min}`);
     if (ageLimit?.max !== undefined && session.draftAge > ageLimit.max) errors.push(`年龄不得高于预设上限 ${ageLimit.max}`);
     errors.push(...validateReductionAllocation(base, rule, attributes.ageAdjustment.reductionAllocation).errors);
-    if (attributes.ageAdjustment.eduImprovements.length !== rule.eduImprovementCount) errors.push("EDU 成长判定尚未完成");
-    if (!attributes.luck) errors.push("Luck 尚未生成或输入");
+    errors.push(...validateEduImprovementHistory(
+      base.EDU,
+      rule.eduImprovementCount,
+      attributes.ageAdjustment.eduImprovements,
+    ).errors);
+    if (!attributes.luck) {
+      errors.push("Luck 尚未生成或输入");
+    } else if (attributes.luck.source === "rolled") {
+      errors.push(...validateRolledLuck(rule.luckRollCount, attributes.luck.rolls, attributes.luck.value).errors);
+    }
     return errors;
   }
 
