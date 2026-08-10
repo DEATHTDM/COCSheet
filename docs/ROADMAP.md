@@ -56,6 +56,7 @@ Status: Completed
 - game-time skill editing and growth-mark state
 - availability and alias metadata
 - Maximum SAN and Cthulhu Mythos resource integration
+- legacy-compatible Maximum SAN initialization and explicit reconciliation
 
 ## Phase 5 — Occupation Engine & Standard Occupations
 

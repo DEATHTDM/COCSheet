@@ -95,7 +95,7 @@ const expectedTopLevelBases: Readonly<Record<(typeof expectedIds)[number], numbe
   "dodge": 32,
   "drive-auto": 20,
   "electrical-repair": 10,
-  "electronics": 1,
+  "electronics": 10,
   "fast-talk": 5,
   "fighting": 0,
   "firearms": 0,
@@ -178,6 +178,14 @@ describe("Standard 技能目录完整性", () => {
       .toEqual(["animal-handling", "artillery", "demolitions", "diving", "hypnosis", "lore", "read-lips"]);
     expect(catalog.filter((definition) => definition.availability.era === "modern-only").map((definition) => definition.id))
       .toEqual(["computer-use", "electronics"]);
+  });
+
+  it("锁定现代技能 Computer Use 5 与 Electronics 10", () => {
+    for (const [id, expected] of [["computer-use", 5], ["electronics", 10]] as const) {
+      const definition = requireDefinition(id);
+      expect(definition.availability.era).toBe("modern-only");
+      expect(calculateSkillBaseValue(definition.baseValueRule, characteristics)).toBe(expected);
+    }
   });
 
   it("关键中文别名保持可搜索元数据且不改变 definition identity", () => {

@@ -59,6 +59,14 @@ export function calculateMaximumSanity(currentCthulhuMythos: number): number {
   return Math.max(0, 99 - currentCthulhuMythos);
 }
 
+export function clampSanityToMaximum(
+  currentSan: number,
+  currentCthulhuMythos: number,
+): number {
+  requireNonNegativeInteger(currentSan, "当前 SAN");
+  return Math.min(currentSan, calculateMaximumSanity(currentCthulhuMythos));
+}
+
 export function calculateMovementRate(
   age: number,
   str: number,

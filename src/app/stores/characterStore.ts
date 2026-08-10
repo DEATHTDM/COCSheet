@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import {
   calculateMaximumSanity,
   calculateMaxHitPoints,
+  clampSanityToMaximum,
   deriveStandardCharacterValues,
 } from "../../coc7/rules/derived";
 import {
@@ -120,10 +121,32 @@ export const useCharacterStore = defineStore("characters", () => {
       resources: {
         hp: { current: derived.maxHp },
         mp: { current: derived.initialMp },
-        san: { current: derived.initialSan },
+        san: {
+          current: clampSanityToMaximum(
+            derived.initialSan,
+            getCurrentCthulhuMythos(existing),
+          ),
+        },
       },
     });
     return synchronize(updated);
+  }
+
+  async function reconcileSanityToMaximum(id: string): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const character = existing.data;
+    if (!character.resources) throw new Error("调查员资源尚未初始化");
+    const reconciledSan = clampSanityToMaximum(
+      character.resources.san.current,
+      getCurrentCthulhuMythos(existing),
+    );
+    if (reconciledSan === character.resources.san.current) {
+      return synchronize(existing);
+    }
+    return synchronize(await characterRepository.update({
+      ...character,
+      resources: { ...character.resources, san: { current: reconciledSan } },
+    }));
   }
 
   async function setCurrentHp(id: string, value: number): Promise<CharacterRecord> {
@@ -194,9 +217,9 @@ export const useCharacterStore = defineStore("characters", () => {
       ? {
           ...existing.data.resources,
           san: {
-            current: Math.min(
+            current: clampSanityToMaximum(
               existing.data.resources.san.current,
-              calculateMaximumSanity(value),
+              value,
             ),
           },
         }
@@ -309,6 +332,7 @@ export const useCharacterStore = defineStore("characters", () => {
     loadById,
     updateName,
     ensureResourcesInitialized,
+    reconcileSanityToMaximum,
     setCurrentHp,
     setCurrentMp,
     setCurrentSan,

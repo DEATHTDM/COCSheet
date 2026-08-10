@@ -46,9 +46,11 @@ Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Ch
 
 属性完成时，`Character` 最终值与 `CreationSession` 流程推进在同一 Dexie 事务中写入。年龄改变只清除并重建年龄相关过程，始终从保存的 Base Characteristics 重新推导 Final Characteristics。
 
-首次完成属性时，current HP、current MP 与 current SAN 分别按 Maximum HP、Initial MP 与 Initial SAN 初始化，并与最终属性和会话推进在同一事务中写入。Initial MP 为 `floor(POW / 5)`，但 current MP 只要求是非负整数，可以因其他规则高于 Initial MP；Phase 3 不实现 MP 自然回复规则。返回 attributes 重新完成会按新的最终属性重置这些初始资源。没有 `resources` 的 Phase 2 Character 继续兼容读取，由 UI 调用显式 Store action 补齐；Repository 读取不产生隐式写入。
+首次完成属性时，current HP 与 current MP 分别按 Maximum HP 与 Initial MP 初始化；current SAN 取 Initial SAN 与已有 Cthulhu Mythos 所允许 Maximum SAN 的较小值，并与最终属性和会话推进在同一事务中写入。Initial MP 为 `floor(POW / 5)`，但 current MP 只要求是非负整数，可以因其他规则高于 Initial MP；Phase 3 不实现 MP 自然回复规则。返回 attributes 重新完成会按新的最终属性重置这些初始资源，但保留已有技能并继续应用已有 Mythos 上限。没有 `resources` 的 Phase 2 Character 继续兼容读取，由 UI 调用显式 Store action 一次性补齐并应用相同 SAN 上限；Repository 读取不产生隐式写入。
 
 显式修改 Cthulhu Mythos 时，Store 在一次 CharacterRepository update 中同时保存技能值，并在必要时把 current SAN 降至新的 Maximum SAN；降低 Mythos 不会自动恢复 SAN。是否执行破坏性 SAN 降低由 UI 在写入前确认，Repository 不包含确认逻辑。
+
+Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过现有 Schema 与 Repository 正常读取；读取或页面加载不会自动改写。UI 明确提示超出上限，并只在用户点击同步后调用 Store reconciliation action；该 action 仅在需要时通过一次 CharacterRepository update 修改 current SAN，不修改 Mythos、HP、MP、属性、Luck 或其他技能。
 
 创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 

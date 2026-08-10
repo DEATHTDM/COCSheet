@@ -148,7 +148,7 @@ export const standardSkillDefinitions: readonly SkillDefinition[] = [
   defineSkill("dodge", "闪避", "Dodge", characteristic("DEX", "half"), ["physical", "combat"]),
   defineSkill("drive-auto", "汽车驾驶", "Drive Auto", fixed(20), ["vehicle"]),
   defineSkill("electrical-repair", "电气维修", "Electrical Repair", fixed(10), ["technology"]),
-  defineSkill("electronics", "电子学", "Electronics", fixed(1), ["knowledge", "technology"], {
+  defineSkill("electronics", "电子学", "Electronics", fixed(10), ["knowledge", "technology"], {
     availability: modernAvailability,
   }),
   defineSkill("fast-talk", "话术", "Fast Talk", fixed(5), ["social"]),

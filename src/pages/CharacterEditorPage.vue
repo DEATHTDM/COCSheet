@@ -111,12 +111,14 @@ const savedDerived = computed(() => {
     return undefined;
   }
 });
-const savedMaximumSanity = computed(() => {
-  const mythos = characterStore.current?.data.skills?.find(
-    (skill) => skill.ref.type === "standard" &&
-      skill.ref.definitionId === "cthulhu-mythos",
-  )?.currentValue ?? 0;
-  return calculateMaximumSanity(mythos);
+const savedCthulhuMythos = computed(() => characterStore.current?.data.skills?.find(
+  (skill) => skill.ref.type === "standard" &&
+    skill.ref.definitionId === "cthulhu-mythos",
+)?.currentValue ?? 0);
+const savedMaximumSanity = computed(() => calculateMaximumSanity(savedCthulhuMythos.value));
+const sanityNeedsReconciliation = computed(() => {
+  const currentSan = characterStore.current?.data.resources?.san.current;
+  return currentSan !== undefined && currentSan > savedMaximumSanity.value;
 });
 
 onMounted(async () => {
@@ -243,6 +245,15 @@ async function complete(): Promise<void> {
     errorMessage.value = error instanceof Error ? error.message : "完成属性失败。";
   }
 }
+
+async function reconcileSanity(): Promise<void> {
+  try {
+    await characterStore.reconcileSanityToMaximum(characterId.value);
+    errorMessage.value = "";
+  } catch (error: unknown) {
+    errorMessage.value = error instanceof Error ? error.message : "同步 SAN 上限失败。";
+  }
+}
 </script>
 
 <template>
@@ -254,6 +265,18 @@ async function complete(): Promise<void> {
         <h1>{{ name || "未命名调查员" }}</h1>
         <p>当前设定：{{ settingName }}</p>
       </div>
+
+      <aside v-if="sanityNeedsReconciliation" class="panel legacy-warning" role="alert">
+        <strong>旧版本 SAN 数据需要同步</strong>
+        <p>
+          当前 SAN {{ characterStore.current.data.resources?.san.current }} 高于克苏鲁神话
+          {{ savedCthulhuMythos }} 所允许的最大理智 {{ savedMaximumSanity }}。该人物来自旧版本数据，
+          在你明确同步前不会修改本地记录。
+        </p>
+        <button class="button" type="button" @click="reconcileSanity">
+          同步至 {{ savedMaximumSanity }}
+        </button>
+      </aside>
 
       <ol class="stepper" aria-label="建卡步骤">
         <li :class="{ active: currentStep === 'basic-info' }">基本信息</li>

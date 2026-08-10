@@ -45,6 +45,7 @@ Phase 4B branch was created from `main` at `fa59171ffa28a9bb1790a3d803dfb9e3d4fa
 - optional strict Character resources containing only current HP, current MP, and current SAN
 - atomic resource initialization when attributes complete, plus reset from new final characteristics after returning to edit
 - explicit legacy Phase 2 resource initialization without Repository read side effects or Dexie version changes
+- legacy resource initialization and repeated attribute completion constrain Initial SAN by existing Cthulhu Mythos in their original single-write transaction paths
 - Character Store APIs for current HP constrained by Maximum HP, nonnegative integer current MP without an Initial MP cap, and current SAN constrained by Maximum SAN, all with refresh persistence
 - strict SkillDefinition, SkillRef, predefined/custom specialization, CharacterSkill, improvement policy, and creation-point policy models
 - closed pure skill base-value rules for fixed and Characteristic full / half / fifth values, reusing existing Half / Fifth helpers
@@ -59,7 +60,9 @@ Phase 4B branch was created from `main` at `fa59171ffa28a9bb1790a3d803dfb9e3d4fa
 - concrete Language (Own) custom specialization identity with EDU-full initialization, stable rename identity, and single-instance domain validation; Language (Other) remains multi-instance
 - SettingPack.skills as the sole per-Setting skill content source, with dynamically created and cached Skill Registries and no hard-coded Setting dispatch
 - pure `calculateMaximumSanity` derivation from current Cthulhu Mythos, defaulting sparse Mythos state to 0
+- pure SAN clamping helper plus explicit legacy reconciliation that leaves over-limit Phase 4A records readable and unchanged until the user chooses to synchronize
 - explicit Mythos edits atomically clamp current SAN when required, with pre-save UI confirmation and no automatic SAN recovery when Mythos decreases
+- Electronics is fixed at its canonical 10% base while Computer Use remains 5%; both remain modern-only
 
 ## Foundation hardening
 

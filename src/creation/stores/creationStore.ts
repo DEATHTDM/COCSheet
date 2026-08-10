@@ -15,7 +15,7 @@ import {
 } from "../../coc7/rules/attributes";
 import { rollLuck, validateRolledLuck } from "../../coc7/rules/luck";
 import { systemRandomSource, type RandomSource } from "../../coc7/rules/random";
-import { deriveStandardCharacterValues } from "../../coc7/rules/derived";
+import { clampSanityToMaximum, deriveStandardCharacterValues } from "../../coc7/rules/derived";
 import {
   characteristicValueSchema,
   characteristicValuesSchema,
@@ -335,6 +335,10 @@ export const useCreationStore = defineStore("creation", () => {
       attributes.ageAdjustment.eduImprovements,
     );
     const derived = deriveStandardCharacterValues(age, finalValues);
+    const currentCthulhuMythos = character.skills?.find(
+      (skill) => skill.ref.type === "standard" &&
+        skill.ref.definitionId === "cthulhu-mythos",
+    )?.currentValue ?? 0;
     const completedSession: CreationSession = { ...session, currentStep: "occupation" };
     const records = await creationWorkflowRepository.updateCharacterWithSession(
       {
@@ -345,7 +349,7 @@ export const useCreationStore = defineStore("creation", () => {
         resources: {
           hp: { current: derived.maxHp },
           mp: { current: derived.initialMp },
-          san: { current: derived.initialSan },
+          san: { current: clampSanityToMaximum(derived.initialSan, currentCthulhuMythos) },
         },
       },
       completedSession,
