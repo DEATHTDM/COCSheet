@@ -26,13 +26,13 @@ Phase 4B branch was created from `main` at `fa59171ffa28a9bb1790a3d803dfb9e3d4fa
 - OccupationRegistry sourced only from SettingPack.occupations, with localized search and category/tag/era filters plus registration validation
 - explicit source mechanics variants through variantOf, while guidance-only source wording shares canonical mechanics and multiple sourceRefs
 - strongly typed CreationSession occupation mechanics snapshot and skill creation state containing requirement selections, SkillRef allocation rows, Credit Rating override and reasoned Keeper approvals
-- pure occupation/interest budget, selection uniqueness, creation-point policy, Credit Rating range, skill final-limit and unused-point warning rules
+- pure occupation/interest budget, selection uniqueness, one-of child-selector one-to-one assignment, creation-point policy, occupation-scoped Credit Rating range override, skill final-limit and unused-point warning rules
 - pure structured-allocation conflict detection for existing Phase 4 Character.skills, with no silent adoption, reverse engineering or overwrite
-- pure finalize plan rebuilding CharacterSkill values from current resolved base + occupation allocation + interest allocation
+- pure finalize plan rebuilding CharacterSkill values from current resolved base + occupation allocation + interest allocation, followed by Phase 4 Character.skills domain validation
 - optional lightweight Character occupation identity snapshot without copied occupation mechanics
-- explicit custom occupation foundation with UUID identity and eight-requirement-slot limit
+- explicit custom occupation foundation with UUID identity and an eight-occupational-skill capacity proof based on requirement cardinality
 - skills CreationStep and pure occupation-switch/reset draft actions that preserve allocations until explicit reset
-- atomic skills completion through Creation Workflow Repository, writing Character occupation/skills and advancing CreationSession to review in one Dexie transaction
+- atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to review in one Dexie transaction without changing HP/MP or restoring SAN
 - legacy CreationPreset.skillCaps read compatibility without inferred mapping or validator effect, alongside explicit final-value skillLimits
 - source-annotated Phase 5A test fixtures for ten occupation families (eleven definitions including two Missionary mechanics variants), not production occupation content
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`

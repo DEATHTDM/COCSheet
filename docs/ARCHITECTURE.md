@@ -129,16 +129,19 @@ Phase 4 在 `Character.version = 1` 中新增 optional `skills`，但不改变 C
 Phase 5A 已建立 Occupation Engine Foundation：
 
 - `OccupationPointFormula` 保持 `attribute / best-of / sum` 闭合联合，`best-of` 禁止重复属性。
-- `OccupationRequirement` 使用职业内稳定 kebab-case ID、闭合 `SkillSelector`、`min/max` cardinality、guidance 与 Keeper review。
+- `OccupationRequirement` 使用职业内稳定 kebab-case ID、闭合 `SkillSelector`、`min/max` cardinality、guidance 与 Keeper review；模糊需求批准同时绑定职业身份与 requirement ID，切换职业后旧批准可保留但不再生效。
 - Selector 可表达普通技能、canonical predefined specialization、开放专业化、固定名称 custom specialization、有限候选、带排除的任意技能和组合组，不接受字符串公式或可执行 predicate。
 - 固定名称开放专业化只在玩家确认时产生带 UUID 与 display name 的 custom `SkillRef`；不会为 Latin、Technical Drawing 等职业措辞扩张完整技能目录。
 - `OccupationRegistry` 只从 `SettingPack.occupations` 构建，负责 ID/requirement/selector/era 验证，以及按本地化名称、alias、category、tag、era 查询。
 - Source mechanics 真正不同时以 `variantOf` 建立显式变体；仅 guidance wording 不同时保留同一 mechanics 与多个 sourceRefs。
 - 结构化 final skill 值始终为当前 Characteristic 解析出的 base 加职业点与兴趣点，不在已有 `CharacterSkill.currentValue` 上叠加。
 - 已有 Phase 4 final skills 由纯检测器暴露 `needsExplicitAdoptionOrReset`；不得静默采用、反推或覆盖。
-- Credit Rating 继续使用 `credit-rating` SkillDefinition；最终值越过职业范围需要显式 override。Cthulhu Mythos 创建点继续需要分理由 Keeper approval。
+- `one-of` 的每个子 selector 在单项需求中最多承接一个已选 SkillRef，并以回溯匹配处理子 selector 重叠；同一专业化父类需要多项时使用 `specialization-of` 与 requirement cardinality 表达。
+- Credit Rating 继续使用 `credit-rating` SkillDefinition；最终值越过职业范围需要显式且绑定当前职业身份的 override。Cthulhu Mythos 创建点继续需要分理由 Keeper approval。
 - 未用职业点与兴趣点是 warning，不在规则层自动分配或作为 hard invalid。
-- 自定义职业复用同一核心定义并限制最多八个 requirement slots；slot 数不等于最终 SkillRef 数。
+- 自定义职业复用同一核心定义并限制最多八项职业技能：有限 requirement 按外层 `cardinality.max` 计数；无法证明上限的需求被拒绝，只有通用 Fighting / Firearms 专业化需求按一项计数。
+- finalize 生成完整 `Character.skills` 后复用 Phase 4 领域校验，继续执行稳定 identity、重复实例与单实例专业化约束。
+- 完成 skills 时，最终 Mythos 与必要的 current SAN 收紧、职业快照、最终技能和 review 会话推进在同一个 Creation Workflow Repository 事务中写入；降低 Mythos 不自动恢复 SAN，HP/MP 不受影响。
 
 当前 Standard SettingPack 仍没有生产职业数据。两本规则书中的真实职业只存在于测试 fixture，用于压力测试公式、selector、变体和分配规则；正式完整职业目录属于 Phase 5B。最终职业浏览与技能分配 UI 尚未实现，属于 Phase 5C。职业数据不得硬编码进 Vue 页面。
 

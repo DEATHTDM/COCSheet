@@ -46,7 +46,14 @@ function validateSelector(selector: SkillSelector, skills: SkillRegistry): void 
       if (definition.specialization.type !== "required") {
         throw new Error(`技能 ${selector.definitionId} 不是专业化技能`);
       }
-      selector.exclude?.forEach((ref) => validateExactRef(ref, skills));
+      selector.exclude?.forEach((ref) => {
+        if (ref.definitionId !== selector.definitionId) {
+          throw new Error(
+            `专业化 selector ${selector.definitionId} 的 exclude 必须引用同一技能定义`,
+          );
+        }
+        validateExactRef(ref, skills);
+      });
       return;
     }
     case "named-custom-specialization": {

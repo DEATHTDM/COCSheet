@@ -92,6 +92,8 @@ Standard COC7 默认职业体系优先以 Keeper Rulebook 与 Investigator Handb
 
 固定名称开放专业化（例如 Language Other (Latin) 与 Art/Craft (Technical Drawing)）不要求扩张 canonical Skill catalog；职业 selector 保存本地化名称约束，玩家确认时才生成带 UUID 的 custom `SkillRef`。
 
+`one-of` 中每个子 selector 在同一个 requirement 内最多满足一个已选 SkillRef；存在重叠时必须寻找可行的一对一分配。需要从同一专业化父类选多项时，使用 `specialization-of` 配合 cardinality 表达。`specialization-of.exclude` 只能引用同一父 SkillDefinition。
+
 ### O007 — Occupation source variants
 
 只有 point formula、Credit Rating、确定性技能需求等规范化机械字段真正不同时才建立 `variantOf` source variant。仅 summary、guidance 或可统一为 broad free-pick + Keeper review 的措辞不同时，使用单一 canonical mechanics、多个 sourceRefs 与来源注释。
@@ -102,9 +104,13 @@ CreationSession 分配行持久化完整 `SkillRef`、职业点与兴趣点，�
 
 已有 Phase 4 final skill state 与结构化分配冲突，必须由消费者显式选择重建或保留手动人物；规则层不得静默采用、反推、删除或覆盖。
 
+结构化 finalize 生成完整 `Character.skills` 后必须复用 Phase 4 人物技能领域校验。完成 skills 时若最终 Cthulhu Mythos 收紧 Maximum SAN，必须在保存职业、技能与 review 会话推进的同一事务中收紧 current SAN；降低 Mythos 不自动恢复 SAN，也不改变 HP/MP。
+
 ### O009 — Credit Rating and approvals
 
-Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴趣点都可投入，最终值越出职业范围时需要显式 Keeper override。Keeper approval 使用带 reason 与 subject 的强类型记录，区分职业定义、Preset 职业政策、自定义职业、Credit Rating、Cthulhu Mythos 分配与模糊需求。
+Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴趣点都可投入，最终值越出职业范围时需要显式 Keeper override，且 override 必须绑定当前职业身份。Keeper approval 使用带 reason 与 subject 的强类型记录，区分职业定义、Preset 职业政策、自定义职业、Credit Rating、Cthulhu Mythos 分配与模糊需求；模糊 requirement 的 subject 同时包含职业身份与 requirement ID。
+
+自定义职业的八项限制按需求最多可产生的职业技能数计算，不按 requirement 条目数计算。有限需求使用外层 `cardinality.max`；无法证明不超过八项的开放上限需求被拒绝，通用 Fighting / Firearms 专业化需求各按一项计数。
 
 ## Skills
 

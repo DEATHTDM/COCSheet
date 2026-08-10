@@ -23,12 +23,17 @@ import type {
 } from "../../creation/types/skillCreation";
 import { evaluateOccupationPointFormula } from "./occupationPointFormula";
 import { evaluateOccupationPrerequisite } from "./occupationPrerequisite";
-import { calculateSkillBaseValue, getSkillBaseValueRule, getSkillRefKey } from "./skills";
+import {
+  calculateSkillBaseValue,
+  getSkillBaseValueRule,
+  getSkillRefKey,
+  validateCharacterSkills,
+} from "./skills";
 
 export type SkillAllocationErrorCode =
   | "missing-characteristics"
   | "existing-manual-skills"
-  | "custom-occupation-too-many-requirements"
+  | "custom-occupation-skill-capacity"
   | "occupation-prerequisite"
   | "preset-occupation-banned"
   | "missing-requirement-selection"
@@ -43,7 +48,8 @@ export type SkillAllocationErrorCode =
   | "interest-budget-exceeded"
   | "occupation-skill-final-limit"
   | "interest-only-skill-final-limit"
-  | "global-skill-final-limit";
+  | "global-skill-final-limit"
+  | "character-skill-validation";
 
 export type SkillAllocationWarningCode =
   | "unused-occupation-points"
@@ -160,6 +166,29 @@ function canAssignAllOf(
   return assign(0);
 }
 
+function canAssignOneOf(
+  refs: readonly SkillRef[],
+  selectors: Extract<SkillSelector, { type: "one-of" }>["selectors"],
+): boolean {
+  const usedSelectors = selectors.map(() => false);
+
+  function assign(index: number): boolean {
+    if (index === refs.length) return true;
+    const ref = refs[index];
+    if (!ref) return false;
+    for (let selectorIndex = 0; selectorIndex < selectors.length; selectorIndex += 1) {
+      const selector = selectors[selectorIndex];
+      if (!selector || usedSelectors[selectorIndex] || !matchesSkillSelector(ref, selector)) continue;
+      usedSelectors[selectorIndex] = true;
+      if (assign(index + 1)) return true;
+      usedSelectors[selectorIndex] = false;
+    }
+    return false;
+  }
+
+  return assign(0);
+}
+
 export function validateOccupationRequirementSelection(
   requirement: OccupationRequirement,
   refs: readonly SkillRef[],
@@ -187,7 +216,9 @@ export function validateOccupationRequirementSelection(
   }
   const selectorMatches = requirement.selector.type === "all-of"
     ? canAssignAllOf(refs, requirement.selector.groups)
-    : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
+    : requirement.selector.type === "one-of"
+      ? canAssignOneOf(refs, requirement.selector.selectors)
+      : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
   if (!selectorMatches) {
     errors.push({
       code: "selector-mismatch",
@@ -218,8 +249,52 @@ export function validateCustomOccupationDefinition(occupation: OccupationDefinit
   if (!occupation.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
     errors.push("自定义职业必须使用 UUID identity");
   }
-  if (occupation.skillRequirements.length > 8) errors.push("自定义职业最多允许八个 requirement slots");
+  const skillCapacity = calculateCustomOccupationSkillCapacity(occupation);
+  errors.push(...skillCapacity.errors);
   return errors;
+}
+
+export interface CustomOccupationSkillCapacityResult {
+  readonly valid: boolean;
+  readonly maximumSkills?: number;
+  readonly errors: readonly string[];
+}
+
+export function calculateCustomOccupationSkillCapacity(
+  occupation: OccupationDefinition,
+): CustomOccupationSkillCapacityResult {
+  let maximumSkills = 0;
+  let hasUnboundedRequirement = false;
+  const errors: string[] = [];
+  for (const requirement of occupation.skillRequirements) {
+    if (requirement.cardinality.max !== undefined) {
+      maximumSkills += requirement.cardinality.max;
+      continue;
+    }
+    const isGenericCombatSpecialization = requirement.selector.type === "specialization-of" &&
+      (requirement.selector.definitionId === "fighting" || requirement.selector.definitionId === "firearms");
+    if (isGenericCombatSpecialization) {
+      maximumSkills += 1;
+      continue;
+    }
+    hasUnboundedRequirement = true;
+    errors.push(`自定义职业需求 ${requirement.id} 没有有限 max，无法证明职业技能不超过八项`);
+  }
+  if (maximumSkills > 8) {
+    errors.push(`自定义职业最多允许八项职业技能；当前需求最多可产生 ${maximumSkills} 项`);
+  }
+  return {
+    valid: errors.length === 0,
+    ...(!hasUnboundedRequirement ? { maximumSkills } : {}),
+    errors,
+  };
+}
+
+export function occupationRequirementApprovalSubject(
+  occupationId: string,
+  requirementId: string,
+): string {
+  return `occupation:${occupationId}:requirement:${requirementId}`;
 }
 
 function hasApproval(
@@ -281,11 +356,10 @@ export function finalizeSkillAllocation(
       message: "已有手动 Character.skills；结构化分配需要显式采用并重建技能",
     });
   }
-  if (occupation.kind === "custom" && definition.skillRequirements.length > 8) {
-    errors.push({
-      code: "custom-occupation-too-many-requirements",
-      message: "自定义职业最多允许八个 requirement slots",
-    });
+  if (occupation.kind === "custom") {
+    for (const message of calculateCustomOccupationSkillCapacity(definition).errors) {
+      errors.push({ code: "custom-occupation-skill-capacity", message });
+    }
   }
   for (const prerequisite of definition.prerequisites ?? []) {
     if (!evaluateOccupationPrerequisite(prerequisite, characteristics)) {
@@ -371,11 +445,15 @@ export function finalizeSkillAllocation(
         }
       }
     }
+    const approvalSubject = occupationRequirementApprovalSubject(
+      occupation.selectedOccupationId,
+      requirement.id,
+    );
     if (requirement.keeperReview &&
-      !hasApproval(state.keeperApprovals, "fuzzy-requirement", requirement.id)) {
+      !hasApproval(state.keeperApprovals, "fuzzy-requirement", approvalSubject)) {
       addApproval(approvals, {
         reason: "fuzzy-requirement",
-        subjectId: requirement.id,
+        subjectId: approvalSubject,
         message: `职业需求 ${requirement.id} 需要 Keeper review`,
       });
     }
@@ -490,9 +568,15 @@ export function finalizeSkillAllocation(
     finalizedSkills.push({ ref, currentValue, improvementChecked: false });
   }
 
+  const characterSkillValidation = validateCharacterSkills(finalizedSkills, input.skillDefinitions);
+  for (const message of characterSkillValidation.errors) {
+    errors.push({ code: "character-skill-validation", message });
+  }
+
   const creditRating = finalizedSkills.find((skill) => getSkillRefKey(skill.ref) === creditRatingKey)?.currentValue ?? 0;
   if ((creditRating < definition.creditRating.min || creditRating > definition.creditRating.max) &&
-    !state.creditRatingOverride?.approved) {
+    !(state.creditRatingOverride?.approved &&
+      state.creditRatingOverride.occupationId === occupation.selectedOccupationId)) {
     addApproval(approvals, {
       reason: "credit-rating-override",
       subjectId: creditRatingKey,

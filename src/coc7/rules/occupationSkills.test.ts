@@ -8,11 +8,13 @@ import { getStandardSkillCatalog } from "../../content/skillRegistry";
 import type { CreationPreset } from "../../creation/types/creationPreset";
 import type { OccupationSelection, SkillCreationState } from "../../creation/types/skillCreation";
 import {
+  calculateCustomOccupationSkillCapacity,
   calculateInterestSkillBudget,
   detectStructuredAllocationConflict,
   finalizeSkillAllocation,
   instantiateNamedCustomSpecialization,
   matchesSkillSelector,
+  occupationRequirementApprovalSubject,
   validateCustomOccupationDefinition,
   validateOccupationRequirementSelection,
 } from "./occupationSkills";
@@ -146,6 +148,43 @@ describe("SkillSelector 与 requirement selection", () => {
       { type: "predefined", definitionId: "firearms", specializationId: "rifle-shotgun" },
     ])).toEqual([]);
   });
+
+  it("one-of 每个子 selector 最多满足一个选择，并通过回溯处理重叠", () => {
+    const soldier = phase5aOccupationFixtures.find((fixture) => fixture.id === "soldier");
+    const support = soldier?.skillRequirements.find((item) => item.id === "support-skills");
+    if (!support) throw new Error("缺少 soldier support-skills fixture");
+    const firstAid: SkillRef = { type: "standard", definitionId: "first-aid" };
+    const mechanicalRepair: SkillRef = { type: "standard", definitionId: "mechanical-repair" };
+    const spanish: SkillRef = {
+      type: "custom",
+      definitionId: "language-other",
+      specializationId: crypto.randomUUID(),
+      displayName: "Spanish",
+    };
+    const french: SkillRef = {
+      type: "custom",
+      definitionId: "language-other",
+      specializationId: crypto.randomUUID(),
+      displayName: "French",
+    };
+    expect(validateOccupationRequirementSelection(support, [firstAid, spanish])).toEqual([]);
+    expect(validateOccupationRequirementSelection(support, [firstAid, mechanicalRepair])).toEqual([]);
+    expect(validateOccupationRequirementSelection(support, [spanish, french]).map((issue) => issue.code))
+      .toContain("selector-mismatch");
+
+    const overlap: OccupationRequirement = {
+      id: "overlap",
+      selector: {
+        type: "one-of",
+        selectors: [
+          { type: "any-skill" },
+          { type: "exact", ref: firstAid },
+        ],
+      },
+      cardinality: { min: 2, max: 2 },
+    };
+    expect(validateOccupationRequirementSelection(overlap, [firstAid, mechanicalRepair])).toEqual([]);
+  });
 });
 
 describe("技能预算与 finalize plan", () => {
@@ -272,6 +311,46 @@ describe("技能预算与 finalize plan", () => {
     expect(result.valid).toBe(true);
   });
 
+  it("模糊 requirement approval 同时绑定职业身份与 requirement ID", () => {
+    const makeReviewedOccupation = (id: string): OccupationDefinition => ({
+      ...simpleOccupation,
+      id,
+      creditRating: { min: 0, max: 99 },
+      skillRequirements: [{
+        id: "personal-or-era",
+        selector: { type: "any-skill" },
+        cardinality: { min: 1, max: 1 },
+        keeperReview: true,
+      }],
+    });
+    const occupationA = makeReviewedOccupation("reviewed-a");
+    const occupationB = makeReviewedOccupation("reviewed-b");
+    const state: SkillCreationState = {
+      requirementSelections: [{ requirementId: "personal-or-era", refs: [libraryUse] }],
+      allocations: [],
+      keeperApprovals: [{
+        reason: "fuzzy-requirement",
+        subjectId: occupationRequirementApprovalSubject(occupationA.id, "personal-or-era"),
+        approved: true,
+      }],
+    };
+    const finalizeReviewed = (definition: OccupationDefinition) => finalizeSkillAllocation({
+      character: makeCharacter(),
+      occupation: {
+        kind: "catalog",
+        selectedOccupationId: definition.id,
+        definitionSnapshot: definition,
+      },
+      state,
+      skillDefinitions: getStandardSkillCatalog(),
+    });
+    expect(finalizeReviewed(occupationA).approvals).toEqual([]);
+    expect(finalizeReviewed(occupationB).approvals).toContainEqual(expect.objectContaining({
+      reason: "fuzzy-requirement",
+      subjectId: occupationRequirementApprovalSubject(occupationB.id, "personal-or-era"),
+    }));
+  });
+
   it("Credit Rating 最终值越界需要 override，且兴趣点也可投入", () => {
     const state = makeState();
     state.allocations[1] = { ref: libraryUse, occupationPoints: 140, interestPoints: 90 };
@@ -282,14 +361,21 @@ describe("技能预算与 finalize plan", () => {
     state.allocations[2] = { ref: creditRating, occupationPoints: 0, interestPoints: 0 };
     result = finalize(state);
     expect(result.approvals.map((approval) => approval.reason)).toContain("credit-rating-override");
-    state.creditRatingOverride = { approved: true, reason: "Keeper approved low status" };
+    state.creditRatingOverride = {
+      occupationId: simpleOccupation.id,
+      approved: true,
+      reason: "Keeper approved low status",
+    };
     expect(finalize(state).approvals.map((approval) => approval.reason)).not.toContain("credit-rating-override");
+
+    state.creditRatingOverride = { occupationId: "other-occupation", approved: true };
+    expect(finalize(state).approvals.map((approval) => approval.reason)).toContain("credit-rating-override");
   });
 
   it("未花完点数只返回 warning，不作为 hard invalid", () => {
     const state = makeState();
     state.allocations = [];
-    state.creditRatingOverride = { approved: true };
+    state.creditRatingOverride = { occupationId: simpleOccupation.id, approved: true };
     const result = finalize(state);
     expect(result.valid).toBe(true);
     expect(result.warnings.map((warning) => warning.code)).toEqual([
@@ -335,23 +421,163 @@ describe("技能预算与 finalize plan", () => {
     state.requirementSelections.push({ requirementId: "old-occupation-slot", refs: [libraryUse] });
     expect(finalize(state).errors.map((issue) => issue.code)).toContain("stale-requirement-selection");
   });
+
+  it("final Character.skills 复用领域校验，拒绝两个 Language Own 实例", () => {
+    const ownA: SkillRef = {
+      type: "custom",
+      definitionId: "language-own",
+      specializationId: crypto.randomUUID(),
+      displayName: "Mandarin",
+    };
+    const ownB: SkillRef = {
+      type: "custom",
+      definitionId: "language-own",
+      specializationId: crypto.randomUUID(),
+      displayName: "Cantonese",
+    };
+    const definition: OccupationDefinition = {
+      ...simpleOccupation,
+      id: "language-validation",
+      creditRating: { min: 0, max: 99 },
+      skillRequirements: [
+        { id: "own-a", selector: { type: "specialization-of", definitionId: "language-own" }, cardinality: { min: 1, max: 1 } },
+        { id: "own-b", selector: { type: "specialization-of", definitionId: "language-own" }, cardinality: { min: 1, max: 1 } },
+      ],
+    };
+    const result = finalizeSkillAllocation({
+      character: makeCharacter(),
+      occupation: { kind: "catalog", selectedOccupationId: definition.id, definitionSnapshot: definition },
+      state: {
+        requirementSelections: [
+          { requirementId: "own-a", refs: [ownA] },
+          { requirementId: "own-b", refs: [ownB] },
+        ],
+        allocations: [],
+        keeperApprovals: [],
+      },
+      skillDefinitions: getStandardSkillCatalog(),
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual(expect.objectContaining({
+      code: "character-skill-validation",
+      message: expect.stringContaining("language-own 只允许一个专业化实例"),
+    }));
+  });
+
+  it("一个 Language Own 与多个 Language Other 通过 final Character.skills 校验", () => {
+    const customRef = (definitionId: "language-own" | "language-other", displayName: string): SkillRef => ({
+      type: "custom",
+      definitionId,
+      specializationId: crypto.randomUUID(),
+      displayName,
+    });
+    const own = customRef("language-own", "Mandarin");
+    const spanish = customRef("language-other", "Spanish");
+    const french = customRef("language-other", "French");
+    const definition: OccupationDefinition = {
+      ...simpleOccupation,
+      id: "valid-languages",
+      creditRating: { min: 0, max: 99 },
+      skillRequirements: [
+        { id: "own", selector: { type: "specialization-of", definitionId: "language-own" }, cardinality: { min: 1, max: 1 } },
+        { id: "other-a", selector: { type: "specialization-of", definitionId: "language-other" }, cardinality: { min: 1, max: 1 } },
+        { id: "other-b", selector: { type: "specialization-of", definitionId: "language-other" }, cardinality: { min: 1, max: 1 } },
+      ],
+    };
+    const result = finalizeSkillAllocation({
+      character: makeCharacter(),
+      occupation: { kind: "catalog", selectedOccupationId: definition.id, definitionSnapshot: definition },
+      state: {
+        requirementSelections: [
+          { requirementId: "own", refs: [own] },
+          { requirementId: "other-a", refs: [spanish] },
+          { requirementId: "other-b", refs: [french] },
+        ],
+        allocations: [],
+        keeperApprovals: [],
+      },
+      skillDefinitions: getStandardSkillCatalog(),
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors.map((issue) => issue.code)).not.toContain("character-skill-validation");
+  });
 });
 
 describe("Custom occupation foundation", () => {
-  it("最多八个 requirement slots；单一 Fighting slot 可选择多个 SkillRef", () => {
+  const customWith = (skillRequirements: OccupationDefinition["skillRequirements"]): OccupationDefinition => ({
+    ...simpleOccupation,
+    id: crypto.randomUUID(),
+    skillRequirements,
+  });
+
+  it("按需求可产生的职业技能项数限制八项", () => {
     const baseRequirement: OccupationRequirement = {
       id: "slot",
       selector: { type: "specialization-of", definitionId: "fighting" },
       cardinality: { min: 1 },
     };
-    const custom: OccupationDefinition = {
-      ...simpleOccupation,
-      id: crypto.randomUUID(),
-      skillRequirements: Array.from({ length: 9 }, (_, index) => ({
-        ...baseRequirement,
-        id: `slot-${index + 1}`,
-      })),
-    };
-    expect(validateCustomOccupationDefinition(custom)).toContain("自定义职业最多允许八个 requirement slots");
+    const genericFighting = customWith(Array.from({ length: 8 }, (_, index) => ({
+      ...baseRequirement,
+      id: `slot-${index + 1}`,
+    })));
+    expect(calculateCustomOccupationSkillCapacity(genericFighting)).toMatchObject({
+      valid: true,
+      maximumSkills: 8,
+    });
+
+    const anyEight = customWith([{
+      id: "any-eight",
+      selector: { type: "any-skill" },
+      cardinality: { min: 8, max: 8 },
+    }]);
+    expect(calculateCustomOccupationSkillCapacity(anyEight)).toMatchObject({ valid: true, maximumSkills: 8 });
+
+    const nine = customWith([
+      ...anyEight.skillRequirements,
+      { id: "fixed", selector: { type: "exact", ref: medicine }, cardinality: { min: 1, max: 1 } },
+    ]);
+    expect(validateCustomOccupationDefinition(nine).join("；")).toContain("最多可产生 9 项");
+
+    const sixteen = customWith(Array.from({ length: 8 }, (_, index) => ({
+      id: `double-${index + 1}`,
+      selector: { type: "any-skill" as const },
+      cardinality: { min: 1, max: 2 },
+    })));
+    expect(validateCustomOccupationDefinition(sixteen).join("；")).toContain("最多可产生 16 项");
+    const overCapacityResult = finalizeSkillAllocation({
+      character: makeCharacter(),
+      occupation: {
+        kind: "custom",
+        selectedOccupationId: sixteen.id,
+        definitionSnapshot: sixteen,
+      },
+      state: { requirementSelections: [], allocations: [], keeperApprovals: [] },
+      skillDefinitions: getStandardSkillCatalog(),
+    });
+    expect(overCapacityResult.errors.map((issue) => issue.code))
+      .toContain("custom-occupation-skill-capacity");
+
+    const allOfThree = customWith([{
+      id: "all-of-three",
+      selector: {
+        type: "all-of",
+        groups: [
+          { selector: { type: "exact", ref: medicine }, cardinality: { min: 1, max: 1 } },
+          { selector: { type: "exact", ref: libraryUse }, cardinality: { min: 2, max: 2 } },
+        ],
+      },
+      cardinality: { min: 3, max: 3 },
+    }]);
+    expect(calculateCustomOccupationSkillCapacity(allOfThree)).toMatchObject({
+      valid: true,
+      maximumSkills: 3,
+    });
+
+    const unboundedAny = customWith([{
+      id: "unbounded",
+      selector: { type: "any-skill" },
+      cardinality: { min: 1 },
+    }]);
+    expect(validateCustomOccupationDefinition(unboundedAny).join("；")).toContain("无法证明职业技能不超过八项");
   });
 });

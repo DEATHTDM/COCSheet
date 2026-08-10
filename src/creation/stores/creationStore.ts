@@ -226,8 +226,27 @@ export const useCreationStore = defineStore("creation", () => {
         existingSkillResolution: { action: "rebuild-structured", confirmed: true },
       },
     };
+    const finalizedCthulhuMythos = plan.skills.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "cthulhu-mythos",
+    )?.currentValue ?? 0;
+    const resources = character.resources
+      ? {
+        ...character.resources,
+        san: {
+          current: clampSanityToMaximum(
+            character.resources.san.current,
+            finalizedCthulhuMythos,
+          ),
+        },
+      }
+      : undefined;
     const records = await creationWorkflowRepository.updateCharacterWithSession(
-      { ...character, occupation, skills: [...plan.skills] },
+      {
+        ...character,
+        occupation,
+        skills: [...plan.skills],
+        ...(resources ? { resources } : {}),
+      },
       completedSession,
     );
     current.value = records.session;

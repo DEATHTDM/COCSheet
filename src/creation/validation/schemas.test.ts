@@ -9,9 +9,18 @@ import {
   type AttributeGenerationMethod,
 } from "../types/creationPreset";
 import { creationSessionSchema } from "../types/creationSession";
+import { creditRatingOverrideSchema } from "../types/skillCreation";
 import { characterRecordSchema, kpPresetRecordSchema } from "../../db/records";
 
 describe("持久化 Zod Schema", () => {
+  it("Credit Rating override 必须绑定职业身份", () => {
+    expect(creditRatingOverrideSchema.safeParse({ approved: true }).success).toBe(false);
+    expect(creditRatingOverrideSchema.safeParse({
+      occupationId: "doctor",
+      approved: true,
+    }).success).toBe(true);
+  });
+
   it("拒绝非法 Character", () => {
     expect(
       characterSchema.safeParse({

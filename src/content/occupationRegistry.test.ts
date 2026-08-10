@@ -88,4 +88,29 @@ describe("OccupationRegistry", () => {
       skillRequirements: [doctor.skillRequirements[0], doctor.skillRequirements[0]],
     }).success).toBe(false);
   });
+
+  it("specialization-of exclude 只能引用同一 SkillDefinition", () => {
+    const doctor = phase5aOccupationFixtures.find((occupation) => occupation.id === "doctor");
+    if (!doctor) throw new Error("缺少 doctor fixture");
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [{
+        ...doctor,
+        id: "broken-specialization-exclude",
+        skillRequirements: [{
+          id: "science-with-wrong-exclude",
+          selector: {
+            type: "specialization-of",
+            definitionId: "science",
+            exclude: [{
+              type: "predefined",
+              definitionId: "firearms",
+              specializationId: "handgun",
+            }],
+          },
+          cardinality: { min: 1, max: 1 },
+        }],
+      }],
+    }, skills)).toThrow("exclude 必须引用同一技能定义");
+  });
 });

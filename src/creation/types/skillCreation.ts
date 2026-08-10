@@ -27,6 +27,7 @@ export const keeperApprovalGrantSchema = z
 
 export const creditRatingOverrideSchema = z
   .object({
+    occupationId: z.union([stableMachineIdSchema, z.string().uuid()]),
     approved: z.literal(true),
     reason: z.string().trim().min(1).optional(),
   })

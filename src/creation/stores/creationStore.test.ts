@@ -305,4 +305,118 @@ describe("Phase 5A skills finalize foundation", () => {
       multiplier: 4,
     });
   });
+
+  it("完成技能时在同一 workflow update 中按最终 Mythos 收紧 SAN，并保留 HP/MP", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initialCharacter = await characterRepository.getById(characterId);
+    if (!initialCharacter) throw new Error("调查员不存在");
+    const afterAttributes = await store.completeAttributes(initialCharacter.data);
+    const prepared = await characterRepository.update({
+      ...afterAttributes.data,
+      resources: {
+        hp: { current: 8 },
+        mp: { current: 7 },
+        san: { current: 70 },
+      },
+    });
+    const occupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: occupationId,
+      name: { zh: "神话研究员", en: "Mythos Researcher" },
+      category: "academic",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 99 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        occupationPoints: 0,
+        interestPoints: 40,
+      }],
+      keeperApprovals: [{
+        reason: "cthulhu-mythos-allocation",
+        subjectId: "skill:cthulhu-mythos",
+        approved: true,
+      }],
+    });
+    const updateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+
+    const completed = await store.completeSkills(prepared.data, true);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.resources).toEqual({
+      hp: { current: 8 },
+      mp: { current: 7 },
+      san: { current: 59 },
+    });
+    const refreshed = await characterRepository.getById(characterId);
+    expect(refreshed?.data.resources?.san.current).toBe(59);
+    expect(store.current?.data.currentStep).toBe("review");
+  });
+
+  it("重建为较低 Mythos 不自动恢复 SAN", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initialCharacter = await characterRepository.getById(characterId);
+    if (!initialCharacter) throw new Error("调查员不存在");
+    const afterAttributes = await store.completeAttributes(initialCharacter.data);
+    const prepared = await characterRepository.update({
+      ...afterAttributes.data,
+      resources: {
+        hp: { current: 8 },
+        mp: { current: 7 },
+        san: { current: 50 },
+      },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 40,
+        improvementChecked: false,
+      }],
+    });
+    const occupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: occupationId,
+      name: { zh: "神话重建", en: "Mythos Rebuild" },
+      category: "academic",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 99 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        occupationPoints: 0,
+        interestPoints: 20,
+      }],
+      keeperApprovals: [{
+        reason: "cthulhu-mythos-allocation",
+        subjectId: "skill:cthulhu-mythos",
+        approved: true,
+      }],
+      existingSkillResolution: { action: "rebuild-structured", confirmed: true },
+    });
+    const updateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+
+    const completed = await store.completeSkills(prepared.data, true);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.resources).toEqual({
+      hp: { current: 8 },
+      mp: { current: 7 },
+      san: { current: 50 },
+    });
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "cthulhu-mythos",
+    )?.currentValue).toBe(20);
+  });
 });

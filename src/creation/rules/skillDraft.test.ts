@@ -77,7 +77,7 @@ describe("occupation skill draft actions", () => {
         { ref: { type: "standard", definitionId: "medicine" }, occupationPoints: 20, interestPoints: 5 },
         { ref: { type: "standard", definitionId: "law" }, occupationPoints: 10, interestPoints: 0 },
       ],
-      creditRatingOverride: { approved: true },
+      creditRatingOverride: { occupationId: "old-occupation", approved: true },
       keeperApprovals: [
         { reason: "fuzzy-requirement", subjectId: "old-slot", approved: true },
         { reason: "cthulhu-mythos-allocation", subjectId: "skill:cthulhu-mythos", approved: true },
