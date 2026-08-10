@@ -2,24 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   calculateDamageBonusAndBuild,
+  calculateInitialMagicPoints,
   calculateInitialSanity,
   calculateMaxHitPoints,
-  calculateMaxMagicPoints,
   calculateMovementRate,
   deriveStandardCharacterValues,
   formatDamageBonus,
   type DamageBonus,
 } from "./derived";
 
-describe("Maximum HP / MP 与起始 SAN", () => {
+describe("Maximum HP、起始 MP 与起始 SAN", () => {
   it("按 CON + SIZ 计算 Maximum HP 并向下取整", () => {
     expect(calculateMaxHitPoints(55, 70)).toBe(12);
     expect(calculateMaxHitPoints(51, 58)).toBe(10);
   });
 
-  it("按 POW / 5 计算 Maximum MP 并向下取整", () => {
-    expect(calculateMaxMagicPoints(65)).toBe(13);
-    expect(calculateMaxMagicPoints(64)).toBe(12);
+  it("按 POW / 5 计算起始 MP 并向下取整", () => {
+    expect(calculateInitialMagicPoints(65)).toBe(13);
+    expect(calculateInitialMagicPoints(64)).toBe(12);
   });
 
   it("起始 SAN 等于 POW", () => {
@@ -110,7 +110,7 @@ describe("Standard 派生结果聚合", () => {
       STR: 65, CON: 55, SIZ: 70, DEX: 60, APP: 50, INT: 60, POW: 65, EDU: 70,
     })).toEqual({
       maxHp: 12,
-      maxMp: 13,
+      initialMp: 13,
       initialSan: 65,
       movement: { status: "value", value: 7 },
       damageBonus: { kind: "dice", count: 1, sides: 4 },

@@ -40,12 +40,12 @@ Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
 - restorable incomplete Manual drafts and minimum-allocation Point Buy drafts without premature Base Characteristics
 - cross-field age consistency plus semantic validation for EDU improvement history and rolled Luck
 - overwrite confirmations for regenerated attribute rolls, EDU history, and Luck rolls
-- pure Standard COC7 derived rules for Maximum HP, Maximum MP, Initial SAN, age-adjusted MOV, structured Damage Bonus, and Build
-- read-only derived previews during attributes and current/maximum resource summaries in the occupation placeholder
+- pure Standard COC7 derived rules for Maximum HP, Initial MP, Initial SAN, age-adjusted MOV, structured Damage Bonus, and Build
+- read-only derived previews during attributes and resource summaries in the occupation placeholder
 - optional strict Character resources containing only current HP, current MP, and current SAN
 - atomic resource initialization when attributes complete, plus reset from new final characteristics after returning to edit
 - explicit legacy Phase 2 resource initialization without Repository read side effects or Dexie version changes
-- Character Store APIs for bounded current HP/MP/SAN updates with refresh persistence
+- Character Store APIs for current HP constrained by Maximum HP, nonnegative integer current MP without an Initial MP cap, and current SAN constrained to 0～99, all with refresh persistence
 
 ## Foundation hardening
 
@@ -77,6 +77,7 @@ Merged in the current enum:
 - URL / Hash preset sharing
 - Setting-specific rules and full Setting content
 - static-host deployment automation
+- MP natural recovery rules and recovery limits
 
 ## Next intended work
 

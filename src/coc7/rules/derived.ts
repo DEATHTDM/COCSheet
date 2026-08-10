@@ -27,7 +27,7 @@ export interface DamageBonusAndBuild {
 
 export interface StandardDerivedCharacterValues extends DamageBonusAndBuild {
   readonly maxHp: number;
-  readonly maxMp: number;
+  readonly initialMp: number;
   readonly initialSan: number;
   readonly movement: MovementRateResult;
 }
@@ -44,7 +44,7 @@ export function calculateMaxHitPoints(con: number, siz: number): number {
   return Math.floor((con + siz) / 10);
 }
 
-export function calculateMaxMagicPoints(pow: number): number {
+export function calculateInitialMagicPoints(pow: number): number {
   requireNonNegativeInteger(pow, "POW");
   return Math.floor(pow / 5);
 }
@@ -122,7 +122,7 @@ export function deriveStandardCharacterValues(
   );
   return {
     maxHp: calculateMaxHitPoints(characteristics.CON, characteristics.SIZ),
-    maxMp: calculateMaxMagicPoints(characteristics.POW),
+    initialMp: calculateInitialMagicPoints(characteristics.POW),
     initialSan: calculateInitialSanity(characteristics.POW),
     movement: calculateMovementRate(
       age,

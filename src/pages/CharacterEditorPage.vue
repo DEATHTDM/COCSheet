@@ -407,7 +407,7 @@ async function complete(): Promise<void> {
             <h2>派生属性预览</h2>
             <div class="attribute-grid">
               <div class="attribute-card"><span>最大 HP</span><strong>{{ derivedPreview.maxHp }}</strong></div>
-              <div class="attribute-card"><span>最大 MP</span><strong>{{ derivedPreview.maxMp }}</strong></div>
+              <div class="attribute-card"><span>起始 MP</span><strong>{{ derivedPreview.initialMp }}</strong></div>
               <div class="attribute-card"><span>起始 SAN</span><strong>{{ derivedPreview.initialSan }}</strong></div>
               <div class="attribute-card"><span>MOV</span><strong>{{ derivedPreview.movement.status === 'value' ? derivedPreview.movement.value : '需 KP 裁定' }}</strong></div>
               <div class="attribute-card"><span>Damage Bonus</span><strong>{{ formatDamageBonus(derivedPreview.damageBonus) }}</strong></div>
@@ -428,7 +428,7 @@ async function complete(): Promise<void> {
         </div>
         <div v-if="characterStore.current.data.resources && savedDerived" class="attribute-grid">
           <div class="attribute-card"><span>HP</span><strong>{{ characterStore.current.data.resources.hp.current }} / {{ savedDerived.maxHp }}</strong></div>
-          <div class="attribute-card"><span>MP</span><strong>{{ characterStore.current.data.resources.mp.current }} / {{ savedDerived.maxMp }}</strong></div>
+          <div class="attribute-card"><span>MP</span><strong>{{ characterStore.current.data.resources.mp.current }}（起始 {{ savedDerived.initialMp }}）</strong></div>
           <div class="attribute-card"><span>SAN</span><strong>{{ characterStore.current.data.resources.san.current }}</strong></div>
           <div class="attribute-card"><span>MOV</span><strong>{{ savedDerived.movement.status === 'value' ? savedDerived.movement.value : '需 KP 裁定' }}</strong></div>
           <div class="attribute-card"><span>DB</span><strong>{{ formatDamageBonus(savedDerived.damageBonus) }}</strong></div>

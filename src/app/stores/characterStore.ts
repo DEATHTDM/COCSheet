@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 
 import {
   calculateMaxHitPoints,
-  calculateMaxMagicPoints,
   deriveStandardCharacterValues,
 } from "../../coc7/rules/derived";
 import { characterRepository } from "../../db/repositories/characterRepository";
@@ -27,8 +26,15 @@ export const useCharacterStore = defineStore("characters", () => {
   }
 
   function requireResourceValue(value: number, label: string, maximum: number): void {
-    if (!Number.isInteger(value) || value < 0 || value > maximum) {
+    requireNonNegativeInteger(value, label);
+    if (value > maximum) {
       throw new RangeError(`${label} 必须为 0～${maximum} 的整数`);
+    }
+  }
+
+  function requireNonNegativeInteger(value: number, label: string): void {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new RangeError(`${label} 必须为非负整数`);
     }
   }
 
@@ -67,7 +73,7 @@ export const useCharacterStore = defineStore("characters", () => {
       ...character,
       resources: {
         hp: { current: derived.maxHp },
-        mp: { current: derived.maxMp },
+        mp: { current: derived.initialMp },
         san: { current: derived.initialSan },
       },
     });
@@ -92,9 +98,8 @@ export const useCharacterStore = defineStore("characters", () => {
   async function setCurrentMp(id: string, value: number): Promise<CharacterRecord> {
     const existing = await requireCharacter(id);
     const character = existing.data;
-    if (!character.resources || !character.characteristics) throw new Error("调查员资源尚未初始化");
-    const maximum = calculateMaxMagicPoints(character.characteristics.POW);
-    requireResourceValue(value, "当前 MP", maximum);
+    if (!character.resources) throw new Error("调查员资源尚未初始化");
+    requireNonNegativeInteger(value, "当前 MP");
     return synchronize(await characterRepository.update({
       ...character,
       resources: { ...character.resources, mp: { current: value } },

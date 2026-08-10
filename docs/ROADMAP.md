@@ -35,7 +35,7 @@ Status: Completed
 Status: Completed
 
 - HP
-- MP
+- Initial MP
 - Initial SAN
 - MOV
 - Damage Bonus

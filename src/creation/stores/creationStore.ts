@@ -344,7 +344,7 @@ export const useCreationStore = defineStore("creation", () => {
         luck: attributes.luck.value,
         resources: {
           hp: { current: derived.maxHp },
-          mp: { current: derived.maxMp },
+          mp: { current: derived.initialMp },
           san: { current: derived.initialSan },
         },
       },

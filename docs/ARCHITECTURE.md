@@ -36,7 +36,7 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Maximum MP、Initial SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
@@ -46,7 +46,7 @@ Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Ch
 
 属性完成时，`Character` 最终值与 `CreationSession` 流程推进在同一 Dexie 事务中写入。年龄改变只清除并重建年龄相关过程，始终从保存的 Base Characteristics 重新推导 Final Characteristics。
 
-首次完成属性时，current HP、current MP 与 current SAN 分别按 Maximum HP、Maximum MP 与 Initial SAN 初始化，并与最终属性和会话推进在同一事务中写入。返回 attributes 重新完成会按新的最终属性重置这些初始资源。没有 `resources` 的 Phase 2 Character 继续兼容读取，由 UI 调用显式 Store action 补齐；Repository 读取不产生隐式写入。
+首次完成属性时，current HP、current MP 与 current SAN 分别按 Maximum HP、Initial MP 与 Initial SAN 初始化，并与最终属性和会话推进在同一事务中写入。Initial MP 为 `floor(POW / 5)`，但 current MP 只要求是非负整数，可以因其他规则高于 Initial MP；Phase 3 不实现 MP 自然回复规则。返回 attributes 重新完成会按新的最终属性重置这些初始资源。没有 `resources` 的 Phase 2 Character 继续兼容读取，由 UI 调用显式 Store action 补齐；Repository 读取不产生隐式写入。
 
 创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 

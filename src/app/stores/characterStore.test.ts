@@ -69,26 +69,28 @@ describe("游戏中资源更新", () => {
     const store = useCharacterStore();
     await store.ensureResourcesInitialized(character.id);
     await store.setCurrentHp(character.id, 5);
-    await store.setCurrentMp(character.id, 6);
+    await store.setCurrentMp(character.id, 20);
     await store.setCurrentSan(character.id, 90);
 
     setActivePinia(createPinia());
     const restored = await useCharacterStore().loadById(character.id);
     expect(restored?.data.resources).toEqual({
       hp: { current: 5 },
-      mp: { current: 6 },
+      mp: { current: 20 },
       san: { current: 90 },
     });
   });
 
-  it("拒绝 HP 高于实时 maxHP、MP 高于实时 maxMP、SAN 高于 99", async () => {
+  it("限制 HP 与 SAN，并只要求 current MP 为非负整数", async () => {
     const character = makeLegacyCharacter();
     await characterRepository.create(character);
     const store = useCharacterStore();
     await store.ensureResourcesInitialized(character.id);
 
     await expect(store.setCurrentHp(character.id, 13)).rejects.toThrow("当前 HP");
-    await expect(store.setCurrentMp(character.id, 14)).rejects.toThrow("当前 MP");
+    await expect(store.setCurrentMp(character.id, -1)).rejects.toThrow("当前 MP");
+    await expect(store.setCurrentMp(character.id, 1.5)).rejects.toThrow("当前 MP");
+    await expect(store.setCurrentMp(character.id, 20)).resolves.toBeDefined();
     await expect(store.setCurrentSan(character.id, 100)).rejects.toThrow("当前 SAN");
     await expect(store.setCurrentSan(character.id, 90)).resolves.toBeDefined();
   });
