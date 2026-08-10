@@ -4,11 +4,12 @@ import { getAvailableSettings } from "./registry";
 import { createSkillRegistry, getSkillRegistry, getStandardSkillCatalog } from "./skillRegistry";
 
 describe("skill registry", () => {
-  it("按 definition ID 获取代表性 Standard 技能并解析专业化", () => {
+  it("按 definition ID 获取完整 Standard 技能并解析专业化", () => {
     const registry = createSkillRegistry(getStandardSkillCatalog());
     expect(registry.get("dodge")?.name.en).toBe("Dodge");
     expect(registry.resolvePredefined("firearms", "handgun")?.name.en).toBe("Handgun");
     expect(registry.definitions.map((definition) => definition.id)).toContain("cthulhu-mythos");
+    expect(registry.definitions).toHaveLength(54);
   });
 
   it("每个 Setting registry 都从对应 SettingPack.skills 构建并缓存", () => {

@@ -54,6 +54,11 @@ export function calculateInitialSanity(pow: number): number {
   return pow;
 }
 
+export function calculateMaximumSanity(currentCthulhuMythos: number): number {
+  requireNonNegativeInteger(currentCthulhuMythos, "克苏鲁神话");
+  return Math.max(0, 99 - currentCthulhuMythos);
+}
+
 export function calculateMovementRate(
   age: number,
   str: number,

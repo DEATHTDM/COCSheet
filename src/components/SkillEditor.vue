@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 
 import { useCharacterStore } from "../app/stores/characterStore";
+import { calculateMaximumSanity } from "../coc7/rules/derived";
 import {
   getSkillRefKey,
   resolveSkillValue,
@@ -17,6 +18,7 @@ interface SkillRow {
   readonly ref: SkillRef;
   readonly nameZh: string;
   readonly nameEn: string;
+  readonly searchText: string;
   readonly persisted: CharacterSkill | undefined;
   readonly value: ResolvedSkillValue;
 }
@@ -60,12 +62,21 @@ const rows = computed<readonly SkillRow[]>(() => {
         : undefined;
       const specializationZh = skillRef.type === "custom" ? skillRef.displayName : specialization?.name.zh;
       const specializationEn = skillRef.type === "custom" ? "Custom" : specialization?.name.en;
+      const aliases = [
+        ...(definition.aliases?.zh ?? []),
+        ...(definition.aliases?.en ?? []),
+        ...(specialization?.aliases?.zh ?? []),
+        ...(specialization?.aliases?.en ?? []),
+      ];
+      const nameZh = specializationZh ? `${definition.name.zh}（${specializationZh}）` : definition.name.zh;
+      const nameEn = specializationEn ? `${definition.name.en} (${specializationEn})` : definition.name.en;
       result.push({
         key,
         definition,
         ref: skillRef,
-        nameZh: specializationZh ? `${definition.name.zh}（${specializationZh}）` : definition.name.zh,
-        nameEn: specializationEn ? `${definition.name.en} (${specializationEn})` : definition.name.en,
+        nameZh,
+        nameEn,
+        searchText: [nameZh, nameEn, ...aliases].join(" ").toLocaleLowerCase(),
         persisted,
         value: resolveSkillValue(
           definition,
@@ -82,9 +93,7 @@ const rows = computed<readonly SkillRow[]>(() => {
 const filteredRows = computed(() => {
   const query = search.value.trim().toLocaleLowerCase();
   return query
-    ? rows.value.filter((row) =>
-        `${row.nameZh} ${row.nameEn}`.toLocaleLowerCase().includes(query),
-      )
+    ? rows.value.filter((row) => row.searchText.includes(query))
     : rows.value;
 });
 
@@ -109,10 +118,22 @@ function run(action: () => Promise<unknown>): Promise<void> {
 }
 
 async function setValue(row: SkillRow, event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const value = numberFromEvent(event);
+  const currentSan = props.character.resources?.san.current;
+  if (row.definition.id === "cthulhu-mythos" && currentSan !== undefined) {
+    const maximumSanity = calculateMaximumSanity(value);
+    if (currentSan > maximumSanity && !window.confirm(
+      `克苏鲁神话提高后，最大理智将降至 ${maximumSanity}，当前 SAN 将从 ${currentSan} 同步降至 ${maximumSanity}。是否继续？`,
+    )) {
+      input.value = String(row.value.currentValue);
+      return;
+    }
+  }
   await run(() => characterStore.setSkillValue(
     props.character.id,
     row.ref,
-    numberFromEvent(event),
+    value,
   ));
 }
 
@@ -156,9 +177,9 @@ async function removeCustom(row: SkillRow): Promise<void> {
   <section class="skill-editor form-stack">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Phase 4A</p>
+        <p class="eyebrow">Phase 4B</p>
         <h2>技能基础编辑</h2>
-        <p class="muted">显示代表性 Standard 技能；职业点与兴趣点将在后续阶段实现。</p>
+        <p class="muted">显示完整 Standard 核心技能目录；职业点与兴趣点将在后续阶段实现。</p>
       </div>
       <label class="field skill-search">
         <span>搜索技能</span>
@@ -176,7 +197,12 @@ async function removeCustom(row: SkillRow): Promise<void> {
         </thead>
         <tbody>
           <tr v-for="row in filteredRows" :key="row.key">
-            <th><strong>{{ row.nameZh }}</strong><small>{{ row.nameEn }}</small></th>
+            <th>
+              <strong>{{ row.nameZh }}</strong>
+              <small>{{ row.nameEn }}</small>
+              <span v-if="row.definition.availability.sheet === 'uncommon'" class="skill-badge warning">非常规</span>
+              <span v-if="row.definition.availability.era === 'modern-only'" class="skill-badge">现代限定</span>
+            </th>
             <td>{{ row.value.baseValue }}</td>
             <td>
               <input
@@ -226,7 +252,11 @@ async function removeCustom(row: SkillRow): Promise<void> {
         class="custom-skill-card"
         @submit.prevent="createCustom(definition)"
       >
-        <strong>新增{{ definition.name.zh }}专业化</strong>
+        <div>
+          <strong>新增{{ definition.name.zh }}专业化</strong>
+          <span v-if="definition.availability.sheet === 'uncommon'" class="skill-badge warning">非常规</span>
+          <span v-if="definition.availability.era === 'modern-only'" class="skill-badge">现代限定</span>
+        </div>
         <input v-model="customNames[definition.id]" type="text" required placeholder="专业化名称" />
         <button class="button" type="submit">创建</button>
       </form>

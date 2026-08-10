@@ -36,7 +36,7 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
@@ -47,6 +47,8 @@ Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Ch
 属性完成时，`Character` 最终值与 `CreationSession` 流程推进在同一 Dexie 事务中写入。年龄改变只清除并重建年龄相关过程，始终从保存的 Base Characteristics 重新推导 Final Characteristics。
 
 首次完成属性时，current HP、current MP 与 current SAN 分别按 Maximum HP、Initial MP 与 Initial SAN 初始化，并与最终属性和会话推进在同一事务中写入。Initial MP 为 `floor(POW / 5)`，但 current MP 只要求是非负整数，可以因其他规则高于 Initial MP；Phase 3 不实现 MP 自然回复规则。返回 attributes 重新完成会按新的最终属性重置这些初始资源。没有 `resources` 的 Phase 2 Character 继续兼容读取，由 UI 调用显式 Store action 补齐；Repository 读取不产生隐式写入。
+
+显式修改 Cthulhu Mythos 时，Store 在一次 CharacterRepository update 中同时保存技能值，并在必要时把 current SAN 降至新的 Maximum SAN；降低 Mythos 不会自动恢复 SAN。是否执行破坏性 SAN 降低由 UI 在写入前确认，Repository 不包含确认逻辑。
 
 创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 
@@ -94,7 +96,7 @@ regency
 
 避免在应用各处散布 `if (setting === "gaslight")`。`SettingPack` 是数据与扩展 ID 声明，不能注入或执行任意 JavaScript。特殊人物规则由应用内部 Extension Registry 提供，并随应用代码发布。
 
-当前 Standard SettingPack 包含一组用于验证领域模型与 UI 的代表性 `SkillDefinition`；其余四个 SettingPack 仍是空内容占位包，不包含技能目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
+当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition` 与必要的 canonical specializations；其余四个 SettingPack 仍是空内容占位包，不包含技能目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
 
 ## Skill architecture
 
@@ -108,11 +110,11 @@ Character.skills（实例化或变化的 CharacterSkill）
 纯规则层实时解析 base / current / half / fifth
 ```
 
-`SkillBaseValueRule` 是闭合联合类型，只允许固定值或 Characteristic 的 full / half / fifth；Half 与 Fifth 复用既有纯函数。`SkillRef` 区分普通技能、预定义专业化和 UUID 标识的自定义专业化。Store 根据 SkillDefinition 的成长政策验证成长标记，并通过 CharacterRepository 持久化；Component 不直接访问 Dexie。
+`SkillBaseValueRule` 是闭合联合类型，只允许固定值或 Characteristic 的 full / half / fifth；Half 与 Fifth 复用既有纯函数。`SkillRef` 区分普通技能、预定义专业化和 UUID 标识的自定义专业化。`SkillDefinition.availability` 以闭合结构记录标准角色卡/非常规与全时代/现代限定语义；可选 `aliases` 仅参与本地化显示和搜索，不参与 identity、规则或持久化 key。Store 根据 SkillDefinition 的成长政策验证成长标记，并通过 CharacterRepository 持久化；Component 不直接访问 Dexie。
 
 `Language (Own)` 使用 `required + allowMultiple: false + allowCustom: true` 的专业化政策，具体母语名称和稳定 UUID 保存在 CharacterSkill 的 custom SkillRef 中；`Language (Other)` 则允许多个 custom 实例。
 
-Phase 4A 只在 `Character.version = 1` 中新增 optional `skills`。静态目录、基础值、名称、来源、点数分配和验证错误不持久化，旧 Character 读取也不会触发隐式写回。
+Phase 4 在 `Character.version = 1` 中新增 optional `skills`，但不改变 CharacterRecord、CreationSessionRecord 或 IndexedDB version。静态目录、availability、aliases、基础值、名称、来源、点数分配和验证错误不持久化，旧 Character 读取也不会触发隐式写回。
 
 ## Occupation architecture
 

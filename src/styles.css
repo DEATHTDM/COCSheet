@@ -228,6 +228,24 @@ h2 {
   font-weight: 400;
 }
 
+.skill-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  margin-right: 0.3rem;
+  padding: 0.12rem 0.38rem;
+  border: 1px solid #7b6a52;
+  border-radius: 999px;
+  color: #4e4335;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.skill-badge.warning {
+  border-color: #a4612c;
+  color: #7c3f12;
+}
+
 .skill-value-input {
   width: 5rem;
 }

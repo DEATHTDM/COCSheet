@@ -60,7 +60,7 @@ Base Characteristics
 
 Maximum HP、Initial MP、Initial SAN、MOV、Damage Bonus 与 Build 是由当前人物数据实时计算的纯派生结果，不持久化到 `Character` 或 `CreationSession`。Initial MP 等于 `floor(POW / 5)`，只表示游戏开始时的 MP，并非 current MP 的绝对上限。
 
-游戏中会变化的 current HP、current MP 与 current SAN 作为一个整体可选的 resources 结构持久化到 `Character`。Current MP 可以因其他规则高于 Initial MP；Phase 3 不实现 MP 自然回复规则或回复上限。Maximum SAN 在技能阶段能够结合 Cthulhu Mythos 后再实现，不以 POW 伪造。
+游戏中会变化的 current HP、current MP 与 current SAN 作为一个整体可选的 resources 结构持久化到 `Character`。Current MP 可以因其他规则高于 Initial MP；Phase 3 不实现 MP 自然回复规则或回复上限。Maximum SAN 等于 `max(0, 99 - current Cthulhu Mythos)`，是实时派生值，不持久化；稀疏技能状态没有 Cthulhu Mythos 时按 0 计算。提高 Cthulhu Mythos 导致 current SAN 超过新上限时，技能与 SAN 在同一次 Character 更新中保存；降低 Cthulhu Mythos 不自动恢复 SAN。
 
 ## Occupations
 
@@ -103,6 +103,10 @@ Standard COC7 默认职业体系优先以 Keeper Rulebook 与 Investigator Handb
 ### SK003 — Closed skill policies
 
 技能基础值使用 `fixed` 或基于 Characteristic 的 `full`、`half`、`fifth` 闭合规则，不执行内容提供的任意公式或代码。成长资格与创建期点数政策分别使用强类型 policy；Cthulhu Mythos 的创建期政策保留 `keeper-approval` 语义。
+
+### SK004 — Availability and aliases
+
+技能是否出现在标准调查员卡以及是否现代限定，使用 `availability.sheet` 与 `availability.era` 的闭合枚举表达，不使用自由字符串 flags。`aliases` 是可选的本地化显示与搜索元数据，不参与 `SkillRef` identity、规则逻辑或持久化 key。
 
 ## KP Preset
 

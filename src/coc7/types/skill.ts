@@ -19,6 +19,23 @@ export const localizedSkillNameSchema = z
   })
   .strict();
 
+export const localizedSkillAliasesSchema = z
+  .object({
+    zh: z.array(z.string().trim().min(1)).min(1).optional(),
+    en: z.array(z.string().trim().min(1)).min(1).optional(),
+  })
+  .strict()
+  .refine((aliases) => aliases.zh !== undefined || aliases.en !== undefined, {
+    message: "技能别名至少需要一种语言",
+  });
+
+export const skillAvailabilitySchema = z
+  .object({
+    sheet: z.enum(["standard", "uncommon"]),
+    era: z.enum(["all", "modern-only"]),
+  })
+  .strict();
+
 export const skillBaseValueRuleSchema = z.discriminatedUnion("type", [
   z
     .object({
@@ -39,6 +56,7 @@ export const predefinedSkillSpecializationSchema = z
   .object({
     id: skillSpecializationIdSchema,
     name: localizedSkillNameSchema,
+    aliases: localizedSkillAliasesSchema.optional(),
     baseValueRule: skillBaseValueRuleSchema.optional(),
     tags: z.array(skillTagIdSchema).optional(),
     sourceRefs: z.array(sourceReferenceSchema).optional(),
@@ -68,6 +86,8 @@ export const skillDefinitionSchema = z
     version: z.literal(1),
     id: skillDefinitionIdSchema,
     name: localizedSkillNameSchema,
+    aliases: localizedSkillAliasesSchema.optional(),
+    availability: skillAvailabilitySchema,
     baseValueRule: skillBaseValueRuleSchema,
     specialization: skillSpecializationPolicySchema,
     predefinedSpecializations: z.array(predefinedSkillSpecializationSchema),
@@ -159,6 +179,8 @@ export const characterSkillsSchema = z.array(characterSkillSchema).superRefine((
 
 export type SkillDefinitionId = z.infer<typeof skillDefinitionIdSchema>;
 export type SkillSpecializationId = z.infer<typeof skillSpecializationIdSchema>;
+export type LocalizedSkillAliases = z.infer<typeof localizedSkillAliasesSchema>;
+export type SkillAvailability = z.infer<typeof skillAvailabilitySchema>;
 export type SkillBaseValueRule = z.infer<typeof skillBaseValueRuleSchema>;
 export type PredefinedSkillSpecialization = z.infer<typeof predefinedSkillSpecializationSchema>;
 export type SkillSpecializationPolicy = z.infer<typeof skillSpecializationPolicySchema>;

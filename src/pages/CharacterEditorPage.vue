@@ -5,7 +5,11 @@ import { useRoute } from "vue-router";
 import { useCharacterStore } from "../app/stores/characterStore";
 import { deriveFinalCharacteristics, getAgeAdjustmentRule } from "../coc7/rules/age";
 import { applyLowRollBoost, getFifthValue, getHalfValue, getPointBuyAllocationSummary, validateAssignRoll, validatePointBuy } from "../coc7/rules/attributes";
-import { deriveStandardCharacterValues, formatDamageBonus } from "../coc7/rules/derived";
+import {
+  calculateMaximumSanity,
+  deriveStandardCharacterValues,
+  formatDamageBonus,
+} from "../coc7/rules/derived";
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
@@ -106,6 +110,13 @@ const savedDerived = computed(() => {
   } catch {
     return undefined;
   }
+});
+const savedMaximumSanity = computed(() => {
+  const mythos = characterStore.current?.data.skills?.find(
+    (skill) => skill.ref.type === "standard" &&
+      skill.ref.definitionId === "cthulhu-mythos",
+  )?.currentValue ?? 0;
+  return calculateMaximumSanity(mythos);
 });
 
 onMounted(async () => {
@@ -430,7 +441,7 @@ async function complete(): Promise<void> {
         <div v-if="characterStore.current.data.resources && savedDerived" class="attribute-grid">
           <div class="attribute-card"><span>HP</span><strong>{{ characterStore.current.data.resources.hp.current }} / {{ savedDerived.maxHp }}</strong></div>
           <div class="attribute-card"><span>MP</span><strong>{{ characterStore.current.data.resources.mp.current }}（起始 {{ savedDerived.initialMp }}）</strong></div>
-          <div class="attribute-card"><span>SAN</span><strong>{{ characterStore.current.data.resources.san.current }}</strong></div>
+          <div class="attribute-card"><span>SAN</span><strong>{{ characterStore.current.data.resources.san.current }} / {{ savedMaximumSanity }}</strong></div>
           <div class="attribute-card"><span>MOV</span><strong>{{ savedDerived.movement.status === 'value' ? savedDerived.movement.value : '需 KP 裁定' }}</strong></div>
           <div class="attribute-card"><span>DB</span><strong>{{ formatDamageBonus(savedDerived.damageBonus) }}</strong></div>
           <div class="attribute-card"><span>Build</span><strong>{{ savedDerived.build }}</strong></div>
