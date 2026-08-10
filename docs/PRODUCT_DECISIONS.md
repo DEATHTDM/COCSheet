@@ -88,6 +88,20 @@ Standard COC7 默认职业体系优先以 Keeper Rulebook 与 Investigator Handb
 
 `OccupationSkillRequirement` 当前支持 `fixed`、`choice`、`group-choice`、`any` 与 `specialization`，但 Schema 尚未冻结。正式录入 Standard 职业前，必须用真实复杂职业进行压力测试。
 
+## Skills
+
+### SK001 — Catalog and character state separation
+
+`SkillDefinition` 属于 Setting content；`Character.skills` 只保存已经实例化或发生变化的 `SkillRef`、当前值与成长标记。静态技能名称、基础值和 Half / Fifth 不复制进人物记录。
+
+### SK002 — Stable specialization identity
+
+普通技能、预定义专业化与自定义专业化使用强类型 `SkillRef` 区分。预定义专业化使用稳定机器 ID；自定义专业化使用 UUID，改名不改变身份。显示名不作为去重依据。
+
+### SK003 — Closed skill policies
+
+技能基础值使用 `fixed` 或基于 Characteristic 的 `full`、`half`、`fifth` 闭合规则，不执行内容提供的任意公式或代码。成长资格与创建期点数政策分别使用强类型 policy；Cthulhu Mythos 的创建期政策保留 `keeper-approval` 语义。
+
 ## KP Preset
 
 ### K001 — Preset scope

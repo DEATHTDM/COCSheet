@@ -96,6 +96,26 @@ describe("CharacterRepository", () => {
     });
     expect((await new CharacterRepository(database).getById(character.id))?.data.resources?.hp.current).toBe(5);
   });
+
+  it("读取 legacy Character 不会隐式写回 skills", async () => {
+    const character = makeCharacter();
+    await characterRepository.create(character);
+    const before = await database.characters.get(character.id);
+
+    expect((await characterRepository.getById(character.id))?.data.skills).toBeUndefined();
+    const after = await database.characters.get(character.id);
+    expect(after?.updatedAt).toBe(before?.updatedAt);
+    expect(Object.hasOwn(after?.data ?? {}, "skills")).toBe(false);
+  });
+
+  it("保持 Dexie version 1 且不新增 table", () => {
+    expect(database.verno).toBe(1);
+    expect(database.tables.map((table) => table.name).sort()).toEqual([
+      "characters",
+      "creationSessions",
+      "kpPresets",
+    ]);
+  });
 });
 
 describe("CreationSessionRepository", () => {

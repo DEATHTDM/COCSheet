@@ -2,22 +2,22 @@
 
 Last updated: 2026-08-10
 
-## Current completed phase
+## Current phase
 
-Phase 3 — Standard Derived Character Values & Resources
+Phase 4 — Skills (In Progress)
+
+Phase 4A — Skills Foundation & Representative Catalog completed. Phase 4B — Standard Skill Catalog remains pending.
 
 ## Git baseline
 
-Foundation PR: [#1 feat: initialize COCSheet project foundation](https://github.com/DEATHTDM/COCSheet/pull/1)
-
-Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
+Phase 4A branch was created from `main` at `1084d5c220fde1055d4286e4963aded08c09f142`.
 
 ## Implemented
 
 - Vue 3 / TypeScript / Vite project with strict type checking
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
-- five minimal SettingPack placeholders and a unified Setting Registry
+- five registered SettingPacks, with representative skills only in Standard and empty content placeholders for the other settings
 - internal Extension Registry and allow-listed extension IDs
 - minimal `Character`, `CreationSession`, and `CreationPreset` schemas
 - Occupation schema, occupation point formula calculation, and attribute prerequisite validation foundations
@@ -46,6 +46,14 @@ Merged to `main` as `ac41a9a186d1b9d48d619390814ac3d3a82d1c72`.
 - atomic resource initialization when attributes complete, plus reset from new final characteristics after returning to edit
 - explicit legacy Phase 2 resource initialization without Repository read side effects or Dexie version changes
 - Character Store APIs for current HP constrained by Maximum HP, nonnegative integer current MP without an Initial MP cap, and current SAN constrained to 0～99, all with refresh persistence
+- strict SkillDefinition, SkillRef, predefined/custom specialization, CharacterSkill, improvement policy, and creation-point policy models
+- closed pure skill base-value rules for fixed and Characteristic full / half / fifth values, reusing existing Half / Fifth helpers
+- deterministic SkillRef keys, semantic duplicate validation, policy validation, and real-time base/current/Half/Fifth resolution
+- Standard Setting representative skill catalog and skill registry with duplicate definition/specialization detection
+- representative Accounting, Credit Rating, Cthulhu Mythos, Dodge, Library Use, Spot Hidden, Fighting, Firearms, Language, Science, Art / Craft, and Survival data
+- optional `Character.skills` persistence with legacy Character read compatibility and no Dexie/version change or read-time writeback
+- Character Store APIs for skill value and improvement mark editing plus custom specialization create/rename/remove
+- reusable searchable skill editor embedded in the existing occupation placeholder, without adding a creation step or point-allocation UI
 
 ## Foundation hardening
 
@@ -69,7 +77,8 @@ Merged in the current enum:
 
 ## Not implemented
 
-- skills and skill allocation
+- complete Standard skill catalog (Phase 4B)
+- skill allocation and improvement-roll workflows
 - occupation data and occupation UI
 - independent final character sheet UI/module
 - guide overlay
@@ -81,7 +90,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-No later phase is authorized by this document. Phase 4 remains planned only and requires a new explicit task.
+Phase 4B remains pending and requires a new explicit task. Phase 5 is not started or authorized by this document.
 
 ## Known technical risks
 

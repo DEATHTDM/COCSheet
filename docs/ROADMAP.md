@@ -45,13 +45,17 @@ Status: Completed
 
 ## Phase 4 — Skills
 
-Status: Planned
+Status: In Progress
 
-- Standard skill definitions
-- skill groups
-- specialization model
-- base values
-- skill editing
+- Phase 4A Skills Foundation & Representative Catalog: Completed
+- Phase 4B Standard Skill Catalog: Pending
+
+- representative Standard skill definitions
+- specialization model and stable SkillRef identity
+- base-value rules
+- game-time skill editing and growth-mark state
+- complete Standard skill definitions (pending Phase 4B)
+- remaining skill groups/content completion (pending Phase 4B)
 
 Exact scope must be confirmed before implementation.
 

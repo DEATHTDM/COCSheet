@@ -94,7 +94,23 @@ regency
 
 避免在应用各处散布 `if (setting === "gaslight")`。`SettingPack` 是数据与扩展 ID 声明，不能注入或执行任意 JavaScript。特殊人物规则由应用内部 Extension Registry 提供，并随应用代码发布。
 
-当前五个 SettingPack 只是占位包，不含正式职业、技能或装备数据。
+当前 Standard SettingPack 包含一组用于验证领域模型与 UI 的代表性 `SkillDefinition`；其余四个 SettingPack 仍是空内容占位包，不包含技能目录，也不会隐式继承 Standard 内容。`src/content/skillRegistry.ts` 负责按稳定 definition ID 查询目录及解析预定义专业化，并在注册时拒绝重复 ID。
+
+## Skill architecture
+
+技能领域保持以下分离：
+
+```text
+SettingPack / Skill Registry（静态 SkillDefinition）
+                    +
+Character.skills（实例化或变化的 CharacterSkill）
+                    ↓
+纯规则层实时解析 base / current / half / fifth
+```
+
+`SkillBaseValueRule` 是闭合联合类型，只允许固定值或 Characteristic 的 full / half / fifth；Half 与 Fifth 复用既有纯函数。`SkillRef` 区分普通技能、预定义专业化和 UUID 标识的自定义专业化。Store 根据 SkillDefinition 的成长政策验证成长标记，并通过 CharacterRepository 持久化；Component 不直接访问 Dexie。
+
+Phase 4A 只在 `Character.version = 1` 中新增 optional `skills`。静态目录、基础值、名称、来源、点数分配和验证错误不持久化，旧 Character 读取也不会触发隐式写回。
 
 ## Occupation architecture
 

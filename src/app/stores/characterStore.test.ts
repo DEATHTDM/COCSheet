@@ -95,3 +95,73 @@ describe("游戏中资源更新", () => {
     await expect(store.setCurrentSan(character.id, 90)).resolves.toBeDefined();
   });
 });
+
+describe("游戏期技能编辑", () => {
+  it("编辑普通技能、100+ 数值与成长标记后可刷新恢复，且资源不变", async () => {
+    const resources = { hp: { current: 8 }, mp: { current: 7 }, san: { current: 61 } };
+    const character = makeLegacyCharacter({ resources });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+    const libraryUse = { type: "standard", definitionId: "library-use" } as const;
+
+    await store.setSkillValue(character.id, libraryUse, 135);
+    await store.setImprovementChecked(character.id, libraryUse, true);
+
+    setActivePinia(createPinia());
+    const restored = await useCharacterStore().loadById(character.id);
+    expect(restored?.data.skills).toEqual([{
+      ref: libraryUse,
+      currentValue: 135,
+      improvementChecked: true,
+    }]);
+    expect(restored?.data.resources).toEqual(resources);
+    expect(restored?.data.characteristics).toEqual(character.characteristics);
+    expect(restored?.data.age).toBe(character.age);
+    expect(restored?.data.luck).toBe(character.luck);
+    expect(restored?.data.name).toBe(character.name);
+  });
+
+  it("拒绝为 Cthulhu Mythos 与 Credit Rating 设置成长标记", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    await expect(store.setImprovementChecked(
+      character.id,
+      { type: "standard", definitionId: "cthulhu-mythos" },
+      true,
+    )).rejects.toThrow("不允许成长标记");
+    await expect(store.setImprovementChecked(
+      character.id,
+      { type: "standard", definitionId: "credit-rating" },
+      true,
+    )).rejects.toThrow("不允许成长标记");
+  });
+
+  it("创建、重命名并删除 custom Science 专业化，UUID 始终不变", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const created = await store.createCustomSpecialization(character.id, "science", "天文学");
+    const custom = created.data.skills?.find((skill) => skill.ref.type === "custom");
+    if (!custom || custom.ref.type !== "custom") throw new Error("自定义专业化创建失败");
+    const specializationId = custom.ref.specializationId;
+    expect(custom.currentValue).toBe(1);
+    expect(custom.improvementChecked).toBe(false);
+
+    const renamed = await store.renameCustomSpecialization(character.id, specializationId, "宇宙学");
+    const renamedCustom = renamed.data.skills?.find((skill) => skill.ref.type === "custom");
+    expect(renamedCustom?.ref).toMatchObject({
+      type: "custom",
+      specializationId,
+      displayName: "宇宙学",
+    });
+
+    const removed = await store.removeCustomSpecialization(character.id, specializationId);
+    expect(removed.data.skills).toEqual([]);
+  });
+});

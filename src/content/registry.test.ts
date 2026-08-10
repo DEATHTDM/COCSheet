@@ -16,6 +16,8 @@ describe("setting registry", () => {
   it("可以读取合法 Setting", () => {
     expect(getSettingPack("gaslight")?.name).toBe("Cthulhu by Gaslight");
     expect(hasSetting("standard")).toBe(true);
+    expect(getSettingPack("standard")?.skills?.map((skill) => skill.id)).toContain("dodge");
+    expect(getSettingPack("gaslight")?.skills).toBeUndefined();
   });
 
   it("非法 Setting 返回 undefined", () => {
