@@ -2,17 +2,10 @@ import { z } from "zod";
 
 import { eraIdSchema, occupationSchema } from "./occupation";
 import { settingIdSchema } from "./setting";
+import { skillDefinitionSchema, type SkillDefinition } from "./skill";
 import { sourceReferenceSchema } from "./source";
 
 export const characterExtensionIdSchema = z.enum(["regency-reputation"]);
-
-export const skillDefinitionSchema = z
-  .object({
-    version: z.literal(1),
-    id: z.string().min(1),
-    name: z.string().min(1),
-  })
-  .strict();
 
 export const equipmentDefinitionSchema = z
   .object({
@@ -49,7 +42,7 @@ export const settingPackSchema = z
   .strict();
 
 export type CharacterExtensionId = z.infer<typeof characterExtensionIdSchema>;
-export type SkillDefinition = z.infer<typeof skillDefinitionSchema>;
+export type { SkillDefinition };
 export type EquipmentDefinition = z.infer<typeof equipmentDefinitionSchema>;
 export type RuleOptionDefinition = z.infer<typeof ruleOptionDefinitionSchema>;
 export type SettingPack = z.infer<typeof settingPackSchema>;

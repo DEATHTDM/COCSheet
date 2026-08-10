@@ -10,6 +10,7 @@ import { characteristicIds, type CharacteristicId, type CharacteristicValues } f
 import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { AttributeGenerationMethod } from "../creation/types/creationPreset";
+import SkillEditor from "../components/SkillEditor.vue";
 
 const route = useRoute();
 const characterStore = useCharacterStore();
@@ -435,6 +436,7 @@ async function complete(): Promise<void> {
           <div class="attribute-card"><span>Build</span><strong>{{ savedDerived.build }}</strong></div>
         </div>
         <button class="button" type="button" @click="creationStore.setCurrentStep('attributes')">返回修改属性</button>
+        <SkillEditor :character="characterStore.current.data" />
       </section>
 
       <section v-else class="panel"><h2>检查（尚未实现）</h2></section>

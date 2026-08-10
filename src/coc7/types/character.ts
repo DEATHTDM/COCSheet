@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { characteristicValuesSchema } from "./attribute";
 import { settingIdSchema } from "./setting";
+import { characterSkillsSchema } from "./skill";
 
 const currentResourceSchema = z
   .object({
@@ -33,6 +34,7 @@ export const characterSchema = z
     characteristics: characteristicValuesSchema.optional(),
     luck: z.number().int().min(0).max(99).optional(),
     resources: characterResourcesSchema.optional(),
+    skills: characterSkillsSchema.optional(),
   })
   .strict();
 

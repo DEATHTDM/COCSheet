@@ -5,6 +5,14 @@ import {
   calculateMaxHitPoints,
   deriveStandardCharacterValues,
 } from "../../coc7/rules/derived";
+import {
+  getSkillRefKey,
+  resolveSkillValue,
+  validateCharacterSkill,
+  validateCharacterSkills,
+} from "../../coc7/rules/skills";
+import type { CharacterSkill, SkillDefinition, SkillRef } from "../../coc7/types/skill";
+import { getSkillRegistry } from "../../content/skillRegistry";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import type { CharacterRecord } from "../../db/records";
 
@@ -36,6 +44,33 @@ export const useCharacterStore = defineStore("characters", () => {
     if (!Number.isInteger(value) || value < 0) {
       throw new RangeError(`${label} 必须为非负整数`);
     }
+  }
+
+  function requireSkillDefinition(record: CharacterRecord, definitionId: string): SkillDefinition {
+    const definition = getSkillRegistry(record.settingId).get(definitionId);
+    if (!definition) throw new Error(`当前设定不存在技能：${definitionId}`);
+    return definition;
+  }
+
+  function requireCharacteristics(record: CharacterRecord) {
+    const characteristics = record.data.characteristics;
+    if (!characteristics) throw new Error("调查员属性尚未完成，无法计算技能基础值");
+    return characteristics;
+  }
+
+  async function persistSkills(
+    existing: CharacterRecord,
+    skills: readonly CharacterSkill[],
+  ): Promise<CharacterRecord> {
+    const validation = validateCharacterSkills(
+      skills,
+      getSkillRegistry(existing.settingId).definitions,
+    );
+    if (!validation.valid) throw new Error(validation.errors.join("；"));
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      skills: [...skills],
+    }));
   }
 
   async function loadList(): Promise<void> {
@@ -117,6 +152,120 @@ export const useCharacterStore = defineStore("characters", () => {
     }));
   }
 
+  async function setSkillValue(
+    id: string,
+    ref: SkillRef,
+    value: number,
+  ): Promise<CharacterRecord> {
+    requireNonNegativeInteger(value, "技能当前值");
+    const existing = await requireCharacter(id);
+    const definition = requireSkillDefinition(existing, ref.definitionId);
+    const next: CharacterSkill = { ref, currentValue: value, improvementChecked: false };
+    const validation = validateCharacterSkill(next, definition);
+    if (!validation.valid) throw new Error(validation.errors.join("；"));
+
+    const key = getSkillRefKey(ref);
+    const skills = [...(existing.data.skills ?? [])];
+    const index = skills.findIndex((skill) => getSkillRefKey(skill.ref) === key);
+    if (index >= 0) {
+      const current = skills[index];
+      if (!current) throw new Error("技能状态索引无效");
+      skills[index] = { ...current, currentValue: value };
+    } else {
+      skills.push(next);
+    }
+    return persistSkills(existing, skills);
+  }
+
+  async function setImprovementChecked(
+    id: string,
+    ref: SkillRef,
+    checked: boolean,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const definition = requireSkillDefinition(existing, ref.definitionId);
+    if (checked && definition.improvementPolicy === "not-eligible") {
+      throw new Error(`技能 ${definition.name.zh} 不允许成长标记`);
+    }
+
+    const key = getSkillRefKey(ref);
+    const skills = [...(existing.data.skills ?? [])];
+    const index = skills.findIndex((skill) => getSkillRefKey(skill.ref) === key);
+    if (index >= 0) {
+      const current = skills[index];
+      if (!current) throw new Error("技能状态索引无效");
+      skills[index] = { ...current, improvementChecked: checked };
+    } else {
+      const resolved = resolveSkillValue(definition, ref, requireCharacteristics(existing));
+      skills.push({ ref, currentValue: resolved.baseValue, improvementChecked: checked });
+    }
+    return persistSkills(existing, skills);
+  }
+
+  async function createCustomSpecialization(
+    id: string,
+    definitionId: string,
+    displayName: string,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const definition = requireSkillDefinition(existing, definitionId);
+    const normalizedName = displayName.trim();
+    if (definition.specialization.type !== "required" || !definition.specialization.allowCustom) {
+      throw new Error(`技能 ${definition.name.zh} 不允许自定义专业化`);
+    }
+    if (!normalizedName) throw new Error("自定义专业化名称不能为空");
+
+    const ref: SkillRef = {
+      type: "custom",
+      definitionId,
+      specializationId: crypto.randomUUID(),
+      displayName: normalizedName,
+    };
+    const resolved = resolveSkillValue(definition, ref, requireCharacteristics(existing));
+    return persistSkills(existing, [
+      ...(existing.data.skills ?? []),
+      { ref, currentValue: resolved.baseValue, improvementChecked: false },
+    ]);
+  }
+
+  async function renameCustomSpecialization(
+    id: string,
+    specializationId: string,
+    displayName: string,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const normalizedName = displayName.trim();
+    if (!normalizedName) throw new Error("自定义专业化名称不能为空");
+    const skills = [...(existing.data.skills ?? [])];
+    const index = skills.findIndex(
+      (skill) => skill.ref.type === "custom" && skill.ref.specializationId === specializationId,
+    );
+    if (index < 0) throw new Error(`找不到自定义专业化：${specializationId}`);
+    const current = skills[index];
+    if (!current || current.ref.type !== "custom") throw new Error("自定义专业化状态无效");
+    skills[index] = {
+      ...current,
+      ref: { ...current.ref, displayName: normalizedName },
+    };
+    return persistSkills(existing, skills);
+  }
+
+  async function removeCustomSpecialization(
+    id: string,
+    specializationId: string,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const skills = existing.data.skills ?? [];
+    const target = skills.find(
+      (skill) => skill.ref.type === "custom" && skill.ref.specializationId === specializationId,
+    );
+    if (!target) throw new Error(`找不到自定义专业化：${specializationId}`);
+    return persistSkills(
+      existing,
+      skills.filter((skill) => skill !== target),
+    );
+  }
+
   async function remove(id: string): Promise<void> {
     await characterRepository.remove(id);
     records.value = records.value.filter((record) => record.id !== id);
@@ -136,6 +285,11 @@ export const useCharacterStore = defineStore("characters", () => {
     setCurrentHp,
     setCurrentMp,
     setCurrentSan,
+    setSkillValue,
+    setImprovementChecked,
+    createCustomSpecialization,
+    renameCustomSpecialization,
+    removeCustomSpecialization,
     remove,
   };
 });
