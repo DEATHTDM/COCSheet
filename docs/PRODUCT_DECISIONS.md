@@ -98,6 +98,8 @@ Standard COC7 默认职业体系优先以 Keeper Rulebook 与 Investigator Handb
 
 普通技能、预定义专业化与自定义专业化使用强类型 `SkillRef` 区分。预定义专业化使用稳定机器 ID；自定义专业化使用 UUID，改名不改变身份。显示名不作为去重依据。
 
+`Language (Own)` 必须保存调查员具体母语身份，因此建模为只允许一个实例的 custom 专业化；其基础值仍为 EDU full。`Language (Other)` 保持可创建多个 custom 专业化实例。
+
 ### SK003 — Closed skill policies
 
 技能基础值使用 `fixed` 或基于 Characteristic 的 `full`、`half`、`fifth` 闭合规则，不执行内容提供的任意公式或代码。成长资格与创建期点数政策分别使用强类型 policy；Cthulhu Mythos 的创建期政策保留 `keeper-approval` 语义。

@@ -101,6 +101,7 @@ export const standardSkillDefinitions: readonly SkillDefinition[] = [
     id: "language-own",
     name: { zh: "母语", en: "Language (Own)" },
     baseValueRule: characteristic("EDU", "full"),
+    specialization: { type: "required", allowMultiple: false, allowCustom: true },
     tags: ["language"],
   },
   {

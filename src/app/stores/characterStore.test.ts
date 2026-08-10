@@ -164,4 +164,78 @@ describe("游戏期技能编辑", () => {
     const removed = await store.removeCustomSpecialization(character.id, specializationId);
     expect(removed.data.skills).toEqual([]);
   });
+
+  it("保存具体母语身份、刷新恢复并在改名后保持 UUID，拒绝第二母语", async () => {
+    const character = makeLegacyCharacter({
+      characteristics: {
+        STR: 50,
+        CON: 55,
+        SIZ: 65,
+        DEX: 60,
+        APP: 50,
+        INT: 60,
+        POW: 65,
+        EDU: 80,
+      },
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const created = await store.createCustomSpecialization(character.id, "language-own", "中文");
+    const motherTongue = created.data.skills?.find(
+      (skill) => skill.ref.type === "custom" && skill.ref.definitionId === "language-own",
+    );
+    if (!motherTongue || motherTongue.ref.type !== "custom") throw new Error("母语创建失败");
+    const specializationId = motherTongue.ref.specializationId;
+    expect(motherTongue).toEqual({
+      ref: {
+        type: "custom",
+        definitionId: "language-own",
+        specializationId,
+        displayName: "中文",
+      },
+      currentValue: 80,
+      improvementChecked: false,
+    });
+
+    setActivePinia(createPinia());
+    const restoredStore = useCharacterStore();
+    const restored = await restoredStore.loadById(character.id);
+    expect(restored?.data.skills?.[0]).toEqual(motherTongue);
+
+    const renamed = await restoredStore.renameCustomSpecialization(
+      character.id,
+      specializationId,
+      "普通话",
+    );
+    expect(renamed.data.skills?.[0]?.ref).toEqual({
+      type: "custom",
+      definitionId: "language-own",
+      specializationId,
+      displayName: "普通话",
+    });
+    await expect(restoredStore.createCustomSpecialization(
+      character.id,
+      "language-own",
+      "English",
+    )).rejects.toThrow("只允许一个专业化实例");
+  });
+
+  it("Language Other 仍允许创建多个不同语言实例", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    await store.createCustomSpecialization(character.id, "language-other", "English");
+    const created = await store.createCustomSpecialization(character.id, "language-other", "Français");
+    const languages = created.data.skills?.filter(
+      (skill) => skill.ref.type === "custom" && skill.ref.definitionId === "language-other",
+    );
+    expect(languages).toHaveLength(2);
+    expect(new Set(languages?.map((skill) =>
+      skill.ref.type === "custom" ? skill.ref.specializationId : "",
+    )).size).toBe(2);
+  });
 });

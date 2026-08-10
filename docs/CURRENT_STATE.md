@@ -54,6 +54,8 @@ Phase 4A branch was created from `main` at `1084d5c220fde1055d4286e4963aded08c09
 - optional `Character.skills` persistence with legacy Character read compatibility and no Dexie/version change or read-time writeback
 - Character Store APIs for skill value and improvement mark editing plus custom specialization create/rename/remove
 - reusable searchable skill editor embedded in the existing occupation placeholder, without adding a creation step or point-allocation UI
+- concrete Language (Own) custom specialization identity with EDU-full initialization, stable rename identity, and single-instance domain validation; Language (Other) remains multi-instance
+- SettingPack.skills as the sole per-Setting skill content source, with dynamically created and cached Skill Registries and no hard-coded Setting dispatch
 
 ## Foundation hardening
 

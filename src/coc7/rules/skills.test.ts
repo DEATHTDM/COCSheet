@@ -28,17 +28,23 @@ function requireDefinition(id: string) {
 }
 
 describe("技能基础值规则", () => {
-  it("Dodge 复用 Half helper，Language Own 使用 EDU full", () => {
+  it("Dodge 复用 Half helper，Language Own custom 使用 EDU full", () => {
     expect(resolveSkillValue(
       requireDefinition("dodge"),
       { type: "standard", definitionId: "dodge" },
       characteristics,
     ).baseValue).toBe(getHalfValue(characteristics.DEX));
+    const edu80 = { ...characteristics, EDU: 80 };
     expect(resolveSkillValue(
       requireDefinition("language-own"),
-      { type: "standard", definitionId: "language-own" },
-      characteristics,
-    ).baseValue).toBe(characteristics.EDU);
+      {
+        type: "custom",
+        definitionId: "language-own",
+        specializationId: crypto.randomUUID(),
+        displayName: "中文",
+      },
+      edu80,
+    ).baseValue).toBe(80);
   });
 
   it("计算 fixed、characteristic half 与 fifth", () => {

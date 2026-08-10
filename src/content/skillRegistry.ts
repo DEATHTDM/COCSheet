@@ -1,6 +1,6 @@
 import { skillDefinitionSchema, type PredefinedSkillSpecialization, type SkillDefinition } from "../coc7/types/skill";
 import type { SettingId } from "../coc7/types/setting";
-import { standardSkillDefinitions } from "./standard/skills";
+import { getSettingPackOrThrow } from "./registry";
 
 export interface SkillRegistry {
   readonly definitions: readonly SkillDefinition[];
@@ -30,24 +30,28 @@ export function createSkillRegistry(definitions: readonly SkillDefinition[]): Sk
   };
 }
 
-const standardSkillRegistry = createSkillRegistry(standardSkillDefinitions);
-const emptySkillRegistry = createSkillRegistry([]);
+const skillRegistries = new Map<SettingId, SkillRegistry>();
 
 export function getSkillRegistry(settingId: SettingId): SkillRegistry {
-  return settingId === "standard" ? standardSkillRegistry : emptySkillRegistry;
+  const cached = skillRegistries.get(settingId);
+  if (cached) return cached;
+
+  const registry = createSkillRegistry(getSettingPackOrThrow(settingId).skills ?? []);
+  skillRegistries.set(settingId, registry);
+  return registry;
 }
 
 export function getStandardSkillCatalog(): readonly SkillDefinition[] {
-  return standardSkillRegistry.definitions;
+  return getSkillRegistry("standard").definitions;
 }
 
 export function getSkillDefinition(definitionId: string): SkillDefinition | undefined {
-  return standardSkillRegistry.get(definitionId);
+  return getSkillRegistry("standard").get(definitionId);
 }
 
 export function resolvePredefinedSpecialization(
   definitionId: string,
   specializationId: string,
 ): PredefinedSkillSpecialization | undefined {
-  return standardSkillRegistry.resolvePredefined(definitionId, specializationId);
+  return getSkillRegistry("standard").resolvePredefined(definitionId, specializationId);
 }

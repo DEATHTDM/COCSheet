@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createSkillRegistry, getStandardSkillCatalog } from "./skillRegistry";
+import { getAvailableSettings } from "./registry";
+import { createSkillRegistry, getSkillRegistry, getStandardSkillCatalog } from "./skillRegistry";
 
 describe("skill registry", () => {
   it("按 definition ID 获取代表性 Standard 技能并解析专业化", () => {
@@ -8,6 +9,18 @@ describe("skill registry", () => {
     expect(registry.get("dodge")?.name.en).toBe("Dodge");
     expect(registry.resolvePredefined("firearms", "handgun")?.name.en).toBe("Handgun");
     expect(registry.definitions.map((definition) => definition.id)).toContain("cthulhu-mythos");
+  });
+
+  it("每个 Setting registry 都从对应 SettingPack.skills 构建并缓存", () => {
+    for (const pack of getAvailableSettings()) {
+      const registry = getSkillRegistry(pack.id);
+      expect(registry.definitions.map((definition) => definition.id)).toEqual(
+        (pack.skills ?? []).map((definition) => definition.id),
+      );
+      expect(getSkillRegistry(pack.id)).toBe(registry);
+    }
+    expect(getSkillRegistry("standard").definitions.length).toBeGreaterThan(0);
+    expect(getSkillRegistry("gaslight").definitions).toEqual([]);
   });
 
   it("拒绝重复 definition ID", () => {
