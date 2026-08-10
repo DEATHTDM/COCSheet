@@ -4,6 +4,8 @@ import { characterSchema } from "./character";
 import {
   characterSkillSchema,
   skillBaseValueRuleSchema,
+  localizedSkillAliasesSchema,
+  skillAvailabilitySchema,
   skillCreationPointPolicySchema,
   skillDefinitionSchema,
   skillRefSchema,
@@ -14,6 +16,8 @@ function makeDefinition() {
     version: 1,
     id: "science",
     name: { zh: "科学", en: "Science" },
+    aliases: { zh: ["理科"] },
+    availability: { sheet: "standard", era: "all" },
     baseValueRule: { type: "fixed", value: 1 },
     specialization: { type: "required", allowMultiple: true, allowCustom: true },
     predefinedSpecializations: [
@@ -34,6 +38,13 @@ describe("SkillDefinition schema", () => {
   it("严格解析完整技能定义并拒绝额外字段", () => {
     expect(skillDefinitionSchema.safeParse(makeDefinition()).success).toBe(true);
     expect(skillDefinitionSchema.safeParse({ ...makeDefinition(), flags: ["special"] }).success).toBe(false);
+  });
+
+  it("availability 与 aliases 使用闭合强类型结构", () => {
+    expect(skillAvailabilitySchema.safeParse({ sheet: "uncommon", era: "modern-only" }).success).toBe(true);
+    expect(skillAvailabilitySchema.safeParse({ sheet: "rare", era: "all" }).success).toBe(false);
+    expect(localizedSkillAliasesSchema.safeParse({ zh: ["取悦", "魅惑"] }).success).toBe(true);
+    expect(localizedSkillAliasesSchema.safeParse({}).success).toBe(false);
   });
 
   it.each([

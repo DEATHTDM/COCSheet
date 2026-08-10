@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 import type { Character } from "../../coc7/types/character";
@@ -15,6 +15,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await db.delete();
 });
 
@@ -53,6 +54,40 @@ describe("legacy Character resources 补齐", () => {
     });
     await store.setCurrentHp(character.id, 4);
     expect((await store.ensureResourcesInitialized(character.id))?.data.resources?.hp.current).toBe(4);
+  });
+
+  it("显式补齐已有 Mythos 的 legacy Character 时一次写入受限 SAN", async () => {
+    const character = makeLegacyCharacter({
+      characteristics: {
+        STR: 50,
+        CON: 55,
+        SIZ: 65,
+        DEX: 60,
+        APP: 50,
+        INT: 60,
+        POW: 80,
+        EDU: 70,
+      },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 30,
+        improvementChecked: false,
+      }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    const initialized = await store.ensureResourcesInitialized(character.id);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(initialized.data.resources).toEqual({
+      hp: { current: 12 },
+      mp: { current: 16 },
+      san: { current: 69 },
+    });
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.resources?.san.current).toBe(69);
   });
 
   it("人物属性或年龄不完整时不初始化", async () => {
@@ -138,6 +173,155 @@ describe("游戏期技能编辑", () => {
       { type: "standard", definitionId: "credit-rating" },
       true,
     )).rejects.toThrow("不允许成长标记");
+  });
+
+  it("Mythos 未超过当前 SAN 上限时只更新技能且 HP / MP 不变", async () => {
+    const resources = { hp: { current: 8 }, mp: { current: 7 }, san: { current: 70 } };
+    const character = makeLegacyCharacter({ resources });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const updated = await store.setSkillValue(
+      character.id,
+      { type: "standard", definitionId: "cthulhu-mythos" },
+      10,
+    );
+    expect(updated.data.resources).toEqual(resources);
+    expect(updated.data.skills?.[0]?.currentValue).toBe(10);
+  });
+
+  it("提高 Mythos 时在一次 Character update 中原子降低 current SAN", async () => {
+    const character = makeLegacyCharacter({
+      resources: { hp: { current: 8 }, mp: { current: 7 }, san: { current: 70 } },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 10,
+        improvementChecked: false,
+      }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    const updated = await store.setSkillValue(
+      character.id,
+      { type: "standard", definitionId: "cthulhu-mythos" },
+      40,
+    );
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updated.data.skills?.[0]?.currentValue).toBe(40);
+    expect(updated.data.resources).toEqual({
+      hp: { current: 8 },
+      mp: { current: 7 },
+      san: { current: 59 },
+    });
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.resources?.san.current).toBe(59);
+  });
+
+  it("降低 Mythos 会提高 Maximum SAN，但不会自动恢复 current SAN", async () => {
+    const character = makeLegacyCharacter({
+      resources: { hp: { current: 8 }, mp: { current: 7 }, san: { current: 50 } },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 40,
+        improvementChecked: false,
+      }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const updated = await store.setSkillValue(
+      character.id,
+      { type: "standard", definitionId: "cthulhu-mythos" },
+      20,
+    );
+    expect(updated.data.resources?.san.current).toBe(50);
+    expect(updated.data.skills?.[0]?.currentValue).toBe(20);
+  });
+
+  it("手动设置 current SAN 时遵守当前 Mythos 派生上限", async () => {
+    const character = makeLegacyCharacter({
+      resources: { hp: { current: 8 }, mp: { current: 7 }, san: { current: 50 } },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 40,
+        improvementChecked: false,
+      }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    await expect(store.setCurrentSan(character.id, 60)).rejects.toThrow("0～59");
+    await expect(store.setCurrentSan(character.id, 59)).resolves.toBeDefined();
+  });
+
+  it("读取超出 Maximum SAN 的 Phase 4A 记录不写回，并仅在显式 reconciliation 后修复 SAN", async () => {
+    const character = makeLegacyCharacter({
+      resources: { hp: { current: 8 }, mp: { current: 7 }, san: { current: 70 } },
+      skills: [
+        {
+          ref: { type: "standard", definitionId: "cthulhu-mythos" },
+          currentValue: 40,
+          improvementChecked: false,
+        },
+        {
+          ref: { type: "standard", definitionId: "library-use" },
+          currentValue: 55,
+          improvementChecked: true,
+        },
+      ],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    const loaded = await store.loadById(character.id);
+    expect(loaded?.data.resources?.san.current).toBe(70);
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect((await characterRepository.getById(character.id))?.data.resources?.san.current).toBe(70);
+
+    const reconciled = await store.reconcileSanityToMaximum(character.id);
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(reconciled.data).toEqual({
+      ...character,
+      resources: { hp: { current: 8 }, mp: { current: 7 }, san: { current: 59 } },
+    });
+
+    setActivePinia(createPinia());
+    const restored = await useCharacterStore().loadById(character.id);
+    expect(restored?.data.resources).toEqual({
+      hp: { current: 8 },
+      mp: { current: 7 },
+      san: { current: 59 },
+    });
+    expect(restored?.data.skills).toEqual(character.skills);
+    expect(restored?.data.characteristics).toEqual(character.characteristics);
+    expect(restored?.data.luck).toBe(character.luck);
+  });
+
+  it("SAN 已在上限内时 reconciliation 不产生写入", async () => {
+    const character = makeLegacyCharacter({
+      resources: { hp: { current: 8 }, mp: { current: 7 }, san: { current: 50 } },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 40,
+        improvementChecked: false,
+      }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    expect((await store.reconcileSanityToMaximum(character.id)).data.resources?.san.current).toBe(50);
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 
   it("创建、重命名并删除 custom Science 专业化，UUID 始终不变", async () => {

@@ -45,19 +45,18 @@ Status: Completed
 
 ## Phase 4 — Skills
 
-Status: In Progress
+Status: Completed
 
 - Phase 4A Skills Foundation & Representative Catalog: Completed
-- Phase 4B Standard Skill Catalog: Pending
+- Phase 4B Standard Skill Catalog: Completed
 
-- representative Standard skill definitions
+- complete 54-definition Standard core skill catalog
 - specialization model and stable SkillRef identity
 - base-value rules
 - game-time skill editing and growth-mark state
-- complete Standard skill definitions (pending Phase 4B)
-- remaining skill groups/content completion (pending Phase 4B)
-
-Exact scope must be confirmed before implementation.
+- availability and alias metadata
+- Maximum SAN and Cthulhu Mythos resource integration
+- legacy-compatible Maximum SAN initialization and explicit reconciliation
 
 ## Phase 5 — Occupation Engine & Standard Occupations
 

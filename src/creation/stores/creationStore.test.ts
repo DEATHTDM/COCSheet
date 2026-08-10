@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 import { characteristicIds } from "../../coc7/types/attribute";
@@ -8,6 +8,7 @@ import { useCharacterStore } from "../../app/stores/characterStore";
 import { db } from "../../db/database";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import { creationSessionRepository } from "../../db/repositories/creationSessionRepository";
+import { creationWorkflowRepository } from "../../db/repositories/creationWorkflowRepository";
 import { useCreationStore } from "./creationStore";
 
 beforeEach(async () => {
@@ -17,6 +18,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await db.delete();
 });
 
@@ -164,5 +166,68 @@ describe("完成属性与 Character resources", () => {
       mp: { current: 13 },
       san: { current: 65 },
     });
+  });
+
+  it("重新完成属性时保留技能，并以已有 Mythos 限制初始 SAN", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const original = await characterRepository.getById(characterId);
+    if (!original) throw new Error("调查员不存在");
+    await store.completeAttributes(original.data);
+
+    const characterStore = useCharacterStore();
+    await characterStore.loadById(characterId);
+    await characterStore.setSkillValue(
+      characterId,
+      { type: "standard", definitionId: "cthulhu-mythos" },
+      40,
+    );
+    await characterStore.setSkillValue(
+      characterId,
+      { type: "standard", definitionId: "library-use" },
+      55,
+    );
+
+    await store.setCurrentStep("attributes");
+    const changed = { ...initialValues, CON: 70, SIZ: 60, POW: 70 } as const;
+    for (const id of characteristicIds) await store.setEnteredValue(id, changed[id]);
+    await store.setReduction("STR", 5);
+    const latest = await characterRepository.getById(characterId);
+    if (!latest) throw new Error("调查员不存在");
+    const workflowUpdateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+
+    const completed = await store.completeAttributes(latest.data);
+
+    expect(workflowUpdateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.resources).toEqual({
+      hp: { current: 13 },
+      mp: { current: 14 },
+      san: { current: 59 },
+    });
+    expect(completed.data.skills).toEqual(latest.data.skills);
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" &&
+        skill.ref.definitionId === "cthulhu-mythos",
+    )?.currentValue).toBe(40);
+    expect(store.current?.data.currentStep).toBe("occupation");
+  });
+
+  it("显式 Mythos 0 不改变正常 POW 初始 SAN", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const characterStore = useCharacterStore();
+    await characterStore.loadById(characterId);
+    await characterStore.setSkillValue(
+      characterId,
+      { type: "standard", definitionId: "cthulhu-mythos" },
+      0,
+    );
+    const character = await characterRepository.getById(characterId);
+    if (!character) throw new Error("调查员不存在");
+
+    const completed = await store.completeAttributes(character.data);
+
+    expect(completed.data.resources?.san.current).toBe(50);
+    expect(completed.data.skills).toEqual(character.data.skills);
   });
 });

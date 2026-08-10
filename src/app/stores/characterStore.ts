@@ -2,7 +2,9 @@ import { ref } from "vue";
 import { defineStore } from "pinia";
 
 import {
+  calculateMaximumSanity,
   calculateMaxHitPoints,
+  clampSanityToMaximum,
   deriveStandardCharacterValues,
 } from "../../coc7/rules/derived";
 import {
@@ -12,6 +14,7 @@ import {
   validateCharacterSkills,
 } from "../../coc7/rules/skills";
 import type { CharacterSkill, SkillDefinition, SkillRef } from "../../coc7/types/skill";
+import type { CharacterResources } from "../../coc7/types/character";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import type { CharacterRecord } from "../../db/records";
@@ -61,6 +64,7 @@ export const useCharacterStore = defineStore("characters", () => {
   async function persistSkills(
     existing: CharacterRecord,
     skills: readonly CharacterSkill[],
+    resources: CharacterResources | undefined = existing.data.resources,
   ): Promise<CharacterRecord> {
     const validation = validateCharacterSkills(
       skills,
@@ -70,7 +74,15 @@ export const useCharacterStore = defineStore("characters", () => {
     return synchronize(await characterRepository.update({
       ...existing.data,
       skills: [...skills],
+      resources,
     }));
+  }
+
+  function getCurrentCthulhuMythos(record: CharacterRecord): number {
+    return record.data.skills?.find(
+      (skill) => skill.ref.type === "standard" &&
+        skill.ref.definitionId === "cthulhu-mythos",
+    )?.currentValue ?? 0;
   }
 
   async function loadList(): Promise<void> {
@@ -109,10 +121,32 @@ export const useCharacterStore = defineStore("characters", () => {
       resources: {
         hp: { current: derived.maxHp },
         mp: { current: derived.initialMp },
-        san: { current: derived.initialSan },
+        san: {
+          current: clampSanityToMaximum(
+            derived.initialSan,
+            getCurrentCthulhuMythos(existing),
+          ),
+        },
       },
     });
     return synchronize(updated);
+  }
+
+  async function reconcileSanityToMaximum(id: string): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const character = existing.data;
+    if (!character.resources) throw new Error("调查员资源尚未初始化");
+    const reconciledSan = clampSanityToMaximum(
+      character.resources.san.current,
+      getCurrentCthulhuMythos(existing),
+    );
+    if (reconciledSan === character.resources.san.current) {
+      return synchronize(existing);
+    }
+    return synchronize(await characterRepository.update({
+      ...character,
+      resources: { ...character.resources, san: { current: reconciledSan } },
+    }));
   }
 
   async function setCurrentHp(id: string, value: number): Promise<CharacterRecord> {
@@ -145,7 +179,11 @@ export const useCharacterStore = defineStore("characters", () => {
     const existing = await requireCharacter(id);
     const character = existing.data;
     if (!character.resources) throw new Error("调查员资源尚未初始化");
-    requireResourceValue(value, "当前 SAN", 99);
+    requireResourceValue(
+      value,
+      "当前 SAN",
+      calculateMaximumSanity(getCurrentCthulhuMythos(existing)),
+    );
     return synchronize(await characterRepository.update({
       ...character,
       resources: { ...character.resources, san: { current: value } },
@@ -174,7 +212,19 @@ export const useCharacterStore = defineStore("characters", () => {
     } else {
       skills.push(next);
     }
-    return persistSkills(existing, skills);
+
+    const resources = definition.id === "cthulhu-mythos" && existing.data.resources
+      ? {
+          ...existing.data.resources,
+          san: {
+            current: clampSanityToMaximum(
+              existing.data.resources.san.current,
+              value,
+            ),
+          },
+        }
+      : existing.data.resources;
+    return persistSkills(existing, skills, resources);
   }
 
   async function setImprovementChecked(
@@ -282,6 +332,7 @@ export const useCharacterStore = defineStore("characters", () => {
     loadById,
     updateName,
     ensureResourcesInitialized,
+    reconcileSanityToMaximum,
     setCurrentHp,
     setCurrentMp,
     setCurrentSan,

@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   calculateDamageBonusAndBuild,
   calculateInitialMagicPoints,
+  calculateMaximumSanity,
   calculateInitialSanity,
   calculateMaxHitPoints,
+  clampSanityToMaximum,
   calculateMovementRate,
   deriveStandardCharacterValues,
   formatDamageBonus,
@@ -24,6 +26,22 @@ describe("Maximum HP、起始 MP 与起始 SAN", () => {
 
   it("起始 SAN 等于 POW", () => {
     expect(calculateInitialSanity(65)).toBe(65);
+  });
+
+  it.each([
+    [0, 99],
+    [5, 94],
+    [40, 59],
+    [99, 0],
+    [120, 0],
+  ])("克苏鲁神话 %i 对应 Maximum SAN %i", (mythos, expected) => {
+    expect(calculateMaximumSanity(mythos)).toBe(expected);
+  });
+
+  it("将当前 SAN 限制在 Mythos 派生上限且不提高较低的 SAN", () => {
+    expect(clampSanityToMaximum(70, 40)).toBe(59);
+    expect(clampSanityToMaximum(50, 40)).toBe(50);
+    expect(clampSanityToMaximum(65, 0)).toBe(65);
   });
 });
 
