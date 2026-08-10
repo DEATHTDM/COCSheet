@@ -5,6 +5,7 @@ import { useRoute } from "vue-router";
 import { useCharacterStore } from "../app/stores/characterStore";
 import { deriveFinalCharacteristics, getAgeAdjustmentRule } from "../coc7/rules/age";
 import { applyLowRollBoost, getFifthValue, getHalfValue, getPointBuyAllocationSummary, validateAssignRoll, validatePointBuy } from "../coc7/rules/attributes";
+import { deriveStandardCharacterValues, formatDamageBonus } from "../coc7/rules/derived";
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
@@ -86,17 +87,37 @@ const finalPreview = computed<CharacteristicValues | undefined>(() => {
     return undefined;
   }
 });
+const derivedPreview = computed(() => {
+  if (!finalPreview.value || session.value?.draftAge === undefined) return undefined;
+  try {
+    return deriveStandardCharacterValues(session.value.draftAge, finalPreview.value);
+  } catch {
+    return undefined;
+  }
+});
+const savedDerived = computed(() => {
+  const character = characterStore.current?.data;
+  if (!character?.characteristics || character.age === undefined || character.settingId !== "standard") {
+    return undefined;
+  }
+  try {
+    return deriveStandardCharacterValues(character.age, character.characteristics);
+  } catch {
+    return undefined;
+  }
+});
 
 onMounted(async () => {
   try {
-    const [record, sessionRecord] = await Promise.all([
+    const [loadedRecord, sessionRecord] = await Promise.all([
       characterStore.loadById(characterId.value),
       creationStore.loadByCharacterId(characterId.value),
     ]);
-    if (!record || !sessionRecord) {
+    if (!loadedRecord || !sessionRecord) {
       errorMessage.value = "找不到该调查员或建卡会话。";
       return;
     }
+    const record = await characterStore.ensureResourcesInitialized(characterId.value);
     name.value = record.name;
     lastSavedName = record.name;
     age.value = sessionRecord.data.draftAge ?? record.data.age ?? 20;
@@ -382,6 +403,17 @@ async function complete(): Promise<void> {
               <tr v-for="id in characteristicIds" :key="id"><th>{{ id }}</th><td>{{ baseValues[id] }}</td><td>{{ finalPreview?.[id] ?? '—' }}</td><td>{{ finalPreview ? getHalfValue(finalPreview[id]) : '—' }}</td><td>{{ finalPreview ? getFifthValue(finalPreview[id]) : '—' }}</td></tr>
             </tbody></table>
           </div>
+          <template v-if="derivedPreview">
+            <h2>派生属性预览</h2>
+            <div class="attribute-grid">
+              <div class="attribute-card"><span>最大 HP</span><strong>{{ derivedPreview.maxHp }}</strong></div>
+              <div class="attribute-card"><span>起始 MP</span><strong>{{ derivedPreview.initialMp }}</strong></div>
+              <div class="attribute-card"><span>起始 SAN</span><strong>{{ derivedPreview.initialSan }}</strong></div>
+              <div class="attribute-card"><span>MOV</span><strong>{{ derivedPreview.movement.status === 'value' ? derivedPreview.movement.value : '需 KP 裁定' }}</strong></div>
+              <div class="attribute-card"><span>Damage Bonus</span><strong>{{ formatDamageBonus(derivedPreview.damageBonus) }}</strong></div>
+              <div class="attribute-card"><span>Build</span><strong>{{ derivedPreview.build }}</strong></div>
+            </div>
+          </template>
           <ul v-if="completionErrors.length" class="validation-list"><li v-for="message in completionErrors" :key="message">{{ message }}</li></ul>
           <button class="button primary" type="button" :disabled="completionErrors.length > 0" @click="complete">完成属性</button>
         </section>
@@ -393,6 +425,14 @@ async function complete(): Promise<void> {
         <div v-if="characterStore.current.data.characteristics" class="attribute-grid">
           <div v-for="id in characteristicIds" :key="id" class="attribute-card"><strong>{{ id }} {{ characterStore.current.data.characteristics[id] }}</strong></div>
           <div class="attribute-card"><strong>Luck {{ characterStore.current.data.luck }}</strong></div>
+        </div>
+        <div v-if="characterStore.current.data.resources && savedDerived" class="attribute-grid">
+          <div class="attribute-card"><span>HP</span><strong>{{ characterStore.current.data.resources.hp.current }} / {{ savedDerived.maxHp }}</strong></div>
+          <div class="attribute-card"><span>MP</span><strong>{{ characterStore.current.data.resources.mp.current }}（起始 {{ savedDerived.initialMp }}）</strong></div>
+          <div class="attribute-card"><span>SAN</span><strong>{{ characterStore.current.data.resources.san.current }}</strong></div>
+          <div class="attribute-card"><span>MOV</span><strong>{{ savedDerived.movement.status === 'value' ? savedDerived.movement.value : '需 KP 裁定' }}</strong></div>
+          <div class="attribute-card"><span>DB</span><strong>{{ formatDamageBonus(savedDerived.damageBonus) }}</strong></div>
+          <div class="attribute-card"><span>Build</span><strong>{{ savedDerived.build }}</strong></div>
         </div>
         <button class="button" type="button" @click="creationStore.setCurrentStep('attributes')">返回修改属性</button>
       </section>

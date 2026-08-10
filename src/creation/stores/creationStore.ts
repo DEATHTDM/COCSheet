@@ -15,6 +15,7 @@ import {
 } from "../../coc7/rules/attributes";
 import { rollLuck, validateRolledLuck } from "../../coc7/rules/luck";
 import { systemRandomSource, type RandomSource } from "../../coc7/rules/random";
+import { deriveStandardCharacterValues } from "../../coc7/rules/derived";
 import {
   characteristicValueSchema,
   characteristicValuesSchema,
@@ -333,9 +334,20 @@ export const useCreationStore = defineStore("creation", () => {
       attributes.ageAdjustment.reductionAllocation,
       attributes.ageAdjustment.eduImprovements,
     );
+    const derived = deriveStandardCharacterValues(age, finalValues);
     const completedSession: CreationSession = { ...session, currentStep: "occupation" };
     const records = await creationWorkflowRepository.updateCharacterWithSession(
-      { ...character, age, characteristics: finalValues, luck: attributes.luck.value },
+      {
+        ...character,
+        age,
+        characteristics: finalValues,
+        luck: attributes.luck.value,
+        resources: {
+          hp: { current: derived.maxHp },
+          mp: { current: derived.initialMp },
+          san: { current: derived.initialSan },
+        },
+      },
       completedSession,
     );
     current.value = records.session;

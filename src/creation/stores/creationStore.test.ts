@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 import { characteristicIds } from "../../coc7/types/attribute";
+import { useCharacterStore } from "../../app/stores/characterStore";
 import { db } from "../../db/database";
+import { characterRepository } from "../../db/repositories/characterRepository";
 import { creationSessionRepository } from "../../db/repositories/creationSessionRepository";
 import { useCreationStore } from "./creationStore";
 
@@ -17,6 +19,20 @@ beforeEach(async () => {
 afterEach(async () => {
   await db.delete();
 });
+
+const initialValues = {
+  STR: 50, CON: 50, SIZ: 50, DEX: 50, APP: 50, INT: 50, POW: 50, EDU: 50,
+} as const;
+
+async function prepareCompletableManual(store: ReturnType<typeof useCreationStore>): Promise<string> {
+  const characterId = await store.start("standard");
+  await store.setAge(15);
+  await store.chooseGenerationMethod("manual");
+  for (const id of characteristicIds) await store.setEnteredValue(id, initialValues[id]);
+  await store.setReduction("STR", 5);
+  await store.setManualLuck(55);
+  return characterId;
+}
 
 describe("Manual 未完成状态", () => {
   it("从空输入开始，填满八项后才生成 Base", async () => {
@@ -97,5 +113,56 @@ describe("完成前语义校验", () => {
     const errors = store.getCompletionErrors();
     expect(errors.some((error) => error.includes("成功状态"))).toBe(true);
     expect(errors.some((error) => error.includes("Luck 结果"))).toBe(true);
+  });
+});
+
+describe("完成属性与 Character resources", () => {
+  it("在推进到 occupation 时一起初始化 HP、MP 与 SAN，并可刷新恢复", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const character = await characterRepository.getById(characterId);
+    if (!character) throw new Error("调查员不存在");
+
+    const completed = await store.completeAttributes(character.data);
+    expect(completed.data.resources).toEqual({
+      hp: { current: 10 },
+      mp: { current: 10 },
+      san: { current: 50 },
+    });
+    expect(store.current?.data.currentStep).toBe("occupation");
+
+    setActivePinia(createPinia());
+    const restoredCharacter = await useCharacterStore().loadById(characterId);
+    const restoredSession = await useCreationStore().loadByCharacterId(characterId);
+    expect(restoredCharacter?.data.resources).toEqual(completed.data.resources);
+    expect(restoredSession?.data.currentStep).toBe("occupation");
+  });
+
+  it("返回修改属性并重新完成后按新最终属性重置资源", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const original = await characterRepository.getById(characterId);
+    if (!original) throw new Error("调查员不存在");
+    await store.completeAttributes(original.data);
+
+    const characterStore = useCharacterStore();
+    await characterStore.loadById(characterId);
+    await characterStore.setCurrentHp(characterId, 3);
+    await characterStore.setCurrentMp(characterId, 4);
+    await characterStore.setCurrentSan(characterId, 90);
+
+    await store.setCurrentStep("attributes");
+    const changed = { ...initialValues, CON: 70, SIZ: 60, POW: 65 } as const;
+    for (const id of characteristicIds) await store.setEnteredValue(id, changed[id]);
+    await store.setReduction("STR", 5);
+    const latest = await characterRepository.getById(characterId);
+    if (!latest) throw new Error("调查员不存在");
+    const completed = await store.completeAttributes(latest.data);
+
+    expect(completed.data.resources).toEqual({
+      hp: { current: 13 },
+      mp: { current: 13 },
+      san: { current: 65 },
+    });
   });
 });
