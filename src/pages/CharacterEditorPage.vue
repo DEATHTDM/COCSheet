@@ -219,7 +219,8 @@ async function complete(): Promise<void> {
             <div><p class="eyebrow">年龄 {{ session.draftAge }} 岁</p><h2>属性生成</h2></div>
             <button class="button" type="button" @click="creationStore.setCurrentStep('basic-info')">返回基本信息</button>
           </div>
-          <div class="method-grid">
+          <p v-if="session.settingId !== 'standard'" class="warning-message">当前建卡环境的属性规则尚未实现；本阶段不会自动套用 Standard COC7 规则。</p>
+          <div v-else class="method-grid">
             <button
               v-for="method in creationStore.config.allowedMethods"
               :key="method"

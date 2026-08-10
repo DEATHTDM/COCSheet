@@ -134,6 +134,7 @@ export const useCreationStore = defineStore("creation", () => {
 
   async function chooseGenerationMethod(method: AttributeGenerationMethod): Promise<void> {
     const session = requireSession();
+    if (session.settingId !== "standard") throw new Error("当前仅实现 Standard COC7 属性规则");
     if (!config.value.allowedMethods.includes(method)) throw new Error("该预设不允许此属性生成方式");
     let generation = makeGeneration(method);
     if (generation.method === "manual" && generation.values) {
