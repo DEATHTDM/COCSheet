@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { characteristicValuesSchema } from "./attribute";
 import { settingIdSchema } from "./setting";
 
 export const characterSchema = z
@@ -8,6 +9,9 @@ export const characterSchema = z
     id: z.string().uuid(),
     name: z.string(),
     settingId: settingIdSchema,
+    age: z.number().int().nonnegative().optional(),
+    characteristics: characteristicValuesSchema.optional(),
+    luck: z.number().int().min(0).max(99).optional(),
   })
   .strict();
 

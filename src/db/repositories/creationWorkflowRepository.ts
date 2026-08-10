@@ -60,6 +60,48 @@ export class CreationWorkflowRepository {
 
     return { character: characterRecord, session: sessionRecord };
   }
+
+  async updateCharacterWithSession(
+    character: Character,
+    session: CreationSession,
+  ): Promise<CreationStartRecords> {
+    const parsedCharacter = characterSchema.parse(character);
+    const parsedSession = creationSessionSchema.parse(session);
+    if (
+      parsedCharacter.id !== parsedSession.characterId ||
+      parsedCharacter.settingId !== parsedSession.settingId
+    ) {
+      throw new Error("调查员与建卡会话不属于同一创建流程");
+    }
+
+    const existingCharacter = await this.database.characters.get(parsedCharacter.id);
+    const existingSession = await this.database.creationSessions.get(parsedSession.characterId);
+    if (!existingCharacter || !existingSession) throw new Error("调查员或建卡会话不存在");
+
+    const now = Date.now();
+    const characterRecord = characterRecordSchema.parse({
+      ...existingCharacter,
+      name: parsedCharacter.name,
+      settingId: parsedCharacter.settingId,
+      updatedAt: now,
+      data: parsedCharacter,
+    });
+    const sessionRecord = creationSessionRecordSchema.parse({
+      ...existingSession,
+      updatedAt: now,
+      data: parsedSession,
+    });
+
+    await this.database.transaction(
+      "rw",
+      [this.database.characters, this.database.creationSessions],
+      async () => {
+        await this.database.characters.put(characterRecord);
+        await this.database.creationSessions.put(sessionRecord);
+      },
+    );
+    return { character: characterRecord, session: sessionRecord };
+  }
 }
 
 export const creationWorkflowRepository = new CreationWorkflowRepository();

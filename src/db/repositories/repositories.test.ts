@@ -54,7 +54,7 @@ function makePreset(id = crypto.randomUUID()): CreationPreset {
     id,
     name: "默认预设",
     settingId: "standard",
-    attributeMethods: ["manual"],
+    attributeGeneration: { allowedMethods: ["manual"] },
     allowCustomOccupation: "keeper-approval",
   };
 }
@@ -88,6 +88,58 @@ describe("CreationSessionRepository", () => {
     await creationSessionRepository.remove(character.id);
     expect(await creationSessionRepository.getByCharacterId(character.id)).toBeUndefined();
     expect(await characterRepository.getById(character.id)).toBeDefined();
+  });
+
+  it("保存并恢复未完成的 Manual 输入", async () => {
+    const character = makeCharacter();
+    const session: CreationSession = {
+      ...makeSession(character.id),
+      currentStep: "attributes",
+      draftAge: 25,
+      attributes: {
+        generationMethod: "manual",
+        generation: { method: "manual", values: { STR: 55, CON: 60, SIZ: 65 } },
+        ageAdjustment: { age: 25, reductionAllocation: {}, eduImprovements: [] },
+      },
+    };
+    await creationWorkflowRepository.createCharacterWithSession(character, session);
+    expect((await creationSessionRepository.getByCharacterId(character.id))?.data).toEqual(session);
+  });
+
+  it("完成属性后可恢复 Character 最终值与 CreationSession 过程", async () => {
+    const character = makeCharacter();
+    const completedCharacteristics = { STR: 60, CON: 60, SIZ: 60, DEX: 60, APP: 60, INT: 60, POW: 60, EDU: 60 };
+    const session: CreationSession = {
+      ...makeSession(character.id),
+      currentStep: "attributes",
+      draftAge: 25,
+      attributes: {
+        generationMethod: "manual",
+        generation: {
+          method: "manual",
+          values: completedCharacteristics,
+          baseCharacteristics: completedCharacteristics,
+        },
+        ageAdjustment: {
+          age: 25,
+          reductionAllocation: {},
+          eduImprovements: [{ checkRoll: 50, eduBefore: 60, success: false, eduAfter: 60 }],
+        },
+        luck: { source: "manual", value: 55 },
+      },
+    };
+    await creationWorkflowRepository.createCharacterWithSession(character, session);
+    await creationWorkflowRepository.updateCharacterWithSession(
+      { ...character, age: 25, characteristics: completedCharacteristics, luck: 55 },
+      { ...session, currentStep: "occupation" },
+    );
+
+    const refreshedCharacter = await new CharacterRepository(database).getById(character.id);
+    const refreshedSession = await new CreationSessionRepository(database).getByCharacterId(character.id);
+    expect(refreshedCharacter?.data.age).toBe(25);
+    expect(refreshedCharacter?.data.characteristics?.STR).toBe(60);
+    expect(refreshedSession?.data.attributes?.generationMethod).toBe("manual");
+    expect(refreshedSession?.data.currentStep).toBe("occupation");
   });
 });
 
