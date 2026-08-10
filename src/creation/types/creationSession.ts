@@ -9,8 +9,9 @@ import {
 } from "../../coc7/types/attribute";
 import { settingIdSchema } from "../../coc7/types/setting";
 import { attributeGenerationMethodSchema, creationPresetSchema } from "./creationPreset";
+import { occupationSelectionSchema, skillCreationStateSchema } from "./skillCreation";
 
-export const creationStepIdSchema = z.enum(["basic-info", "attributes", "occupation", "review"]);
+export const creationStepIdSchema = z.enum(["basic-info", "attributes", "occupation", "skills", "review"]);
 
 const assignmentSchema = z
   .object({
@@ -131,6 +132,8 @@ export const creationSessionSchema = z
     presetSnapshot: creationPresetSchema.optional(),
     draftAge: z.number().int().nonnegative().optional(),
     attributes: attributeStateSchema.optional(),
+    occupation: occupationSelectionSchema.optional(),
+    skills: skillCreationStateSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {

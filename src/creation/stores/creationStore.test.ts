@@ -231,3 +231,192 @@ describe("完成属性与 Character resources", () => {
     expect(completed.data.skills).toEqual(character.data.skills);
   });
 });
+
+describe("Phase 5A skills finalize foundation", () => {
+  it("保留属性回退期间的职业/分配草稿，并原子写入 Character.skills + review", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initialCharacter = await characterRepository.getById(characterId);
+    if (!initialCharacter) throw new Error("调查员不存在");
+    await store.completeAttributes(initialCharacter.data);
+
+    const customOccupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: customOccupationId,
+      name: { zh: "自定义医学顾问", en: "Custom Medical Consultant" },
+      category: "medical",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 0 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [{
+        id: "medicine",
+        selector: { type: "exact", ref: { type: "standard", definitionId: "medicine" } },
+        cardinality: { min: 1, max: 1 },
+      }],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [{
+        requirementId: "medicine",
+        refs: [{ type: "standard", definitionId: "medicine" }],
+      }],
+      allocations: [{
+        ref: { type: "standard", definitionId: "medicine" },
+        occupationPoints: 180,
+        interestPoints: 100,
+      }],
+      keeperApprovals: [],
+    });
+    const beforeReturn = store.current?.data;
+    if (!beforeReturn?.occupation || !beforeReturn.skills) throw new Error("技能草稿未建立");
+
+    await store.setCurrentStep("attributes");
+    const currentCharacter = await characterRepository.getById(characterId);
+    if (!currentCharacter) throw new Error("调查员不存在");
+    await store.completeAttributes(currentCharacter.data);
+    expect(store.current?.data.occupation).toEqual(beforeReturn.occupation);
+    expect(store.current?.data.skills).toEqual(beforeReturn.skills);
+
+    await store.setCurrentStep("skills");
+    const latestCharacter = await characterRepository.getById(characterId);
+    if (!latestCharacter) throw new Error("调查员不存在");
+    const updateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+    const completed = await store.completeSkills(latestCharacter.data);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.occupation).toMatchObject({
+      kind: "custom",
+      id: customOccupationId,
+      displayNameSnapshot: { zh: "自定义医学顾问", en: "Custom Medical Consultant" },
+    });
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "medicine",
+    )?.currentValue).toBe(281);
+    expect(store.current?.data.currentStep).toBe("review");
+
+    const refreshedCharacter = await characterRepository.getById(characterId);
+    const refreshedSession = await creationSessionRepository.getByCharacterId(characterId);
+    expect(refreshedCharacter?.data.skills).toEqual(completed.data.skills);
+    expect(refreshedSession?.data.currentStep).toBe("review");
+    expect(refreshedSession?.data.occupation?.definitionSnapshot.pointFormula).toEqual({
+      type: "attribute",
+      attribute: "EDU",
+      multiplier: 4,
+    });
+  });
+
+  it("完成技能时在同一 workflow update 中按最终 Mythos 收紧 SAN，并保留 HP/MP", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initialCharacter = await characterRepository.getById(characterId);
+    if (!initialCharacter) throw new Error("调查员不存在");
+    const afterAttributes = await store.completeAttributes(initialCharacter.data);
+    const prepared = await characterRepository.update({
+      ...afterAttributes.data,
+      resources: {
+        hp: { current: 8 },
+        mp: { current: 7 },
+        san: { current: 70 },
+      },
+    });
+    const occupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: occupationId,
+      name: { zh: "神话研究员", en: "Mythos Researcher" },
+      category: "academic",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 99 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        occupationPoints: 0,
+        interestPoints: 40,
+      }],
+      keeperApprovals: [{
+        reason: "cthulhu-mythos-allocation",
+        subjectId: "skill:cthulhu-mythos",
+        approved: true,
+      }],
+    });
+    const updateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+
+    const completed = await store.completeSkills(prepared.data, true);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.resources).toEqual({
+      hp: { current: 8 },
+      mp: { current: 7 },
+      san: { current: 59 },
+    });
+    const refreshed = await characterRepository.getById(characterId);
+    expect(refreshed?.data.resources?.san.current).toBe(59);
+    expect(store.current?.data.currentStep).toBe("review");
+  });
+
+  it("重建为较低 Mythos 不自动恢复 SAN", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initialCharacter = await characterRepository.getById(characterId);
+    if (!initialCharacter) throw new Error("调查员不存在");
+    const afterAttributes = await store.completeAttributes(initialCharacter.data);
+    const prepared = await characterRepository.update({
+      ...afterAttributes.data,
+      resources: {
+        hp: { current: 8 },
+        mp: { current: 7 },
+        san: { current: 50 },
+      },
+      skills: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        currentValue: 40,
+        improvementChecked: false,
+      }],
+    });
+    const occupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: occupationId,
+      name: { zh: "神话重建", en: "Mythos Rebuild" },
+      category: "academic",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 99 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [{
+        ref: { type: "standard", definitionId: "cthulhu-mythos" },
+        occupationPoints: 0,
+        interestPoints: 20,
+      }],
+      keeperApprovals: [{
+        reason: "cthulhu-mythos-allocation",
+        subjectId: "skill:cthulhu-mythos",
+        approved: true,
+      }],
+      existingSkillResolution: { action: "rebuild-structured", confirmed: true },
+    });
+    const updateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+
+    const completed = await store.completeSkills(prepared.data, true);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.resources).toEqual({
+      hp: { current: 8 },
+      mp: { current: 7 },
+      san: { current: 50 },
+    });
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "cthulhu-mythos",
+    )?.currentValue).toBe(20);
+  });
+});

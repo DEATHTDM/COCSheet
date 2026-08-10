@@ -59,6 +59,15 @@ export const attributeGenerationConfigSchema = z
   })
   .strict();
 
+export const skillLimitsSchema = z
+  .object({
+    // 三个字段都限制“基础值 + 全部分配”后的最终成功率，不限制分配贡献值。
+    maxOccupationSkillFinalValue: z.number().int().nonnegative().optional(),
+    maxInterestOnlySkillFinalValue: z.number().int().nonnegative().optional(),
+    maxSkillFinalValue: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
 const presetBaseSchema = z
   .object({
     version: z.literal(1),
@@ -75,6 +84,7 @@ const presetBaseSchema = z
       })
       .strict()
       .optional(),
+    skillLimits: skillLimitsSchema.optional(),
     occupationPolicy: z
       .object({
         bannedOccupationIds: z.array(z.string().min(1)).optional(),
@@ -112,6 +122,7 @@ export const creationPresetSchema = presetBaseSchema.transform(({ attributeMetho
 
 export type AttributeGenerationMethod = z.infer<typeof attributeGenerationMethodSchema>;
 export type AttributeGenerationConfig = z.infer<typeof attributeGenerationConfigSchema>;
+export type SkillLimits = z.infer<typeof skillLimitsSchema>;
 export type CreationPreset = z.infer<typeof creationPresetSchema>;
 
 export const defaultAttributeGenerationConfig: AttributeGenerationConfig = {

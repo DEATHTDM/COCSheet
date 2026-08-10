@@ -9,9 +9,18 @@ import {
   type AttributeGenerationMethod,
 } from "../types/creationPreset";
 import { creationSessionSchema } from "../types/creationSession";
+import { creditRatingOverrideSchema } from "../types/skillCreation";
 import { characterRecordSchema, kpPresetRecordSchema } from "../../db/records";
 
 describe("持久化 Zod Schema", () => {
+  it("Credit Rating override 必须绑定职业身份", () => {
+    expect(creditRatingOverrideSchema.safeParse({ approved: true }).success).toBe(false);
+    expect(creditRatingOverrideSchema.safeParse({
+      occupationId: "doctor",
+      approved: true,
+    }).success).toBe(true);
+  });
+
   it("拒绝非法 Character", () => {
     expect(
       characterSchema.safeParse({
@@ -45,6 +54,25 @@ describe("持久化 Zod Schema", () => {
       characteristics: { STR: 50, CON: 50, SIZ: 50, DEX: 50, APP: 50, INT: 50, POW: 50, EDU: 50 },
       luck: 55,
     }).success).toBe(true);
+  });
+
+  it("Character version 1 可选保存轻量职业身份，不复制职业规则", () => {
+    const character = characterSchema.parse({
+      version: 1,
+      id: crypto.randomUUID(),
+      name: "有职业的调查员",
+      settingId: "standard",
+      occupation: {
+        kind: "catalog",
+        id: "doctor",
+        displayNameSnapshot: { zh: "医生", en: "Doctor" },
+        sourceRefs: [{ sourceId: "handbook", title: "Investigator Handbook", page: 78 }],
+      },
+    });
+    expect(character.version).toBe(1);
+    expect(character.occupation?.kind).toBe("catalog");
+    expect(character.occupation).not.toHaveProperty("pointFormula");
+    expect(character.occupation).not.toHaveProperty("skillRequirements");
   });
 
   it("resources 一旦存在就要求完整、严格且 current 合法", () => {
@@ -152,6 +180,41 @@ describe("CreationPreset", () => {
 
     const parsed = creationPresetSchema.parse(JSON.parse(JSON.stringify(preset)));
     expect(parsed).toEqual(preset);
+  });
+
+  it("新 skillLimits 只表达最终值上限，legacy skillCaps 继续读取但不映射", () => {
+    const parsed = creationPresetSchema.parse({
+      version: 1,
+      id: crypto.randomUUID(),
+      name: "技能上限预设",
+      settingId: "standard",
+      attributeGeneration: { allowedMethods: ["manual"] },
+      skillCaps: { occupation: 80, interest: 70, overall: 90 },
+      skillLimits: {
+        maxOccupationSkillFinalValue: 75,
+        maxInterestOnlySkillFinalValue: 60,
+        maxSkillFinalValue: 90,
+      },
+      allowCustomOccupation: true,
+    });
+    expect(parsed.skillCaps).toEqual({ occupation: 80, interest: 70, overall: 90 });
+    expect(parsed.skillLimits).toEqual({
+      maxOccupationSkillFinalValue: 75,
+      maxInterestOnlySkillFinalValue: 60,
+      maxSkillFinalValue: 90,
+    });
+
+    const legacy = creationPresetSchema.parse({
+      version: 1,
+      id: crypto.randomUUID(),
+      name: "旧技能上限预设",
+      settingId: "standard",
+      attributeMethods: ["manual"],
+      skillCaps: { occupation: 80 },
+      allowCustomOccupation: true,
+    });
+    expect(legacy.skillCaps).toEqual({ occupation: 80 });
+    expect(legacy.skillLimits).toBeUndefined();
   });
 
   it("兼容读取旧 attributeMethods 并规范化为新结构", () => {
@@ -271,6 +334,57 @@ describe("CreationSession 领域一致性", () => {
       ...session,
       attributes: { ...session.attributes, ageAdjustment: { ...session.attributes.ageAdjustment, age: 25 } },
     }).success).toBe(true);
+  });
+
+  it("version 1 增加 skills step、职业 mechanics snapshot 与 SkillRef allocation rows", () => {
+    const characterId = crypto.randomUUID();
+    const parsed = creationSessionSchema.parse({
+      version: 1,
+      characterId,
+      settingId: "standard",
+      currentStep: "skills",
+      occupation: {
+        kind: "catalog",
+        selectedOccupationId: "doctor",
+        definitionSnapshot: {
+          version: 1,
+          id: "doctor",
+          name: { zh: "医生", en: "Doctor" },
+          category: "medical",
+          sourceRefs: [{ sourceId: "handbook", title: "Investigator Handbook", page: 78 }],
+          era: { type: "all" },
+          creditRating: { min: 30, max: 80 },
+          pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+          skillRequirements: [],
+        },
+      },
+      skills: {
+        requirementSelections: [],
+        allocations: [{
+          ref: { type: "standard", definitionId: "medicine" },
+          occupationPoints: 20,
+          interestPoints: 5,
+        }],
+        keeperApprovals: [],
+      },
+    });
+    expect(parsed.version).toBe(1);
+    expect(parsed.currentStep).toBe("skills");
+    expect(parsed.skills?.allocations[0]?.ref).toEqual({ type: "standard", definitionId: "medicine" });
+    expect(parsed.skills?.allocations[0]).not.toHaveProperty("skillRefKey");
+    expect(parsed.skills?.allocations[0]).not.toHaveProperty("baseValue");
+    expect(parsed.skills?.allocations[0]).not.toHaveProperty("finalValue");
+  });
+
+  it("旧 CreationSession 仍正常解析且不生成 occupation/skills 字段", () => {
+    const parsed = creationSessionSchema.parse({
+      version: 1,
+      characterId: crypto.randomUUID(),
+      settingId: "standard",
+      currentStep: "occupation",
+    });
+    expect(parsed.occupation).toBeUndefined();
+    expect(parsed.skills).toBeUndefined();
   });
 });
 

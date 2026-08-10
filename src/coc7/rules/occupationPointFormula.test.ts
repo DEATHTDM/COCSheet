@@ -29,40 +29,23 @@ describe("evaluateOccupationPointFormula", () => {
     expect(evaluateOccupationPointFormula(formula, attributes)).toBe(300);
   });
 
-  it("计算 EDU × 2 + STR × 2", () => {
-    const formula: OccupationPointFormula = {
+  it.each([
+    ["EDU ×2 + DEX ×2", { type: "attribute", attribute: "DEX", multiplier: 2 }, 290],
+    ["EDU ×2 + STR ×2", { type: "attribute", attribute: "STR", multiplier: 2 }, 280],
+    ["EDU ×2 + best(DEX, STR) ×2", { type: "best-of", attributes: ["DEX", "STR"], multiplier: 2 }, 290],
+    ["EDU ×2 + best(APP, POW) ×2", { type: "best-of", attributes: ["APP", "POW"], multiplier: 2 }, 310],
+    ["EDU ×2 + best(APP, DEX) ×2", { type: "best-of", attributes: ["APP", "DEX"], multiplier: 2 }, 310],
+    ["EDU ×2 + POW ×2", { type: "attribute", attribute: "POW", multiplier: 2 }, 240],
+    ["EDU ×2 + best(APP, DEX, STR) ×2", { type: "best-of", attributes: ["APP", "DEX", "STR"], multiplier: 2 }, 310],
+  ] satisfies [string, OccupationPointFormula, number][])("计算 %s", (_label, secondTerm, expected) => {
+    const formula = {
       type: "sum",
       terms: [
         { type: "attribute", attribute: "EDU", multiplier: 2 },
-        { type: "attribute", attribute: "STR", multiplier: 2 },
+        secondTerm,
       ],
-    };
-
-    expect(evaluateOccupationPointFormula(formula, attributes)).toBe(280);
-  });
-
-  it("计算 EDU × 2 + max(STR, DEX) × 2", () => {
-    const formula: OccupationPointFormula = {
-      type: "sum",
-      terms: [
-        { type: "attribute", attribute: "EDU", multiplier: 2 },
-        { type: "best-of", attributes: ["STR", "DEX"], multiplier: 2 },
-      ],
-    };
-
-    expect(evaluateOccupationPointFormula(formula, attributes)).toBe(290);
-  });
-
-  it("计算 EDU × 2 + max(APP, DEX, STR) × 2", () => {
-    const formula: OccupationPointFormula = {
-      type: "sum",
-      terms: [
-        { type: "attribute", attribute: "EDU", multiplier: 2 },
-        { type: "best-of", attributes: ["APP", "DEX", "STR"], multiplier: 2 },
-      ],
-    };
-
-    expect(evaluateOccupationPointFormula(formula, attributes)).toBe(310);
+    } satisfies OccupationPointFormula;
+    expect(evaluateOccupationPointFormula(formula, attributes)).toBe(expected);
   });
 
   it("拒绝在职业技能点公式中引用 LUCK", () => {
@@ -73,5 +56,13 @@ describe("evaluateOccupationPointFormula", () => {
         multiplier: 2,
       }).success,
     ).toBe(false);
+  });
+
+  it("拒绝 best-of 重复引用同一属性", () => {
+    expect(occupationPointFormulaSchema.safeParse({
+      type: "best-of",
+      attributes: ["DEX", "DEX"],
+      multiplier: 2,
+    }).success).toBe(false);
   });
 });

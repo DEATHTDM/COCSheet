@@ -4,9 +4,9 @@ Last updated: 2026-08-10
 
 ## Current phase
 
-Phase 4 — Skills (Completed)
+Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 4A — Skills Foundation & Representative Catalog and Phase 4B — Complete Standard Skill Catalog are completed.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data and Phase 5C — Creation UI have not started.
 
 ## Git baseline
 
@@ -21,6 +21,20 @@ Phase 4B branch was created from `main` at `fa59171ffa28a9bb1790a3d803dfb9e3d4fa
 - internal Extension Registry and allow-listed extension IDs
 - minimal `Character`, `CreationSession`, and `CreationPreset` schemas
 - Occupation schema, occupation point formula calculation, and attribute prerequisite validation foundations
+- closed OccupationRequirement + SkillSelector model with stable requirement IDs, cardinality, fixed-name custom specialization, finite candidates, exclusions and declarative composition
+- hardened OccupationPointFormula schema with duplicate-free best-of attributes and all verified Standard formula shapes
+- OccupationRegistry sourced only from SettingPack.occupations, with localized search and category/tag/era filters plus registration validation
+- explicit source mechanics variants through variantOf, while guidance-only source wording shares canonical mechanics and multiple sourceRefs
+- strongly typed CreationSession occupation mechanics snapshot and skill creation state containing requirement selections, SkillRef allocation rows, Credit Rating override and reasoned Keeper approvals
+- pure occupation/interest budget, selection uniqueness, one-of child-selector one-to-one assignment, creation-point policy, occupation-scoped Credit Rating range override, skill final-limit and unused-point warning rules
+- pure structured-allocation conflict detection for existing Phase 4 Character.skills, with no silent adoption, reverse engineering or overwrite
+- pure finalize plan rebuilding CharacterSkill values from current resolved base + occupation allocation + interest allocation, followed by Phase 4 Character.skills domain validation
+- optional lightweight Character occupation identity snapshot without copied occupation mechanics
+- explicit custom occupation foundation with UUID identity and an eight-occupational-skill capacity proof based on requirement cardinality
+- skills CreationStep and pure occupation-switch/reset draft actions that preserve allocations until explicit reset
+- atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to review in one Dexie transaction without changing HP/MP or restoring SAN
+- legacy CreationPreset.skillCaps read compatibility without inferred mapping or validator effect, alongside explicit final-value skillLimits
+- source-annotated Phase 5A test fixtures for ten occupation families (eleven definitions including two Missionary mechanics variants), not production occupation content
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
 - basic Home, character creation/editor, and KP preset pages
@@ -71,7 +85,7 @@ Phase 4B branch was created from `main` at `fa59171ffa28a9bb1790a3d803dfb9e3d4fa
 - persistent Character and KP Preset record metadata is checked against nested domain data.
 - obsolete `occupationName` is absent and rejected by strict record validation.
 - the attribute generation enum foundation is present.
-- `OccupationSkillRequirement` is explicitly marked unfrozen pending real-data pressure tests.
+- the former unfrozen `OccupationSkillRequirement` variants were replaced by the pressure-tested Requirement + SkillSelector model.
 
 ## AttributeGenerationMethod implemented
 
@@ -86,8 +100,9 @@ Merged in the current enum:
 
 ## Not implemented
 
-- skill allocation and improvement-roll workflows
-- occupation data and occupation UI
+- production Standard occupation data (Phase 5B)
+- occupation browsing, requirement selection and skill allocation UI (Phase 5C)
+- post-creation improvement-roll workflow
 - independent final character sheet UI/module
 - guide overlay
 - import/export and printing/export
@@ -98,12 +113,12 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5 is the next intended phase, but is not started or authorized by this document.
+Phase 5B verified Standard occupation data is the next intended work, but is not authorized by this document.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
-- Occupation schema not yet pressure-tested with full real data
+- full Standard occupation data still requires entry-by-entry source verification in Phase 5B
 - browser storage can be cleared, and long-term file backup is not implemented
