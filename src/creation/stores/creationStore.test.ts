@@ -231,3 +231,78 @@ describe("完成属性与 Character resources", () => {
     expect(completed.data.skills).toEqual(character.data.skills);
   });
 });
+
+describe("Phase 5A skills finalize foundation", () => {
+  it("保留属性回退期间的职业/分配草稿，并原子写入 Character.skills + review", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initialCharacter = await characterRepository.getById(characterId);
+    if (!initialCharacter) throw new Error("调查员不存在");
+    await store.completeAttributes(initialCharacter.data);
+
+    const customOccupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: customOccupationId,
+      name: { zh: "自定义医学顾问", en: "Custom Medical Consultant" },
+      category: "medical",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 0 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [{
+        id: "medicine",
+        selector: { type: "exact", ref: { type: "standard", definitionId: "medicine" } },
+        cardinality: { min: 1, max: 1 },
+      }],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [{
+        requirementId: "medicine",
+        refs: [{ type: "standard", definitionId: "medicine" }],
+      }],
+      allocations: [{
+        ref: { type: "standard", definitionId: "medicine" },
+        occupationPoints: 180,
+        interestPoints: 100,
+      }],
+      keeperApprovals: [],
+    });
+    const beforeReturn = store.current?.data;
+    if (!beforeReturn?.occupation || !beforeReturn.skills) throw new Error("技能草稿未建立");
+
+    await store.setCurrentStep("attributes");
+    const currentCharacter = await characterRepository.getById(characterId);
+    if (!currentCharacter) throw new Error("调查员不存在");
+    await store.completeAttributes(currentCharacter.data);
+    expect(store.current?.data.occupation).toEqual(beforeReturn.occupation);
+    expect(store.current?.data.skills).toEqual(beforeReturn.skills);
+
+    await store.setCurrentStep("skills");
+    const latestCharacter = await characterRepository.getById(characterId);
+    if (!latestCharacter) throw new Error("调查员不存在");
+    const updateSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+    const completed = await store.completeSkills(latestCharacter.data);
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(completed.data.occupation).toMatchObject({
+      kind: "custom",
+      id: customOccupationId,
+      displayNameSnapshot: { zh: "自定义医学顾问", en: "Custom Medical Consultant" },
+    });
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "medicine",
+    )?.currentValue).toBe(281);
+    expect(store.current?.data.currentStep).toBe("review");
+
+    const refreshedCharacter = await characterRepository.getById(characterId);
+    const refreshedSession = await creationSessionRepository.getByCharacterId(characterId);
+    expect(refreshedCharacter?.data.skills).toEqual(completed.data.skills);
+    expect(refreshedSession?.data.currentStep).toBe("review");
+    expect(refreshedSession?.data.occupation?.definitionSnapshot.pointFormula).toEqual({
+      type: "attribute",
+      attribute: "EDU",
+      multiplier: 4,
+    });
+  });
+});

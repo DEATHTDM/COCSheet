@@ -6,6 +6,7 @@ import type { Character } from "../../coc7/types/character";
 import type { CreationPreset } from "../../creation/types/creationPreset";
 import type { CreationSession } from "../../creation/types/creationSession";
 import { COCSheetDatabase } from "../database";
+import type { KPPresetRecord } from "../records";
 import { CharacterRepository } from "./characterRepository";
 import { CreationSessionRepository } from "./creationSessionRepository";
 import { CreationWorkflowRepository } from "./creationWorkflowRepository";
@@ -149,6 +150,23 @@ describe("CreationSessionRepository", () => {
     expect((await creationSessionRepository.getByCharacterId(character.id))?.data).toEqual(session);
   });
 
+  it("读取 legacy Session 不会补写 occupation、skills 或新 step", async () => {
+    const character = makeCharacter();
+    const session = makeSession(character.id);
+    await creationWorkflowRepository.createCharacterWithSession(character, session);
+    const before = await database.creationSessions.get(character.id);
+
+    const read = await creationSessionRepository.getByCharacterId(character.id);
+    expect(read?.data.currentStep).toBe("basic-info");
+    expect(read?.data.occupation).toBeUndefined();
+    expect(read?.data.skills).toBeUndefined();
+
+    const after = await database.creationSessions.get(character.id);
+    expect(after?.updatedAt).toBe(before?.updatedAt);
+    expect(Object.hasOwn(after?.data ?? {}, "occupation")).toBe(false);
+    expect(Object.hasOwn(after?.data ?? {}, "skills")).toBe(false);
+  });
+
   it("完成属性后可恢复 Character 最终值与 CreationSession 过程", async () => {
     const character = makeCharacter();
     const completedCharacteristics = { STR: 60, CON: 60, SIZ: 60, DEX: 60, APP: 60, INT: 60, POW: 60, EDU: 60 };
@@ -224,5 +242,37 @@ describe("KPPresetRepository", () => {
 
     await kpPresetRepository.remove(preset.id);
     expect(await kpPresetRepository.getById(preset.id)).toBeUndefined();
+  });
+
+  it("读取 legacy skillCaps/attributeMethods 时不猜测 skillLimits，也不 writeback", async () => {
+    const id = crypto.randomUUID();
+    const raw = {
+      id,
+      version: 1,
+      name: "Legacy preset",
+      updatedAt: 123,
+      data: {
+        version: 1,
+        id,
+        name: "Legacy preset",
+        settingId: "standard",
+        attributeMethods: ["manual"],
+        skillCaps: { occupation: 80, interest: 70, overall: 90 },
+        allowCustomOccupation: true,
+      },
+    };
+    await database.table<KPPresetRecord, string>("kpPresets").add(raw as unknown as KPPresetRecord);
+
+    const read = await kpPresetRepository.getById(id);
+    expect(read?.data.skillCaps).toEqual({ occupation: 80, interest: 70, overall: 90 });
+    expect(read?.data.skillLimits).toBeUndefined();
+    expect(read?.data.attributeGeneration.allowedMethods).toEqual(["manual"]);
+
+    const after = await database.table<Record<string, unknown>, string>("kpPresets").get(id);
+    const rawData = after?.data as Record<string, unknown> | undefined;
+    expect(after?.updatedAt).toBe(123);
+    expect(rawData).toHaveProperty("attributeMethods");
+    expect(rawData).not.toHaveProperty("attributeGeneration");
+    expect(rawData).not.toHaveProperty("skillLimits");
   });
 });

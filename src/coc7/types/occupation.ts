@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 import { characteristicIdSchema } from "./attribute";
+import {
+  localizedSkillAliasesSchema,
+  localizedSkillNameSchema,
+  skillDefinitionIdSchema,
+  skillSpecializationIdSchema,
+  stableMachineIdSchema,
+  type LocalizedSkillName,
+  type SkillDefinitionId,
+  type SkillSpecializationId,
+} from "./skill";
 import { sourceReferenceSchema } from "./source";
 
 export const occupationCategoryIds = [
@@ -18,8 +28,8 @@ export const occupationCategoryIds = [
 ] as const;
 
 export const occupationCategoryIdSchema = z.enum(occupationCategoryIds);
-export const occupationTagIdSchema = z.string().min(1);
-export const eraIdSchema = z.string().min(1);
+export const occupationTagIdSchema = stableMachineIdSchema;
+export const eraIdSchema = stableMachineIdSchema;
 
 export const attributeFormulaSchema = z
   .object({
@@ -35,7 +45,20 @@ export const bestOfFormulaSchema = z
     attributes: z.array(characteristicIdSchema).min(2),
     multiplier: z.number().finite().positive(),
   })
-  .strict();
+  .strict()
+  .superRefine((formula, context) => {
+    const seen = new Set<string>();
+    formula.attributes.forEach((attribute, index) => {
+      if (seen.has(attribute)) {
+        context.addIssue({
+          code: "custom",
+          message: `best-of 不能重复引用属性：${attribute}`,
+          path: ["attributes", index],
+        });
+      }
+      seen.add(attribute);
+    });
+  });
 
 export interface SumFormula {
   readonly type: "sum";
@@ -59,65 +82,120 @@ export const occupationPointFormulaSchema: z.ZodType<OccupationPointFormula> = z
   ]),
 );
 
-const fixedSkillRequirementSchema = z
-  .object({
-    type: z.literal("fixed"),
-    skillId: z.string().min(1),
-  })
-  .strict();
+export interface SelectorCardinality {
+  readonly min: number;
+  readonly max?: number | undefined;
+}
 
-const choiceRequirementSchema = z
+export interface ExactSkillSelector {
+  readonly type: "exact";
+  readonly ref:
+    | { readonly type: "standard"; readonly definitionId: SkillDefinitionId }
+    | {
+      readonly type: "predefined";
+      readonly definitionId: SkillDefinitionId;
+      readonly specializationId: SkillSpecializationId;
+    };
+}
+
+export interface SpecializationOfSkillSelector {
+  readonly type: "specialization-of";
+  readonly definitionId: SkillDefinitionId;
+  readonly exclude?: readonly ExactSkillSelector["ref"][] | undefined;
+}
+
+export interface NamedCustomSpecializationSelector {
+  readonly type: "named-custom-specialization";
+  readonly definitionId: SkillDefinitionId;
+  readonly name: LocalizedSkillName;
+}
+
+export interface OneOfSkillSelector {
+  readonly type: "one-of";
+  readonly selectors: readonly SkillSelector[];
+}
+
+export interface AnySkillSelector {
+  readonly type: "any-skill";
+  readonly exclude?: readonly SkillSelector[] | undefined;
+}
+
+export interface AllOfSkillSelector {
+  readonly type: "all-of";
+  readonly groups: readonly {
+    readonly selector: SkillSelector;
+    readonly cardinality: SelectorCardinality;
+  }[];
+}
+
+export type SkillSelector =
+  | ExactSkillSelector
+  | SpecializationOfSkillSelector
+  | NamedCustomSpecializationSelector
+  | OneOfSkillSelector
+  | AnySkillSelector
+  | AllOfSkillSelector;
+
+const selectorCardinalitySchema = z
   .object({
-    type: z.literal("choice"),
-    skillIds: z.array(z.string().min(1)).min(2),
-    choose: z.number().int().positive(),
+    min: z.number().int().positive(),
+    max: z.number().int().positive().optional(),
   })
   .strict()
-  .refine((value) => value.choose <= value.skillIds.length, {
-    message: "choose 不能超过候选技能数",
-    path: ["choose"],
+  .refine((value) => value.max === undefined || value.min <= value.max, {
+    message: "selector cardinality 的 min 不能高于 max",
+    path: ["min"],
   });
 
-const groupChoiceRequirementSchema = z
-  .object({
-    type: z.literal("group-choice"),
-    groupId: z.string().min(1),
-    choose: z.number().int().positive(),
-  })
-  .strict();
-
-const anySkillRequirementSchema = z
-  .object({
-    type: z.literal("any"),
-    count: z.number().int().positive(),
-    excludeSkillIds: z.array(z.string().min(1)).optional(),
-  })
-  .strict();
-
-const specializationRequirementSchema = z
-  .object({
-    type: z.literal("specialization"),
-    skillId: z.string().min(1),
-    specialization: z.string().min(1).optional(),
-    allowPlayerChoice: z.boolean(),
-  })
-  .strict();
-
-// 在正式导入 Standard COC7 职业前仍需用真实职业数据压力测试，不视为最终冻结版本。
-export const occupationSkillRequirementSchema = z.discriminatedUnion("type", [
-  fixedSkillRequirementSchema,
-  choiceRequirementSchema,
-  groupChoiceRequirementSchema,
-  anySkillRequirementSchema,
-  specializationRequirementSchema,
+const exactSkillRefSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("standard"), definitionId: skillDefinitionIdSchema }).strict(),
+  z.object({
+    type: z.literal("predefined"),
+    definitionId: skillDefinitionIdSchema,
+    specializationId: skillSpecializationIdSchema,
+  }).strict(),
 ]);
 
-export type FixedSkillRequirement = z.infer<typeof fixedSkillRequirementSchema>;
-export type ChoiceRequirement = z.infer<typeof choiceRequirementSchema>;
-export type GroupChoiceRequirement = z.infer<typeof groupChoiceRequirementSchema>;
-export type AnySkillRequirement = z.infer<typeof anySkillRequirementSchema>;
-export type SpecializationRequirement = z.infer<typeof specializationRequirementSchema>;
-export type OccupationSkillRequirement = z.infer<typeof occupationSkillRequirementSchema>;
+export const skillSelectorSchema: z.ZodType<SkillSelector> = z.lazy(() =>
+  z.discriminatedUnion("type", [
+    z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
+    z.object({
+      type: z.literal("specialization-of"),
+      definitionId: skillDefinitionIdSchema,
+      exclude: z.array(exactSkillRefSchema).min(1).optional(),
+    }).strict(),
+    z.object({
+      type: z.literal("named-custom-specialization"),
+      definitionId: skillDefinitionIdSchema,
+      name: localizedSkillNameSchema,
+    }).strict(),
+    z.object({
+      type: z.literal("one-of"),
+      selectors: z.array(skillSelectorSchema).min(2),
+    }).strict(),
+    z.object({
+      type: z.literal("any-skill"),
+      exclude: z.array(skillSelectorSchema).min(1).optional(),
+    }).strict(),
+    z.object({
+      type: z.literal("all-of"),
+      groups: z.array(z.object({
+        selector: skillSelectorSchema,
+        cardinality: selectorCardinalitySchema,
+      }).strict()).min(2),
+    }).strict(),
+  ]),
+);
+
+export const occupationRequirementSchema = z
+  .object({
+    id: stableMachineIdSchema,
+    selector: skillSelectorSchema,
+    cardinality: selectorCardinalitySchema,
+    guidance: localizedSkillNameSchema.optional(),
+    keeperReview: z.boolean().optional(),
+  })
+  .strict();
 
 export const attributePrerequisiteSchema = z
   .object({
@@ -132,23 +210,26 @@ export const occupationPrerequisiteSchema = z.discriminatedUnion("type", [
   attributePrerequisiteSchema,
 ]);
 
-export type AttributePrerequisite = z.infer<typeof attributePrerequisiteSchema>;
-export type OccupationPrerequisite = z.infer<typeof occupationPrerequisiteSchema>;
+export const occupationEraAvailabilitySchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("all") }).strict(),
+  z.object({ type: z.literal("specific"), eraIds: z.array(eraIdSchema).min(1) }).strict(),
+]);
 
-export const occupationSchema = z
+export const occupationDefinitionSchema = z
   .object({
     version: z.literal(1),
-    id: z.string().min(1),
-    name: z.string().min(1),
-    aliases: z.array(z.string().min(1)).optional(),
+    id: z.union([stableMachineIdSchema, z.string().uuid()]),
+    variantOf: stableMachineIdSchema.optional(),
+    name: localizedSkillNameSchema,
+    aliases: localizedSkillAliasesSchema.optional(),
     category: occupationCategoryIdSchema,
     tags: z.array(occupationTagIdSchema).optional(),
-    sources: z.array(sourceReferenceSchema).min(1),
-    eras: z.array(eraIdSchema).min(1),
+    sourceRefs: z.array(sourceReferenceSchema).min(1),
+    era: occupationEraAvailabilitySchema,
     creditRating: z
       .object({
-        min: z.number().finite().nonnegative(),
-        max: z.number().finite().nonnegative(),
+        min: z.number().int().min(0).max(99),
+        max: z.number().int().min(0).max(99),
       })
       .strict()
       .refine((value) => value.min <= value.max, {
@@ -156,15 +237,46 @@ export const occupationSchema = z
         path: ["min"],
       }),
     pointFormula: occupationPointFormulaSchema,
-    skillRequirements: z.array(occupationSkillRequirementSchema),
+    skillRequirements: z.array(occupationRequirementSchema),
     prerequisites: z.array(occupationPrerequisiteSchema).optional(),
-    keeperApproval: z.boolean().optional(),
-    recommendedContacts: z.array(z.string().min(1)).optional(),
-    summary: z.string().min(1).optional(),
+    approval: z.object({
+      reason: z.literal("occupation-definition"),
+      guidance: localizedSkillNameSchema.optional(),
+    }).strict().optional(),
+    recommendedContacts: z.array(z.string().trim().min(1)).optional(),
+    summary: localizedSkillNameSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((occupation, context) => {
+    if (occupation.variantOf === occupation.id) {
+      context.addIssue({
+        code: "custom",
+        message: "职业 variantOf 不能引用自身",
+        path: ["variantOf"],
+      });
+    }
+    const requirementIds = new Set<string>();
+    occupation.skillRequirements.forEach((requirement, index) => {
+      if (requirementIds.has(requirement.id)) {
+        context.addIssue({
+          code: "custom",
+          message: `重复的职业 requirement ID：${requirement.id}`,
+          path: ["skillRequirements", index, "id"],
+        });
+      }
+      requirementIds.add(requirement.id);
+    });
+  });
+
+// 保留旧导出名，减少领域重构对现有调用方的机械影响。
+export const occupationSchema = occupationDefinitionSchema;
 
 export type OccupationCategoryId = z.infer<typeof occupationCategoryIdSchema>;
 export type OccupationTagId = z.infer<typeof occupationTagIdSchema>;
 export type EraId = z.infer<typeof eraIdSchema>;
-export type Occupation = z.infer<typeof occupationSchema>;
+export type OccupationEraAvailability = z.infer<typeof occupationEraAvailabilitySchema>;
+export type OccupationRequirement = z.infer<typeof occupationRequirementSchema>;
+export type AttributePrerequisite = z.infer<typeof attributePrerequisiteSchema>;
+export type OccupationPrerequisite = z.infer<typeof occupationPrerequisiteSchema>;
+export type OccupationDefinition = z.infer<typeof occupationDefinitionSchema>;
+export type Occupation = OccupationDefinition;

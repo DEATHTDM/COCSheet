@@ -17,6 +17,11 @@ import { rollLuck, validateRolledLuck } from "../../coc7/rules/luck";
 import { systemRandomSource, type RandomSource } from "../../coc7/rules/random";
 import { clampSanityToMaximum, deriveStandardCharacterValues } from "../../coc7/rules/derived";
 import {
+  finalizeSkillAllocation,
+  validateCustomOccupationDefinition,
+  type FinalizeSkillAllocationResult,
+} from "../../coc7/rules/occupationSkills";
+import {
   characteristicValueSchema,
   characteristicValuesSchema,
   type CharacteristicId,
@@ -24,8 +29,11 @@ import {
   type PartialCharacteristicValues,
 } from "../../coc7/types/attribute";
 import type { Character } from "../../coc7/types/character";
+import { occupationDefinitionSchema, type OccupationDefinition } from "../../coc7/types/occupation";
 import type { SettingId } from "../../coc7/types/setting";
+import { getOccupationRegistry } from "../../content/occupationRegistry";
 import { getSettingPackOrThrow } from "../../content/registry";
+import { getSkillRegistry } from "../../content/skillRegistry";
 import { creationSessionRepository } from "../../db/repositories/creationSessionRepository";
 import { creationWorkflowRepository } from "../../db/repositories/creationWorkflowRepository";
 import type { CharacterRecord, CreationSessionRecord } from "../../db/records";
@@ -42,6 +50,8 @@ import type {
   CreationSession,
   CreationStepId,
 } from "../types/creationSession";
+import { replaceOccupationSelection, resetOccupationAllocation } from "../rules/skillDraft";
+import type { SkillCreationState } from "../types/skillCreation";
 
 function emptyAgeAdjustment(age: number): AgeAdjustmentState {
   return { age, reductionAllocation: {}, eduImprovements: [] };
@@ -116,6 +126,112 @@ export const useCreationStore = defineStore("creation", () => {
 
   async function setCurrentStep(step: CreationStepId): Promise<void> {
     await persist({ ...requireSession(), currentStep: step });
+  }
+
+  function emptySkillCreationState(): SkillCreationState {
+    return { requirementSelections: [], allocations: [], keeperApprovals: [] };
+  }
+
+  async function selectCatalogOccupation(occupationId: string): Promise<void> {
+    const session = requireSession();
+    const definition = getOccupationRegistry(session.settingId).get(occupationId);
+    if (!definition) throw new Error(`找不到职业：${occupationId}`);
+    await persist({
+      ...replaceOccupationSelection(session, {
+        kind: "catalog",
+        selectedOccupationId: definition.id,
+        definitionSnapshot: definition,
+      }),
+      skills: session.skills ?? emptySkillCreationState(),
+    });
+  }
+
+  async function selectCustomOccupation(definition: OccupationDefinition): Promise<void> {
+    const session = requireSession();
+    const parsed = occupationDefinitionSchema.parse(definition);
+    const errors = validateCustomOccupationDefinition(parsed);
+    if (errors.length > 0) throw new Error(errors.join("；"));
+    await persist({
+      ...replaceOccupationSelection(session, {
+        kind: "custom",
+        selectedOccupationId: parsed.id,
+        definitionSnapshot: parsed,
+      }),
+      skills: session.skills ?? emptySkillCreationState(),
+    });
+  }
+
+  async function setSkillCreationState(skills: SkillCreationState): Promise<void> {
+    await persist({ ...requireSession(), skills });
+  }
+
+  async function resetCurrentOccupationAllocation(): Promise<void> {
+    const session = requireSession();
+    if (!session.skills) return;
+    await persist({ ...session, skills: resetOccupationAllocation(session.skills) });
+  }
+
+  function getSkillFinalizePlan(character: Character): FinalizeSkillAllocationResult {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) throw new Error("职业或技能创建状态尚未初始化");
+    return finalizeSkillAllocation({
+      character,
+      occupation: session.occupation,
+      state: session.skills,
+      skillDefinitions: getSkillRegistry(session.settingId).definitions,
+      ...(session.presetSnapshot ? { preset: session.presetSnapshot } : {}),
+    });
+  }
+
+  async function completeSkills(
+    character: Character,
+    acknowledgeWarnings = false,
+  ): Promise<CharacterRecord> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) throw new Error("职业或技能创建状态尚未初始化");
+    const plan = getSkillFinalizePlan(character);
+    if (!plan.valid) {
+      const blockers = [
+        ...plan.errors.map((error) => error.message),
+        ...plan.approvals.map((approval) => approval.message),
+      ];
+      throw new Error(blockers.join("；"));
+    }
+    if (plan.warnings.length > 0 && !acknowledgeWarnings) {
+      throw new Error(`完成前必须显式确认：${plan.warnings.map((warning) => warning.message).join("；")}`);
+    }
+
+    const selection = session.occupation;
+    const definition = selection.definitionSnapshot;
+    const occupation = selection.kind === "catalog"
+      ? {
+        kind: "catalog" as const,
+        id: selection.selectedOccupationId,
+        displayNameSnapshot: definition.name,
+        ...(definition.variantOf ? { variantOf: definition.variantOf } : {}),
+        sourceRefs: definition.sourceRefs,
+      }
+      : {
+        kind: "custom" as const,
+        id: selection.selectedOccupationId,
+        displayNameSnapshot: definition.name,
+        sourceRefs: definition.sourceRefs,
+      };
+    const completedSession: CreationSession = {
+      ...session,
+      currentStep: "review",
+      skills: {
+        ...session.skills,
+        // 首次结构化 finalize 后记录明确来源，返回 skills 再次计算时不会把自己的结果误判为 Phase 4 手动状态。
+        existingSkillResolution: { action: "rebuild-structured", confirmed: true },
+      },
+    };
+    const records = await creationWorkflowRepository.updateCharacterWithSession(
+      { ...character, occupation, skills: [...plan.skills] },
+      completedSession,
+    );
+    current.value = records.session;
+    return records.character;
   }
 
   async function setAge(age: number): Promise<void> {
@@ -369,6 +485,12 @@ export const useCreationStore = defineStore("creation", () => {
     start,
     loadByCharacterId,
     setCurrentStep,
+    selectCatalogOccupation,
+    selectCustomOccupation,
+    setSkillCreationState,
+    resetCurrentOccupationAllocation,
+    getSkillFinalizePlan,
+    completeSkills,
     setAge,
     chooseGenerationMethod,
     generateCurrentMethod,

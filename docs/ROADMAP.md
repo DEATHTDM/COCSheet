@@ -60,14 +60,36 @@ Status: Completed
 
 ## Phase 5 — Occupation Engine & Standard Occupations
 
-Status: Planned
+Status: In Progress
 
-- pressure-test the Occupation schema
-- occupation formulas
-- occupation skill selectors
-- Standard occupation dataset
-- occupation search, categories, and tags
-- occupation point allocation
+### Phase 5A — Occupation Engine Foundation
+
+Status: Completed
+
+- pressure-tested Occupation requirement and SkillSelector schema
+- closed occupation formulas and pure budget/finalize rules
+- Occupation Registry and era validation
+- CreationSession occupation snapshot and skill allocation state
+- Credit Rating, approval reasons, manual-skill conflict and Preset skill limit foundations
+- atomic Character.skills + review completion path
+- source-annotated real occupation test fixtures only
+
+### Phase 5B — Verified Standard Occupation Data
+
+Status: Not Started
+
+- verify and enter the complete Standard occupation dataset
+- preserve mechanical source variants and source/page metadata
+- do not treat Phase 5A test fixtures as a partial production catalog
+
+### Phase 5C — Creation UI
+
+Status: Not Started
+
+- occupation search, categories, tags and era filters
+- requirement/custom specialization selection
+- occupation/interest point allocation, approvals and warnings
+- explicit handling of stale drafts and Phase 4 manual skill conflicts
 
 ## Later
 

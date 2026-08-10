@@ -3,7 +3,7 @@ import { z } from "zod";
 import { characteristicIdSchema } from "./attribute";
 import { sourceReferenceSchema } from "./source";
 
-const stableMachineIdSchema = z
+export const stableMachineIdSchema = z
   .string()
   .min(1)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "必须使用小写 kebab-case 稳定机器 ID");
@@ -179,6 +179,7 @@ export const characterSkillsSchema = z.array(characterSkillSchema).superRefine((
 
 export type SkillDefinitionId = z.infer<typeof skillDefinitionIdSchema>;
 export type SkillSpecializationId = z.infer<typeof skillSpecializationIdSchema>;
+export type LocalizedSkillName = z.infer<typeof localizedSkillNameSchema>;
 export type LocalizedSkillAliases = z.infer<typeof localizedSkillAliasesSchema>;
 export type SkillAvailability = z.infer<typeof skillAvailabilitySchema>;
 export type SkillBaseValueRule = z.infer<typeof skillBaseValueRuleSchema>;

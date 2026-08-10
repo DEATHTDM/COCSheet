@@ -1,0 +1,514 @@
+import type { CharacteristicValues } from "../types/attribute";
+import type { Character } from "../types/character";
+import {
+  occupationDefinitionSchema,
+  type NamedCustomSpecializationSelector,
+  type OccupationDefinition,
+  type OccupationRequirement,
+  type SelectorCardinality,
+  type SkillSelector,
+} from "../types/occupation";
+import {
+  skillRefSchema,
+  type CharacterSkill,
+  type SkillDefinition,
+  type SkillRef,
+} from "../types/skill";
+import type { CreationPreset } from "../../creation/types/creationPreset";
+import type {
+  ApprovalReasonId,
+  KeeperApprovalGrant,
+  OccupationSelection,
+  SkillCreationState,
+} from "../../creation/types/skillCreation";
+import { evaluateOccupationPointFormula } from "./occupationPointFormula";
+import { evaluateOccupationPrerequisite } from "./occupationPrerequisite";
+import { calculateSkillBaseValue, getSkillBaseValueRule, getSkillRefKey } from "./skills";
+
+export type SkillAllocationErrorCode =
+  | "missing-characteristics"
+  | "existing-manual-skills"
+  | "custom-occupation-too-many-requirements"
+  | "occupation-prerequisite"
+  | "preset-occupation-banned"
+  | "missing-requirement-selection"
+  | "stale-requirement-selection"
+  | "requirement-cardinality"
+  | "selector-mismatch"
+  | "duplicate-skill-selection"
+  | "invalid-skill-ref"
+  | "occupation-skill-not-eligible"
+  | "creation-points-forbidden"
+  | "occupation-budget-exceeded"
+  | "interest-budget-exceeded"
+  | "occupation-skill-final-limit"
+  | "interest-only-skill-final-limit"
+  | "global-skill-final-limit";
+
+export type SkillAllocationWarningCode =
+  | "unused-occupation-points"
+  | "unused-interest-points";
+
+export interface SkillAllocationIssue {
+  readonly code: SkillAllocationErrorCode | SkillAllocationWarningCode;
+  readonly message: string;
+  readonly requirementId?: string;
+  readonly refKey?: string;
+}
+
+export interface ApprovalRequirement {
+  readonly reason: ApprovalReasonId;
+  readonly subjectId?: string;
+  readonly message: string;
+}
+
+export interface StructuredAllocationConflict {
+  readonly hasConflict: boolean;
+  readonly needsExplicitAdoptionOrReset: boolean;
+  readonly existingSkillRefs: readonly SkillRef[];
+}
+
+export interface FinalizeSkillAllocationInput {
+  readonly character: Character;
+  readonly occupation: OccupationSelection;
+  readonly state: SkillCreationState;
+  readonly skillDefinitions: readonly SkillDefinition[];
+  readonly preset?: CreationPreset;
+}
+
+export interface FinalizeSkillAllocationResult {
+  readonly valid: boolean;
+  readonly errors: readonly SkillAllocationIssue[];
+  readonly warnings: readonly SkillAllocationIssue[];
+  readonly approvals: readonly ApprovalRequirement[];
+  readonly occupationBudget: number;
+  readonly interestBudget: number;
+  readonly remainingOccupationPoints: number;
+  readonly remainingInterestPoints: number;
+  readonly skills: readonly CharacterSkill[];
+}
+
+function normalizeDisplayName(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+export function instantiateNamedCustomSpecialization(
+  selector: NamedCustomSpecializationSelector,
+  specializationId: string,
+  displayName = selector.name.en,
+): SkillRef {
+  return skillRefSchema.parse({
+    type: "custom",
+    definitionId: selector.definitionId,
+    specializationId,
+    displayName,
+  });
+}
+
+export function matchesSkillSelector(ref: SkillRef, selector: SkillSelector): boolean {
+  switch (selector.type) {
+    case "exact":
+      return getSkillRefKey(ref) === getSkillRefKey(selector.ref);
+    case "specialization-of":
+      return ref.type !== "standard" &&
+        ref.definitionId === selector.definitionId &&
+        !selector.exclude?.some((excluded) => getSkillRefKey(excluded) === getSkillRefKey(ref));
+    case "named-custom-specialization": {
+      if (ref.type !== "custom" || ref.definitionId !== selector.definitionId) return false;
+      const actual = normalizeDisplayName(ref.displayName);
+      return [selector.name.zh, selector.name.en]
+        .map(normalizeDisplayName)
+        .includes(actual);
+    }
+    case "one-of":
+      return selector.selectors.some((candidate) => matchesSkillSelector(ref, candidate));
+    case "any-skill":
+      return !selector.exclude?.some((excluded) => matchesSkillSelector(ref, excluded));
+    case "all-of":
+      return selector.groups.some((group) => matchesSkillSelector(ref, group.selector));
+  }
+}
+
+function cardinalityMatches(count: number, cardinality: SelectorCardinality): boolean {
+  return count >= cardinality.min && (cardinality.max === undefined || count <= cardinality.max);
+}
+
+function canAssignAllOf(
+  refs: readonly SkillRef[],
+  groups: Extract<SkillSelector, { type: "all-of" }>["groups"],
+): boolean {
+  const counts = groups.map(() => 0);
+
+  function assign(index: number): boolean {
+    if (index === refs.length) {
+      return groups.every((group, groupIndex) => cardinalityMatches(counts[groupIndex] ?? 0, group.cardinality));
+    }
+    const ref = refs[index];
+    if (!ref) return false;
+    for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+      const group = groups[groupIndex];
+      if (!group || !matchesSkillSelector(ref, group.selector)) continue;
+      const maximum = group.cardinality.max;
+      if (maximum !== undefined && (counts[groupIndex] ?? 0) >= maximum) continue;
+      counts[groupIndex] = (counts[groupIndex] ?? 0) + 1;
+      if (assign(index + 1)) return true;
+      counts[groupIndex] = (counts[groupIndex] ?? 1) - 1;
+    }
+    return false;
+  }
+
+  return assign(0);
+}
+
+export function validateOccupationRequirementSelection(
+  requirement: OccupationRequirement,
+  refs: readonly SkillRef[],
+): SkillAllocationIssue[] {
+  const errors: SkillAllocationIssue[] = [];
+  if (!cardinalityMatches(refs.length, requirement.cardinality)) {
+    errors.push({
+      code: "requirement-cardinality",
+      requirementId: requirement.id,
+      message: `职业需求 ${requirement.id} 的选择数量不符合 ${requirement.cardinality.min}～${requirement.cardinality.max ?? "无上限"}`,
+    });
+  }
+  const keys = new Set<string>();
+  for (const ref of refs) {
+    const key = getSkillRefKey(ref);
+    if (keys.has(key)) {
+      errors.push({
+        code: "duplicate-skill-selection",
+        requirementId: requirement.id,
+        refKey: key,
+        message: `职业需求 ${requirement.id} 重复选择了 ${key}`,
+      });
+    }
+    keys.add(key);
+  }
+  const selectorMatches = requirement.selector.type === "all-of"
+    ? canAssignAllOf(refs, requirement.selector.groups)
+    : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
+  if (!selectorMatches) {
+    errors.push({
+      code: "selector-mismatch",
+      requirementId: requirement.id,
+      message: `职业需求 ${requirement.id} 的技能选择不符合 selector`,
+    });
+  }
+  return errors;
+}
+
+export function calculateInterestSkillBudget(characteristics: CharacteristicValues): number {
+  return characteristics.INT * 2;
+}
+
+export function detectStructuredAllocationConflict(character: Character): StructuredAllocationConflict {
+  const existingSkillRefs = character.skills?.map((skill) => skill.ref) ?? [];
+  const hasConflict = existingSkillRefs.length > 0;
+  return {
+    hasConflict,
+    needsExplicitAdoptionOrReset: hasConflict,
+    existingSkillRefs,
+  };
+}
+
+export function validateCustomOccupationDefinition(occupation: OccupationDefinition): readonly string[] {
+  const parsed = occupationDefinitionSchema.safeParse(occupation);
+  const errors = parsed.success ? [] : parsed.error.issues.map((issue) => issue.message);
+  if (!occupation.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+    errors.push("自定义职业必须使用 UUID identity");
+  }
+  if (occupation.skillRequirements.length > 8) errors.push("自定义职业最多允许八个 requirement slots");
+  return errors;
+}
+
+function hasApproval(
+  grants: readonly KeeperApprovalGrant[],
+  reason: ApprovalReasonId,
+  subjectId?: string,
+): boolean {
+  return grants.some((grant) =>
+    grant.reason === reason &&
+    (subjectId === undefined || grant.subjectId === subjectId),
+  );
+}
+
+function addApproval(
+  approvals: ApprovalRequirement[],
+  requirement: ApprovalRequirement,
+): void {
+  if (!approvals.some((existing) =>
+    existing.reason === requirement.reason && existing.subjectId === requirement.subjectId,
+  )) {
+    approvals.push(requirement);
+  }
+}
+
+function addSkillRef(map: Map<string, SkillRef>, ref: SkillRef): void {
+  map.set(getSkillRefKey(ref), ref);
+}
+
+export function finalizeSkillAllocation(
+  input: FinalizeSkillAllocationInput,
+): FinalizeSkillAllocationResult {
+  const { character, occupation, state, preset } = input;
+  const definition = occupation.definitionSnapshot;
+  const errors: SkillAllocationIssue[] = [];
+  const warnings: SkillAllocationIssue[] = [];
+  const approvals: ApprovalRequirement[] = [];
+  const definitions = new Map(input.skillDefinitions.map((skill) => [skill.id, skill]));
+  const characteristics = character.characteristics;
+
+  if (!characteristics) {
+    errors.push({ code: "missing-characteristics", message: "完成技能分配前必须存在最终属性" });
+    return {
+      valid: false,
+      errors,
+      warnings,
+      approvals,
+      occupationBudget: 0,
+      interestBudget: 0,
+      remainingOccupationPoints: 0,
+      remainingInterestPoints: 0,
+      skills: [],
+    };
+  }
+
+  const conflict = detectStructuredAllocationConflict(character);
+  if (conflict.hasConflict && state.existingSkillResolution?.action !== "rebuild-structured") {
+    errors.push({
+      code: "existing-manual-skills",
+      message: "已有手动 Character.skills；结构化分配需要显式采用并重建技能",
+    });
+  }
+  if (occupation.kind === "custom" && definition.skillRequirements.length > 8) {
+    errors.push({
+      code: "custom-occupation-too-many-requirements",
+      message: "自定义职业最多允许八个 requirement slots",
+    });
+  }
+  for (const prerequisite of definition.prerequisites ?? []) {
+    if (!evaluateOccupationPrerequisite(prerequisite, characteristics)) {
+      errors.push({ code: "occupation-prerequisite", message: `不满足职业 ${definition.id} 的属性前置条件` });
+    }
+  }
+
+  if (preset?.occupationPolicy?.bannedOccupationIds?.includes(occupation.selectedOccupationId)) {
+    errors.push({ code: "preset-occupation-banned", message: "当前 Preset 禁止该职业" });
+  }
+  if (preset?.occupationPolicy?.approvalRequiredOccupationIds?.includes(occupation.selectedOccupationId) &&
+    !hasApproval(state.keeperApprovals, "preset-occupation-policy", occupation.selectedOccupationId)) {
+    addApproval(approvals, {
+      reason: "preset-occupation-policy",
+      subjectId: occupation.selectedOccupationId,
+      message: "当前 Preset 要求 Keeper 批准该职业",
+    });
+  }
+  if (occupation.kind === "custom") {
+    if (preset?.allowCustomOccupation === false) {
+      errors.push({ code: "preset-occupation-banned", message: "当前 Preset 禁止自定义职业" });
+    } else if (preset?.allowCustomOccupation === "keeper-approval" &&
+      !hasApproval(state.keeperApprovals, "custom-occupation", occupation.selectedOccupationId)) {
+      addApproval(approvals, {
+        reason: "custom-occupation",
+        subjectId: occupation.selectedOccupationId,
+        message: "当前 Preset 要求 Keeper 批准自定义职业",
+      });
+    }
+  }
+  if (definition.approval &&
+    !hasApproval(state.keeperApprovals, "occupation-definition", occupation.selectedOccupationId)) {
+    addApproval(approvals, {
+      reason: "occupation-definition",
+      subjectId: occupation.selectedOccupationId,
+      message: "职业定义本身要求 Keeper 批准",
+    });
+  }
+
+  const requirements = new Map(definition.skillRequirements.map((requirement) => [requirement.id, requirement]));
+  const selections = new Map(state.requirementSelections.map((selection) => [selection.requirementId, selection]));
+  const occupationEligible = new Set<string>();
+  const selectedSkillRefs = new Map<string, SkillRef>();
+  const usedAcrossRequirements = new Map<string, string>();
+
+  for (const selection of state.requirementSelections) {
+    if (!requirements.has(selection.requirementId)) {
+      errors.push({
+        code: "stale-requirement-selection",
+        requirementId: selection.requirementId,
+        message: `职业切换后遗留了无法匹配的 requirement selection：${selection.requirementId}`,
+      });
+    }
+  }
+
+  for (const requirement of definition.skillRequirements) {
+    const selection = selections.get(requirement.id);
+    if (!selection) {
+      errors.push({
+        code: "missing-requirement-selection",
+        requirementId: requirement.id,
+        message: `尚未完成职业需求：${requirement.id}`,
+      });
+      continue;
+    }
+    const selectionErrors = validateOccupationRequirementSelection(requirement, selection.refs);
+    errors.push(...selectionErrors);
+    for (const ref of selection.refs) {
+      const key = getSkillRefKey(ref);
+      const previousRequirement = usedAcrossRequirements.get(key);
+      if (previousRequirement) {
+        errors.push({
+          code: "duplicate-skill-selection",
+          requirementId: requirement.id,
+          refKey: key,
+          message: `${key} 已用于职业需求 ${previousRequirement}，不能再次满足 ${requirement.id}`,
+        });
+      } else {
+        usedAcrossRequirements.set(key, requirement.id);
+        if (selectionErrors.length === 0) {
+          occupationEligible.add(key);
+          addSkillRef(selectedSkillRefs, ref);
+        }
+      }
+    }
+    if (requirement.keeperReview &&
+      !hasApproval(state.keeperApprovals, "fuzzy-requirement", requirement.id)) {
+      addApproval(approvals, {
+        reason: "fuzzy-requirement",
+        subjectId: requirement.id,
+        message: `职业需求 ${requirement.id} 需要 Keeper review`,
+      });
+    }
+  }
+
+  const creditRatingRef: SkillRef = { type: "standard", definitionId: "credit-rating" };
+  const creditRatingKey = getSkillRefKey(creditRatingRef);
+  occupationEligible.add(creditRatingKey);
+  addSkillRef(selectedSkillRefs, creditRatingRef);
+
+  let spentOccupationPoints = 0;
+  let spentInterestPoints = 0;
+  const allocations = new Map(state.allocations.map((allocation) => [getSkillRefKey(allocation.ref), allocation]));
+  for (const allocation of state.allocations) {
+    const key = getSkillRefKey(allocation.ref);
+    addSkillRef(selectedSkillRefs, allocation.ref);
+    spentOccupationPoints += allocation.occupationPoints;
+    spentInterestPoints += allocation.interestPoints;
+    if (allocation.occupationPoints > 0 && !occupationEligible.has(key)) {
+      errors.push({
+        code: "occupation-skill-not-eligible",
+        refKey: key,
+        message: `${key} 不是当前职业选择产生的本职技能`,
+      });
+    }
+    const skillDefinition = definitions.get(allocation.ref.definitionId);
+    if (!skillDefinition) {
+      errors.push({ code: "invalid-skill-ref", refKey: key, message: `找不到技能定义：${allocation.ref.definitionId}` });
+      continue;
+    }
+    try {
+      getSkillBaseValueRule(skillDefinition, allocation.ref);
+    } catch (error: unknown) {
+      errors.push({
+        code: "invalid-skill-ref",
+        refKey: key,
+        message: error instanceof Error ? error.message : `技能引用无效：${key}`,
+      });
+    }
+    const allocatedPoints = allocation.occupationPoints + allocation.interestPoints;
+    if (allocatedPoints > 0 && skillDefinition.creationPointPolicy === "forbidden") {
+      errors.push({ code: "creation-points-forbidden", refKey: key, message: `${key} 不允许分配创建期技能点` });
+    }
+    if (allocatedPoints > 0 && skillDefinition.creationPointPolicy === "keeper-approval" &&
+      !hasApproval(
+        state.keeperApprovals,
+        skillDefinition.id === "cthulhu-mythos"
+          ? "cthulhu-mythos-allocation"
+          : "skill-creation-point-policy",
+        key,
+      )) {
+      const reason = skillDefinition.id === "cthulhu-mythos"
+        ? "cthulhu-mythos-allocation" as const
+        : "skill-creation-point-policy" as const;
+      addApproval(approvals, {
+        reason,
+        subjectId: key,
+        message: `${key} 的创建期点数需要 Keeper 批准`,
+      });
+    }
+  }
+
+  const occupationBudget = evaluateOccupationPointFormula(definition.pointFormula, characteristics);
+  const interestBudget = calculateInterestSkillBudget(characteristics);
+  if (spentOccupationPoints > occupationBudget) {
+    errors.push({ code: "occupation-budget-exceeded", message: "职业技能点超过预算" });
+  } else if (spentOccupationPoints < occupationBudget) {
+    warnings.push({ code: "unused-occupation-points", message: `尚有 ${occupationBudget - spentOccupationPoints} 点职业技能点未分配` });
+  }
+  if (spentInterestPoints > interestBudget) {
+    errors.push({ code: "interest-budget-exceeded", message: "兴趣技能点超过预算" });
+  } else if (spentInterestPoints < interestBudget) {
+    warnings.push({ code: "unused-interest-points", message: `尚有 ${interestBudget - spentInterestPoints} 点兴趣技能点未分配` });
+  }
+
+  const finalizedSkills: CharacterSkill[] = [];
+  for (const [key, ref] of [...selectedSkillRefs.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    const skillDefinition = definitions.get(ref.definitionId);
+    if (!skillDefinition) {
+      if (!errors.some((issue) => issue.code === "invalid-skill-ref" && issue.refKey === key)) {
+        errors.push({ code: "invalid-skill-ref", refKey: key, message: `找不到技能定义：${ref.definitionId}` });
+      }
+      continue;
+    }
+    let baseValue: number;
+    try {
+      baseValue = calculateSkillBaseValue(getSkillBaseValueRule(skillDefinition, ref), characteristics);
+    } catch (error: unknown) {
+      if (!errors.some((issue) => issue.code === "invalid-skill-ref" && issue.refKey === key)) {
+        errors.push({
+          code: "invalid-skill-ref",
+          refKey: key,
+          message: error instanceof Error ? error.message : `技能引用无效：${key}`,
+        });
+      }
+      continue;
+    }
+    const allocation = allocations.get(key);
+    const currentValue = baseValue + (allocation?.occupationPoints ?? 0) + (allocation?.interestPoints ?? 0);
+    const limits = preset?.skillLimits;
+    if (limits?.maxOccupationSkillFinalValue !== undefined &&
+      occupationEligible.has(key) && currentValue > limits.maxOccupationSkillFinalValue) {
+      errors.push({ code: "occupation-skill-final-limit", refKey: key, message: `${key} 超过职业技能最终值上限` });
+    }
+    if (limits?.maxInterestOnlySkillFinalValue !== undefined &&
+      !occupationEligible.has(key) && currentValue > limits.maxInterestOnlySkillFinalValue) {
+      errors.push({ code: "interest-only-skill-final-limit", refKey: key, message: `${key} 超过非职业兴趣技能最终值上限` });
+    }
+    if (limits?.maxSkillFinalValue !== undefined && currentValue > limits.maxSkillFinalValue) {
+      errors.push({ code: "global-skill-final-limit", refKey: key, message: `${key} 超过全局技能最终值上限` });
+    }
+    finalizedSkills.push({ ref, currentValue, improvementChecked: false });
+  }
+
+  const creditRating = finalizedSkills.find((skill) => getSkillRefKey(skill.ref) === creditRatingKey)?.currentValue ?? 0;
+  if ((creditRating < definition.creditRating.min || creditRating > definition.creditRating.max) &&
+    !state.creditRatingOverride?.approved) {
+    addApproval(approvals, {
+      reason: "credit-rating-override",
+      subjectId: creditRatingKey,
+      message: `最终 Credit Rating ${creditRating} 超出职业范围 ${definition.creditRating.min}～${definition.creditRating.max}`,
+    });
+  }
+
+  return {
+    valid: errors.length === 0 && approvals.length === 0,
+    errors,
+    warnings,
+    approvals,
+    occupationBudget,
+    interestBudget,
+    remainingOccupationPoints: occupationBudget - spentOccupationPoints,
+    remainingInterestPoints: interestBudget - spentInterestPoints,
+    skills: finalizedSkills,
+  };
+}

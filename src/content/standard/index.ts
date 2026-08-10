@@ -5,6 +5,7 @@ export const standardSettingPack: SettingPack = {
   version: 1,
   id: "standard",
   name: "Standard COC7",
+  eras: ["classic-1920s", "modern"],
   occupations: [],
   skills: [...standardSkillDefinitions],
 };
