@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { attributeIdSchema } from "./attribute";
+import { characteristicIdSchema } from "./attribute";
 import { sourceReferenceSchema } from "./source";
 
 export const occupationCategoryIds = [
@@ -24,7 +24,7 @@ export const eraIdSchema = z.string().min(1);
 export const attributeFormulaSchema = z
   .object({
     type: z.literal("attribute"),
-    attribute: attributeIdSchema,
+    attribute: characteristicIdSchema,
     multiplier: z.number().finite().positive(),
   })
   .strict();
@@ -32,7 +32,7 @@ export const attributeFormulaSchema = z
 export const bestOfFormulaSchema = z
   .object({
     type: z.literal("best-of"),
-    attributes: z.array(attributeIdSchema).min(2),
+    attributes: z.array(characteristicIdSchema).min(2),
     multiplier: z.number().finite().positive(),
   })
   .strict();
@@ -103,6 +103,7 @@ const specializationRequirementSchema = z
   })
   .strict();
 
+// 在正式导入 Standard COC7 职业前仍需用真实职业数据压力测试，不视为最终冻结版本。
 export const occupationSkillRequirementSchema = z.discriminatedUnion("type", [
   fixedSkillRequirementSchema,
   choiceRequirementSchema,
@@ -121,7 +122,7 @@ export type OccupationSkillRequirement = z.infer<typeof occupationSkillRequireme
 export const attributePrerequisiteSchema = z
   .object({
     type: z.literal("attribute"),
-    attribute: attributeIdSchema,
+    attribute: characteristicIdSchema,
     operator: z.enum([">", ">=", "<", "<=", "=="]),
     value: z.number().finite(),
   })

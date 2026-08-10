@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { AttributeValues } from "../types/attribute";
+import type { CharacteristicValues } from "../types/attribute";
+import { occupationPrerequisiteSchema } from "../types/occupation";
 import { evaluateOccupationPrerequisite } from "./occupationPrerequisite";
 
-const attributes: AttributeValues = {
+const attributes: CharacteristicValues = {
   STR: 75,
   CON: 50,
   SIZ: 85,
@@ -12,7 +13,6 @@ const attributes: AttributeValues = {
   INT: 65,
   POW: 50,
   EDU: 60,
-  LUCK: 45,
 };
 
 describe("evaluateOccupationPrerequisite", () => {
@@ -32,5 +32,16 @@ describe("evaluateOccupationPrerequisite", () => {
         attributes,
       ),
     ).toBe(true);
+  });
+
+  it("拒绝将 LUCK 用作职业属性前置条件", () => {
+    expect(
+      occupationPrerequisiteSchema.safeParse({
+        type: "attribute",
+        attribute: "LUCK",
+        operator: ">",
+        value: 70,
+      }).success,
+    ).toBe(false);
   });
 });

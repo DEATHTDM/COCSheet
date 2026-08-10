@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { AttributeValues } from "../types/attribute";
-import type { OccupationPointFormula } from "../types/occupation";
+import type { CharacteristicValues } from "../types/attribute";
+import {
+  occupationPointFormulaSchema,
+  type OccupationPointFormula,
+} from "../types/occupation";
 import { evaluateOccupationPointFormula } from "./occupationPointFormula";
 
-const attributes: AttributeValues = {
+const attributes: CharacteristicValues = {
   STR: 65,
   CON: 50,
   SIZ: 55,
@@ -13,7 +16,6 @@ const attributes: AttributeValues = {
   INT: 60,
   POW: 45,
   EDU: 75,
-  LUCK: 40,
 };
 
 describe("evaluateOccupationPointFormula", () => {
@@ -61,5 +63,15 @@ describe("evaluateOccupationPointFormula", () => {
     };
 
     expect(evaluateOccupationPointFormula(formula, attributes)).toBe(310);
+  });
+
+  it("拒绝在职业技能点公式中引用 LUCK", () => {
+    expect(
+      occupationPointFormulaSchema.safeParse({
+        type: "attribute",
+        attribute: "LUCK",
+        multiplier: 2,
+      }).success,
+    ).toBe(false);
   });
 });

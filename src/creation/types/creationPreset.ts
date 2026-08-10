@@ -3,9 +3,11 @@ import { z } from "zod";
 import { settingIdSchema } from "../../coc7/types/setting";
 
 export const attributeGenerationMethodSchema = z.enum([
-  "manual",
-  "standard-random",
+  "standard-roll",
+  "assign-roll",
+  "multi-roll",
   "point-buy",
+  "manual",
 ]);
 
 export const creationPresetSchema = z

@@ -1,4 +1,4 @@
-import type { AttributeValues } from "../types/attribute";
+import type { CharacteristicValues } from "../types/attribute";
 import type { OccupationPointFormula } from "../types/occupation";
 
 function assertNever(value: never): never {
@@ -7,7 +7,7 @@ function assertNever(value: never): never {
 
 export function evaluateOccupationPointFormula(
   formula: OccupationPointFormula,
-  attributes: AttributeValues,
+  attributes: CharacteristicValues,
 ): number {
   switch (formula.type) {
     case "attribute":
