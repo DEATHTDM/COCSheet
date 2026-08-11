@@ -3,6 +3,7 @@ import {
   type EraId,
   type OccupationCategoryId,
   type OccupationDefinition,
+  type SelectorCardinality,
   type SkillSelector,
 } from "../coc7/types/occupation";
 import type { SettingId } from "../coc7/types/setting";
@@ -76,6 +77,80 @@ function validateSelector(selector: SkillSelector, skills: SkillRegistry): void 
   }
 }
 
+function validateSelectorCardinality(
+  selector: SkillSelector,
+  cardinality: SelectorCardinality,
+  context: string,
+): void {
+  if (selector.type === "exact") {
+    if (cardinality.min > 1 || (cardinality.max !== undefined && cardinality.max > 1)) {
+      throw new Error(`${context} 的 exact selector 最多只能选择一项技能`);
+    }
+    return;
+  }
+
+  if (selector.type === "one-of") {
+    const available = selector.selectors.length;
+    if (cardinality.min > available) {
+      throw new Error(`${context} 的 min ${cardinality.min} 超过 one-of 的 ${available} 个子 selector`);
+    }
+    if (cardinality.max !== undefined && cardinality.max > available) {
+      throw new Error(`${context} 的 max ${cardinality.max} 超过 one-of 的 ${available} 个子 selector`);
+    }
+    selector.selectors.forEach((child, index) => {
+      validateNestedSelectorStructure(child, `${context}.one-of[${index}]`);
+    });
+    return;
+  }
+
+  if (selector.type === "all-of") {
+    const innerMinimum = selector.groups.reduce((sum, group) => sum + group.cardinality.min, 0);
+    if (cardinality.max !== undefined && innerMinimum > cardinality.max) {
+      throw new Error(`${context} 的 all-of 内部 minimum ${innerMinimum} 超过外层 max ${cardinality.max}`);
+    }
+    const hasBoundedMaximum = selector.groups.every((group) => group.cardinality.max !== undefined);
+    if (hasBoundedMaximum) {
+      const innerMaximum = selector.groups.reduce(
+        (sum, group) => sum + (group.cardinality.max ?? 0),
+        0,
+      );
+      if (cardinality.min > innerMaximum) {
+        throw new Error(`${context} 的外层 min ${cardinality.min} 超过 all-of 内部 maximum ${innerMaximum}`);
+      }
+    }
+    selector.groups.forEach((group, index) => {
+      validateSelectorCardinality(group.selector, group.cardinality, `${context}.all-of[${index}]`);
+    });
+    return;
+  }
+
+  validateNestedSelectorStructure(selector, context);
+}
+
+function validateNestedSelectorStructure(selector: SkillSelector, context: string): void {
+  switch (selector.type) {
+    case "one-of":
+      selector.selectors.forEach((child, index) => {
+        validateNestedSelectorStructure(child, `${context}.one-of[${index}]`);
+      });
+      return;
+    case "all-of":
+      selector.groups.forEach((group, index) => {
+        validateSelectorCardinality(group.selector, group.cardinality, `${context}.all-of[${index}]`);
+      });
+      return;
+    case "any-skill":
+      selector.exclude?.forEach((child, index) => {
+        validateNestedSelectorStructure(child, `${context}.exclude[${index}]`);
+      });
+      return;
+    case "exact":
+    case "specialization-of":
+    case "named-custom-specialization":
+      return;
+  }
+}
+
 function normalizeSearchText(value: string): string {
   return value.normalize("NFKC").trim().toLocaleLowerCase();
 }
@@ -108,7 +183,14 @@ export function createOccupationRegistry(
         if (!eraIds.has(eraId)) throw new Error(`职业 ${occupation.id} 引用了未声明时代：${eraId}`);
       }
     }
-    occupation.skillRequirements.forEach((requirement) => validateSelector(requirement.selector, skills));
+    occupation.skillRequirements.forEach((requirement) => {
+      validateSelector(requirement.selector, skills);
+      validateSelectorCardinality(
+        requirement.selector,
+        requirement.cardinality,
+        `职业 ${occupation.id} 的 requirement ${requirement.id}`,
+      );
+    });
     byId.set(occupation.id, occupation);
   }
 

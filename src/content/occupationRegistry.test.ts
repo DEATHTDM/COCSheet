@@ -113,4 +113,79 @@ describe("OccupationRegistry", () => {
       }],
     }, skills)).toThrow("exclude 必须引用同一技能定义");
   });
+
+  it("注册时拒绝 one-of 声明超过子 selector 数量的 cardinality", () => {
+    const doctor = phase5aOccupationFixtures.find((occupation) => occupation.id === "doctor");
+    if (!doctor) throw new Error("缺少 doctor fixture");
+    const selector = {
+      type: "one-of" as const,
+      selectors: [
+        { type: "exact" as const, ref: { type: "standard" as const, definitionId: "listen" } },
+        { type: "exact" as const, ref: { type: "standard" as const, definitionId: "spot-hidden" } },
+      ],
+    };
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [{
+        ...doctor,
+        id: "broken-one-of-min",
+        skillRequirements: [{
+          id: "too-many",
+          selector,
+          cardinality: { min: 3, max: 3 },
+        }],
+      }],
+    }, skills)).toThrow("min 3 超过 one-of 的 2 个子 selector");
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [{
+        ...doctor,
+        id: "broken-one-of-max",
+        skillRequirements: [{
+          id: "too-many",
+          selector,
+          cardinality: { min: 1, max: 3 },
+        }],
+      }],
+    }, skills)).toThrow("max 3 超过 one-of 的 2 个子 selector");
+  });
+
+  it("注册时拒绝 all-of 内外 cardinality 的确定性矛盾", () => {
+    const doctor = phase5aOccupationFixtures.find((occupation) => occupation.id === "doctor");
+    if (!doctor) throw new Error("缺少 doctor fixture");
+    const groups = [
+      {
+        selector: { type: "specialization-of" as const, definitionId: "science" },
+        cardinality: { min: 2, max: 2 },
+      },
+      {
+        selector: { type: "specialization-of" as const, definitionId: "art-craft" },
+        cardinality: { min: 2, max: 2 },
+      },
+    ];
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [{
+        ...doctor,
+        id: "broken-all-of-max",
+        skillRequirements: [{
+          id: "contradiction",
+          selector: { type: "all-of", groups },
+          cardinality: { min: 1, max: 3 },
+        }],
+      }],
+    }, skills)).toThrow("内部 minimum 4 超过外层 max 3");
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [{
+        ...doctor,
+        id: "broken-all-of-min",
+        skillRequirements: [{
+          id: "contradiction",
+          selector: { type: "all-of", groups },
+          cardinality: { min: 5, max: 5 },
+        }],
+      }],
+    }, skills)).toThrow("外层 min 5 超过 all-of 内部 maximum 4");
+  });
 });
