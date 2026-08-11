@@ -88,11 +88,23 @@ Status: Implemented
 
 #### Phase 5B-2 — Full Verified Standard Dataset
 
+Status: In Progress
+
+##### Phase 5B-2-A — Full Standard Occupation Intake Audit
+
+Status: Completed
+
+- complete Keeper Rulebook + Investigator Handbook source-entry inventory
+- canonical-family and mechanical-variant analysis
+- complete Excel crosswalk, duplicate audit, source-boundary classification, and import-batch plan
+
+##### Phase 5B-2-B — Bulk Verified Production Import
+
 Status: Pending
 
-- verify and enter the remaining Standard occupation dataset
+- enter the remaining confirmed Standard occupation definitions in complexity-based batches
 - preserve mechanical source variants and source/page metadata
-- use the Excel only as an intake checklist and re-verify every mechanical field against official PDFs
+- use the Excel only as an intake checklist and re-verify every production mechanical field against official PDFs
 
 ### Phase 5C — Creation UI
 

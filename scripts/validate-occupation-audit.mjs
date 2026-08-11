@@ -1,0 +1,210 @@
+import fs from "node:fs/promises";
+
+const inventoryPath = new URL("../docs/data/STANDARD_OCCUPATION_OFFICIAL_INVENTORY.csv", import.meta.url);
+const crosswalkPath = new URL("../docs/data/STANDARD_OCCUPATION_EXCEL_CROSSWALK.csv", import.meta.url);
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (quoted) {
+      if (character === '"' && text[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      } else {
+        field += character;
+      }
+      continue;
+    }
+    if (character === '"') {
+      quoted = true;
+    } else if (character === ",") {
+      row.push(field);
+      field = "";
+    } else if (character === "\n") {
+      row.push(field.replace(/\r$/, ""));
+      rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += character;
+    }
+  }
+  if (quoted) throw new Error("CSV ends inside a quoted field");
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+function recordsFromCsv(text, label) {
+  const rows = parseCsv(text);
+  const headers = rows.shift();
+  if (!headers || headers.length === 0) throw new Error(`${label}: missing header`);
+  for (const [index, row] of rows.entries()) {
+    if (row.length !== headers.length) {
+      throw new Error(`${label}: row ${index + 2} has ${row.length} fields; expected ${headers.length}`);
+    }
+  }
+  return rows.map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index]])));
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function assertUnique(records, key, label) {
+  const values = records.map((record) => record[key]);
+  assert(values.every(Boolean), `${label}: ${key} contains a blank value`);
+  assert(new Set(values).size === values.length, `${label}: ${key} contains duplicates`);
+}
+
+function assertRequired(records, keys, label) {
+  for (const [index, record] of records.entries()) {
+    for (const key of keys) {
+      assert(record[key]?.trim(), `${label}: row ${index + 2} has a blank ${key}`);
+    }
+  }
+}
+
+const inventory = recordsFromCsv(await fs.readFile(inventoryPath, "utf8"), "official inventory");
+const crosswalk = recordsFromCsv(await fs.readFile(crosswalkPath, "utf8"), "Excel crosswalk");
+
+assert(inventory.length === 142, `official inventory: expected 142 rows, found ${inventory.length}`);
+assertUnique(inventory, "source_entry_id", "official inventory");
+assertRequired(inventory, [
+  "source_entry_id",
+  "source_id",
+  "source_title",
+  "source_page",
+  "official_name_zh",
+  "official_name_en",
+  "normalized_family_key",
+  "credit_rating",
+  "point_formula",
+  "requirements_fingerprint",
+  "mechanical_comparison",
+  "implementation_status",
+  "recommended_batch",
+], "official inventory");
+assert(inventory.filter((row) => row.source_id === "coc7-keeper-rulebook-40th-zh").length === 28,
+  "official inventory: Keeper source-entry count must be 28");
+assert(inventory.filter((row) => row.source_id === "coc7-investigator-handbook-zh-1-21").length === 114,
+  "official inventory: Handbook source-entry count must be 114");
+assert(new Set(inventory.map((row) => row.normalized_family_key)).size === 91,
+  "official inventory: canonical-family count must be 91");
+
+const implementationStatuses = new Set(["production-pilot", "pending", "needs-review"]);
+assert(inventory.every((row) => implementationStatuses.has(row.implementation_status)),
+  "official inventory: illegal implementation_status");
+assert(inventory.filter((row) => row.implementation_status === "production-pilot").length === 22,
+  "official inventory: pilot must map 22 source entries");
+assert(inventory.filter((row) => row.implementation_status === "needs-review").length === 1
+    && inventory.find((row) => row.implementation_status === "needs-review")?.normalized_family_key === "deprogrammer",
+  "official inventory: Deprogrammer must be the sole needs-review family");
+const productionIds = new Set(
+  inventory.flatMap((row) => row.notes.match(/production_id=([a-z0-9-]+)/)?.[1] ?? []),
+);
+const expectedProductionIds = new Set([
+  "accountant",
+  "antiquarian",
+  "artist",
+  "author",
+  "doctor-of-medicine",
+  "journalist-investigative-handbook",
+  "journalist-keeper-rulebook",
+  "journalist-reporter-handbook",
+  "laboratory-assistant",
+  "missionary-investigator-handbook",
+  "missionary-keeper-rulebook",
+  "police-detective",
+  "professor",
+  "soldier-marine",
+  "student-intern",
+]);
+assert(productionIds.size === expectedProductionIds.size,
+  `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
+assert([...expectedProductionIds].every((id) => productionIds.has(id)),
+  "official inventory: mapped production IDs do not match the Phase 5B-1 pilot");
+const pendingPoliceEntries = inventory.filter((row) => row.normalized_family_key === "police"
+  && row.implementation_status === "pending");
+assert(pendingPoliceEntries.length === 2
+    && pendingPoliceEntries.every((row) => row.recommended_batch === "Batch 2 - structured"),
+  "official inventory: the two uniformed-officer source entries must remain pending in Batch 2");
+
+const familyRows = Map.groupBy(inventory, (row) => row.normalized_family_key);
+const familyPlan = new Map();
+for (const [family, rows] of familyRows) {
+  const pendingBatches = new Set(rows
+    .filter((row) => row.implementation_status !== "production-pilot")
+    .map((row) => row.recommended_batch));
+  assert(pendingBatches.size <= 1, `official inventory: ${family} is assigned to multiple pending batches`);
+  familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
+}
+const expectedFamilyPlanCounts = {
+  "already implemented": 11,
+  "Batch 1 - simple": 4,
+  "Batch 2 - structured": 32,
+  "Batch 3 - complex / review": 44,
+};
+for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
+  const actual = [...familyPlan.values()].filter((value) => value === batch).length;
+  assert(actual === expected, `official inventory: ${batch} expected ${expected} families, found ${actual}`);
+}
+
+assert(crosswalk.length === 230, `Excel crosswalk: expected 230 rows, found ${crosswalk.length}`);
+assertUnique(crosswalk, "excel_index", "Excel crosswalk");
+assertRequired(crosswalk, [
+  "excel_row",
+  "excel_index",
+  "excel_name",
+  "normalized_name",
+  "classification",
+  "recommended_action",
+  "confidence",
+], "Excel crosswalk");
+const indices = crosswalk.map((row) => Number(row.excel_index)).sort((left, right) => left - right);
+assert(indices[0] === 1 && indices.at(-1) === 230, "Excel crosswalk: expected indices 1 through 230");
+assert(indices.every((value, index) => value === index + 1), "Excel crosswalk: missing or non-contiguous index");
+assert(crosswalk.filter((row) => Number(row.excel_index) >= 2).length === 229,
+  "Excel crosswalk: expected 229 numbered occupations");
+assert(crosswalk.filter((row) => row.classification === "custom-template").length === 1,
+  "Excel crosswalk: expected one custom template");
+assert(crosswalk
+  .filter((row) => ["confirmed-standard", "confirmed-standard-variant"].includes(row.classification))
+  .every((row) => row.official_family_key && row.matched_source_entries),
+  "Excel crosswalk: confirmed Standard rows must map to an official family and source entry");
+
+const classifications = new Set([
+  "confirmed-standard",
+  "confirmed-standard-variant",
+  "standard-alias-or-duplicate",
+  "confirmed-out-of-scope",
+  "unverified",
+  "custom-template",
+]);
+assert(crosswalk.every((row) => classifications.has(row.classification)),
+  "Excel crosswalk: illegal classification");
+const expectedClassifications = {
+  "confirmed-standard": 77,
+  "confirmed-standard-variant": 37,
+  "standard-alias-or-duplicate": 0,
+  "confirmed-out-of-scope": 115,
+  "unverified": 0,
+  "custom-template": 1,
+};
+for (const [classification, expected] of Object.entries(expectedClassifications)) {
+  const actual = crosswalk.filter((row) => row.classification === classification).length;
+  assert(actual === expected, `Excel crosswalk: ${classification} expected ${expected}, found ${actual}`);
+}
+
+console.log("Occupation audit CSV validation passed.");
+console.log("Official inventory: 142 rows, 91 families, 22 pilot source entries.");
+console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");
