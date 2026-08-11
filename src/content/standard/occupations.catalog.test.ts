@@ -284,6 +284,53 @@ describe("Standard production occupation catalog", () => {
     expect(validateOccupationRequirementSelection(requirement, illegal).map((issue) => issue.code)).toContain("selector-mismatch");
   });
 
+  it("只为原文 generic Fighting / Firearms 保留 one-or-more cardinality", () => {
+    const policeFirearms = registry.get("police-detective")?.skillRequirements.find(
+      (requirement) => requirement.id === "firearms",
+    );
+    const soldier = registry.get("soldier-marine");
+    const soldierFighting = soldier?.skillRequirements.find((requirement) => requirement.id === "fighting");
+    const soldierFirearms = soldier?.skillRequirements.find((requirement) => requirement.id === "firearms");
+    const soldierSurvival = soldier?.skillRequirements.find((requirement) => requirement.id === "survival");
+    const soldierSupport = soldier?.skillRequirements.find((requirement) => requirement.id === "support-skills");
+
+    expect(policeFirearms?.cardinality).toEqual({ min: 1 });
+    expect(policeFirearms?.cardinality.max).toBeUndefined();
+    expect(soldierFighting?.cardinality).toEqual({ min: 1 });
+    expect(soldierFighting?.cardinality.max).toBeUndefined();
+    expect(soldierFirearms?.cardinality).toEqual({ min: 1 });
+    expect(soldierFirearms?.cardinality.max).toBeUndefined();
+    expect(soldierSurvival?.cardinality).toEqual({ min: 1, max: 1 });
+    expect(soldierSupport?.cardinality).toEqual({ min: 2, max: 2 });
+  });
+
+  it("production generic Fighting / Firearms 接受多个不同专业并拒绝重复 SkillRef", () => {
+    const policeFirearms = registry.get("police-detective")?.skillRequirements.find(
+      (requirement) => requirement.id === "firearms",
+    );
+    const soldier = registry.get("soldier-marine");
+    const soldierFighting = soldier?.skillRequirements.find((requirement) => requirement.id === "fighting");
+    const soldierFirearms = soldier?.skillRequirements.find((requirement) => requirement.id === "firearms");
+    if (!policeFirearms || !soldierFighting || !soldierFirearms) {
+      throw new Error("缺少 production generic Fighting / Firearms requirement");
+    }
+
+    const handgun: SkillRef = { type: "predefined", definitionId: "firearms", specializationId: "handgun" };
+    const rifleShotgun: SkillRef = {
+      type: "predefined",
+      definitionId: "firearms",
+      specializationId: "rifle-shotgun",
+    };
+    const brawl: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "brawl" };
+    const sword: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "sword" };
+
+    expect(validateOccupationRequirementSelection(policeFirearms, [handgun, rifleShotgun])).toEqual([]);
+    expect(validateOccupationRequirementSelection(soldierFighting, [brawl, sword])).toEqual([]);
+    expect(validateOccupationRequirementSelection(soldierFirearms, [handgun, rifleShotgun])).toEqual([]);
+    expect(validateOccupationRequirementSelection(policeFirearms, [handgun, handgun]).map((issue) => issue.code))
+      .toContain("duplicate-skill-selection");
+  });
+
   it.each(expectedMechanics)("锁定 $id 的机械字段", (expected) => {
     const occupation = registry.get(expected.id);
     expect(occupation?.creditRating).toEqual(expected.creditRating);
