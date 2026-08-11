@@ -76,11 +76,23 @@ Status: Completed
 
 ### Phase 5B — Verified Standard Occupation Data
 
-Status: Not Started
+Status: In Progress
 
-- verify and enter the complete Standard occupation dataset
+#### Phase 5B-1 — Verified Standard Occupation Data Pilot
+
+Status: Implemented
+
+- first production pilot: 12 canonical families / 15 definitions
+- verified PDF source/page metadata and explicit Journalist / Missionary mechanics variants
+- production module, Registry static validation, source audit document, and dataset regression tests
+
+#### Phase 5B-2 — Full Verified Standard Dataset
+
+Status: Pending
+
+- verify and enter the remaining Standard occupation dataset
 - preserve mechanical source variants and source/page metadata
-- do not treat Phase 5A test fixtures as a partial production catalog
+- use the Excel only as an intake checklist and re-verify every mechanical field against official PDFs
 
 ### Phase 5C — Creation UI
 

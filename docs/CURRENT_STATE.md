@@ -1,12 +1,12 @@
 # Current State
 
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 ## Current phase
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data and Phase 5C — Creation UI have not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot is implemented, while Phase 5B-2 full verified Standard dataset is pending. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
@@ -35,6 +35,10 @@ Phase 4B branch was created from `main` at `fa59171ffa28a9bb1790a3d803dfb9e3d4fa
 - atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to review in one Dexie transaction without changing HP/MP or restoring SAN
 - legacy CreationPreset.skillCaps read compatibility without inferred mapping or validator effect, alongside explicit final-value skillLimits
 - source-annotated Phase 5A test fixtures for ten occupation families (eleven definitions including two Missionary mechanics variants), not production occupation content
+- Phase 5B-1 Standard production occupation pilot with 12 canonical families and 15 definitions, including verified Journalist and Missionary source mechanics variants
+- dedicated `src/content/standard/occupations.ts` production module wired through `standardSettingPack.occupations`, with no dependency on testing fixtures
+- source/page audit documentation in `docs/STANDARD_OCCUPATION_SOURCES.md`, including the Excel data-pool assessment and PDF verification matrix
+- deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
 - basic Home, character creation/editor, and KP preset pages
@@ -100,7 +104,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- production Standard occupation data (Phase 5B)
+- complete verified Standard occupation data beyond the Phase 5B-1 pilot (Phase 5B-2)
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -113,12 +117,12 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B verified Standard occupation data is the next intended work, but is not authorized by this document.
+Phase 5B-2 full verified Standard occupation data is the next intended occupation-data work, but is not authorized by this document.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
-- full Standard occupation data still requires entry-by-entry source verification in Phase 5B
+- Standard occupations outside the Phase 5B-1 pilot still require entry-by-entry source verification in Phase 5B-2
 - browser storage can be cleared, and long-term file backup is not implemented

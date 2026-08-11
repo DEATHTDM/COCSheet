@@ -143,7 +143,9 @@ Phase 5A 已建立 Occupation Engine Foundation：
 - finalize 生成完整 `Character.skills` 后复用 Phase 4 领域校验，继续执行稳定 identity、重复实例与单实例专业化约束。
 - 完成 skills 时，最终 Mythos 与必要的 current SAN 收紧、职业快照、最终技能和 review 会话推进在同一个 Creation Workflow Repository 事务中写入；降低 Mythos 不自动恢复 SAN，HP/MP 不受影响。
 
-当前 Standard SettingPack 仍没有生产职业数据。两本规则书中的真实职业只存在于测试 fixture，用于压力测试公式、selector、变体和分配规则；正式完整职业目录属于 Phase 5B。最终职业浏览与技能分配 UI 尚未实现，属于 Phase 5C。职业数据不得硬编码进 Vue 页面。
+当前 Standard SettingPack 已从 `src/content/standard/occupations.ts` 接入 Phase 5B-1 的首批生产职业数据：12 个 canonical family、15 个 definition，包含 Journalist 三个 source mechanics variants 与 Missionary 两个 source mechanics variants。`src/coc7/testing/occupationFixtures.ts` 继续只用于 Engine 压力测试，生产内容不依赖 testing 目录。完整 Standard 职业目录仍属于 Phase 5B-2；最终职业浏览与技能分配 UI 尚未实现，属于 Phase 5C。职业数据不得硬编码进 Vue 页面。
+
+Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还拒绝确定不可满足的 selector cardinality：`one-of` 的 min/max 不得超过 child 数量，`all-of` 的外层范围不得与内部 group minimum/maximum 矛盾。该检查只处理可确定的低风险结构，不尝试通用约束求解。
 
 ## Schema evolution
 
