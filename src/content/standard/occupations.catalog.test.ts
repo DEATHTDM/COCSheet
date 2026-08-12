@@ -329,20 +329,20 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 84 个 canonical family 的 95 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 89 个 canonical family identity 的 105 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(95);
+    expect(standardSettingPack.occupations).toHaveLength(105);
     const families = new Set(standardSettingPack.occupations.map((occupation) =>
       occupation.variantOf ?? occupation.id,
     ));
-    expect(families.size).toBe(84);
+    expect(families.size).toBe(89);
   });
 
   it("所有 definition 通过 schema 与完整 Standard OccupationRegistry 注册", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(95);
+    expect(registry.definitions).toHaveLength(105);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -363,14 +363,19 @@ describe("Standard production occupation catalog", () => {
     expect(registry.get("entertainer")).toBeUndefined();
     expect(registry.definitions.filter((occupation) => occupation.variantOf === "entertainer"))
       .toHaveLength(2);
-    const batch3cVariantFamilies = new Map([
+    const productionVariantFamilies = new Map([
       ["actor", 2],
       ["computer-professional", 2],
       ["driver", 3],
       ["gangster", 2],
       ["military-officer", 2],
+      ["laborer", 3],
+      ["photographer", 2],
+      ["pilot", 2],
+      ["sailor", 2],
+      ["white-collar-worker", 1],
     ]);
-    for (const [family, count] of batch3cVariantFamilies) {
+    for (const [family, count] of productionVariantFamilies) {
       expect(registry.get(family)).toBeUndefined();
       expect(registry.definitions.filter((occupation) => occupation.variantOf === family))
         .toHaveLength(count);
@@ -425,6 +430,7 @@ describe("Standard production occupation catalog", () => {
       "journalist-investigative-handbook",
       "journalist-reporter-handbook",
       "foreign-correspondent",
+      "photographer-photojournalist",
     ]);
     expect(registry.list({ category: "medical" }).map((occupation) => occupation.id)).toEqual([
       "doctor-of-medicine",
@@ -439,8 +445,8 @@ describe("Standard production occupation catalog", () => {
     ]);
     expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
     expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
-    expect(registry.list({ era: "classic-1920s" })).toHaveLength(93);
-    expect(registry.list({ era: "modern" })).toHaveLength(93);
+    expect(registry.list({ era: "classic-1920s" })).toHaveLength(103);
+    expect(registry.list({ era: "modern" })).toHaveLength(102);
   });
 
   it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {

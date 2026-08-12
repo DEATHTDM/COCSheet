@@ -1,5 +1,6 @@
 import type { OccupationDefinition } from "../../coc7/types/occupation";
 
+import { batch3dOccupationDefinitions } from "./occupations/batch3d";
 import { batch3cOccupationDefinitions } from "./occupations/batch3c";
 import { batch3bOccupationDefinitions } from "./occupations/batch3b";
 import { batch3aOccupationDefinitions } from "./occupations/batch3a";
@@ -476,4 +477,5 @@ export const standardOccupationDefinitions: readonly OccupationDefinition[] = [
   ...batch3aOccupationDefinitions,
   ...batch3bOccupationDefinitions,
   ...batch3cOccupationDefinitions,
+  ...batch3dOccupationDefinitions,
 ];
