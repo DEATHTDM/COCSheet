@@ -56,6 +56,15 @@ const expectedMechanics = [
     sourcePages: ["coc7-keeper-rulebook-40th-zh:40", "coc7-investigator-handbook-zh-1-21:72"],
   },
   {
+    id: "clergy",
+    creditRating: { min: 9, max: 60 },
+    pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+    requirementIds: ["accounting", "history", "library-use", "listen", "other-language", "social", "psychology", "other-skill"],
+    selectorTypes: ["exact", "exact", "exact", "exact", "specialization-of", "one-of", "exact", "any-skill"],
+    keeperReviewIds: [],
+    sourcePages: ["coc7-keeper-rulebook-40th-zh:40", "coc7-investigator-handbook-zh-1-21:74"],
+  },
+  {
     id: "doctor-of-medicine",
     creditRating: { min: 30, max: 80 },
     pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
@@ -63,6 +72,21 @@ const expectedMechanics = [
     selectorTypes: ["exact", "exact", "named-custom-specialization", "exact", "exact", "exact", "any-skill"],
     keeperReviewIds: ["academic-or-personal-specialties"],
     sourcePages: ["coc7-keeper-rulebook-40th-zh:40", "coc7-investigator-handbook-zh-1-21:78"],
+  },
+  {
+    id: "elected-official",
+    creditRating: { min: 50, max: 90 },
+    pointFormula: {
+      type: "sum",
+      terms: [
+        { type: "attribute", attribute: "EDU", multiplier: 2 },
+        { type: "attribute", attribute: "APP", multiplier: 2 },
+      ],
+    },
+    requirementIds: ["charm", "history", "intimidate", "fast-talk", "listen", "own-language", "persuade", "psychology"],
+    selectorTypes: ["exact", "exact", "exact", "exact", "exact", "specialization-of", "exact", "exact"],
+    keeperReviewIds: [],
+    sourcePages: ["coc7-investigator-handbook-zh-1-21:79"],
   },
   {
     id: "journalist-keeper-rulebook",
@@ -92,6 +116,15 @@ const expectedMechanics = [
     sourcePages: ["coc7-investigator-handbook-zh-1-21:81"],
   },
   {
+    id: "judge",
+    creditRating: { min: 50, max: 80 },
+    pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+    requirementIds: ["history", "intimidate", "law", "library-use", "listen", "own-language", "persuade", "psychology"],
+    selectorTypes: ["exact", "exact", "exact", "exact", "exact", "specialization-of", "exact", "exact"],
+    keeperReviewIds: [],
+    sourcePages: ["coc7-investigator-handbook-zh-1-21:82"],
+  },
+  {
     id: "laboratory-assistant",
     creditRating: { min: 10, max: 30 },
     pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
@@ -99,6 +132,15 @@ const expectedMechanics = [
     selectorTypes: ["one-of", "exact", "specialization-of", "all-of", "exact", "any-skill"],
     keeperReviewIds: ["personal-specialty"],
     sourcePages: ["coc7-investigator-handbook-zh-1-21:82"],
+  },
+  {
+    id: "museum-curator",
+    creditRating: { min: 10, max: 30 },
+    pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+    requirementIds: ["accounting", "appraise", "archaeology", "history", "library-use", "occult", "other-language", "spot-hidden"],
+    selectorTypes: ["exact", "exact", "exact", "exact", "exact", "exact", "specialization-of", "exact"],
+    keeperReviewIds: [],
+    sourcePages: ["coc7-investigator-handbook-zh-1-21:84"],
   },
   {
     id: "police-detective",
@@ -174,6 +216,96 @@ const expectedMechanics = [
   },
 ] as const;
 
+const batch1ExpectedDefinitions = [
+  {
+    id: "clergy",
+    name: { zh: "神职人员", en: "Clergy, Member of the" },
+    aliases: undefined,
+    creditRating: { min: 9, max: 60 },
+    pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+    requirements: [
+      ["accounting", "exact"],
+      ["history", "exact"],
+      ["library-use", "exact"],
+      ["listen", "exact"],
+      ["other-language", "specialization-of"],
+      ["social", "one-of"],
+      ["psychology", "exact"],
+      ["other-skill", "any-skill"],
+    ],
+    sourceRefs: [
+      ["coc7-keeper-rulebook-40th-zh", "《克苏鲁的呼唤 40 周年纪念版》", 40],
+      ["coc7-investigator-handbook-zh-1-21", "《克苏鲁的呼唤第七版调查员手册》", 74],
+    ],
+  },
+  {
+    id: "elected-official",
+    name: { zh: "政府官员", en: "Elected Official" },
+    aliases: { zh: ["民选官员"] },
+    creditRating: { min: 50, max: 90 },
+    pointFormula: {
+      type: "sum",
+      terms: [
+        { type: "attribute", attribute: "EDU", multiplier: 2 },
+        { type: "attribute", attribute: "APP", multiplier: 2 },
+      ],
+    },
+    requirements: [
+      ["charm", "exact"],
+      ["history", "exact"],
+      ["intimidate", "exact"],
+      ["fast-talk", "exact"],
+      ["listen", "exact"],
+      ["own-language", "specialization-of"],
+      ["persuade", "exact"],
+      ["psychology", "exact"],
+    ],
+    sourceRefs: [
+      ["coc7-investigator-handbook-zh-1-21", "《克苏鲁的呼唤第七版调查员手册》", 79],
+    ],
+  },
+  {
+    id: "judge",
+    name: { zh: "法官", en: "Judge" },
+    aliases: undefined,
+    creditRating: { min: 50, max: 80 },
+    pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+    requirements: [
+      ["history", "exact"],
+      ["intimidate", "exact"],
+      ["law", "exact"],
+      ["library-use", "exact"],
+      ["listen", "exact"],
+      ["own-language", "specialization-of"],
+      ["persuade", "exact"],
+      ["psychology", "exact"],
+    ],
+    sourceRefs: [
+      ["coc7-investigator-handbook-zh-1-21", "《克苏鲁的呼唤第七版调查员手册》", 82],
+    ],
+  },
+  {
+    id: "museum-curator",
+    name: { zh: "博物馆管理员", en: "Museum Curator" },
+    aliases: { zh: ["博物馆馆长"] },
+    creditRating: { min: 10, max: 30 },
+    pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+    requirements: [
+      ["accounting", "exact"],
+      ["appraise", "exact"],
+      ["archaeology", "exact"],
+      ["history", "exact"],
+      ["library-use", "exact"],
+      ["occult", "exact"],
+      ["other-language", "specialization-of"],
+      ["spot-hidden", "exact"],
+    ],
+    sourceRefs: [
+      ["coc7-investigator-handbook-zh-1-21", "《克苏鲁的呼唤第七版调查员手册》", 84],
+    ],
+  },
+] as const;
+
 function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector) => void): void {
   visit(selector);
   switch (selector.type) {
@@ -194,18 +326,18 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 12 个 canonical family 的 15 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 16 个 canonical family 的 19 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(15);
+    expect(standardSettingPack.occupations).toHaveLength(19);
     const families = new Set(standardSettingPack.occupations.map((occupation) => occupation.variantOf ?? occupation.id));
-    expect(families.size).toBe(12);
+    expect(families.size).toBe(16);
   });
 
   it("所有 definition 通过 schema 与完整 Standard OccupationRegistry 注册", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(15);
+    expect(registry.definitions).toHaveLength(19);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -261,8 +393,42 @@ describe("Standard production occupation catalog", () => {
     expect(registry.search("Physician").map((occupation) => occupation.id)).toContain("doctor-of-medicine");
     expect(registry.search("记者")).toHaveLength(3);
     expect(registry.list({ category: "medical" }).map((occupation) => occupation.id)).toEqual(["doctor-of-medicine"]);
-    expect(registry.list({ era: "classic-1920s" })).toHaveLength(15);
-    expect(registry.list({ era: "modern" })).toHaveLength(15);
+    expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
+    expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
+    expect(registry.list({ era: "classic-1920s" })).toHaveLength(19);
+    expect(registry.list({ era: "modern" })).toHaveLength(19);
+  });
+
+  it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {
+    const occupation = registry.get(expected.id);
+    expect(occupation?.name).toEqual(expected.name);
+    expect(occupation?.aliases).toEqual(expected.aliases);
+    expect(occupation?.creditRating).toEqual(expected.creditRating);
+    expect(occupation?.pointFormula).toEqual(expected.pointFormula);
+    expect(occupation?.skillRequirements.map((requirement) => [
+      requirement.id,
+      requirement.selector.type,
+    ])).toEqual(expected.requirements);
+    expect(occupation?.skillRequirements.map((requirement) => requirement.cardinality))
+      .toEqual(expected.requirements.map(() => ({ min: 1, max: 1 })));
+    expect(occupation?.skillRequirements.some((requirement) => requirement.keeperReview)).toBe(false);
+    expect(occupation?.sourceRefs.map((source) => [source.sourceId, source.title, source.page]))
+      .toEqual(expected.sourceRefs);
+  });
+
+  it("神职人员社交技能接受合法选择，并拒绝错误 cardinality 与 selector", () => {
+    const social = registry.get("clergy")?.skillRequirements.find((requirement) => requirement.id === "social");
+    if (!social) throw new Error("缺少 clergy social requirement");
+
+    const charm: SkillRef = { type: "standard", definitionId: "charm" };
+    const persuade: SkillRef = { type: "standard", definitionId: "persuade" };
+    const accounting: SkillRef = { type: "standard", definitionId: "accounting" };
+
+    expect(validateOccupationRequirementSelection(social, [charm])).toEqual([]);
+    expect(validateOccupationRequirementSelection(social, [charm, persuade]).map((issue) => issue.code))
+      .toContain("requirement-cardinality");
+    expect(validateOccupationRequirementSelection(social, [accounting]).map((issue) => issue.code))
+      .toContain("selector-mismatch");
   });
 
   it("实验室助理的固定 Chemistry + 另两项 Science 组合接受合法选择并拒绝缺少 Chemistry 的选择", () => {

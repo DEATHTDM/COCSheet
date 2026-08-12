@@ -101,7 +101,7 @@ assert(inventory.filter((row) => row.source_id === "coc7-investigator-handbook-z
 assert(new Set(inventory.map((row) => row.normalized_family_key)).size === 91,
   "official inventory: canonical-family count must be 91");
 
-const implementationStatuses = new Set(["production-pilot", "pending", "needs-review"]);
+const implementationStatuses = new Set(["production-pilot", "production-batch-1", "pending", "needs-review"]);
 assert(inventory.every((row) => implementationStatuses.has(row.implementation_status)),
   "official inventory: illegal implementation_status");
 assert(inventory.filter((row) => row.implementation_status === "production-pilot").length === 22,
@@ -109,6 +109,14 @@ assert(inventory.filter((row) => row.implementation_status === "production-pilot
 assert(inventory.filter((row) => row.implementation_status === "needs-review").length === 1
     && inventory.find((row) => row.implementation_status === "needs-review")?.normalized_family_key === "deprogrammer",
   "official inventory: Deprogrammer must be the sole needs-review family");
+const batch1Families = new Set(["clergy", "elected-official", "judge", "museum-curator"]);
+const batch1Entries = inventory.filter((row) => batch1Families.has(row.normalized_family_key));
+assert(batch1Entries.length === 5
+    && batch1Entries.every((row) => row.implementation_status === "production-batch-1")
+    && batch1Entries.every((row) => row.recommended_batch === "Batch 1 - simple")
+    && batch1Entries.every((row) => row.notes === `production_id=${row.normalized_family_key}`)
+    && new Set(batch1Entries.map((row) => row.normalized_family_key)).size === batch1Families.size,
+  "official inventory: all four Batch 1 families must map to their canonical production ID and retain their batch assignment");
 const productionIds = new Set(
   inventory.flatMap((row) => row.notes.match(/production_id=([a-z0-9-]+)/)?.[1] ?? []),
 );
@@ -117,13 +125,17 @@ const expectedProductionIds = new Set([
   "antiquarian",
   "artist",
   "author",
+  "clergy",
   "doctor-of-medicine",
+  "elected-official",
   "journalist-investigative-handbook",
   "journalist-keeper-rulebook",
   "journalist-reporter-handbook",
+  "judge",
   "laboratory-assistant",
   "missionary-investigator-handbook",
   "missionary-keeper-rulebook",
+  "museum-curator",
   "police-detective",
   "professor",
   "soldier-marine",
@@ -132,7 +144,7 @@ const expectedProductionIds = new Set([
 assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
-  "official inventory: mapped production IDs do not match the Phase 5B-1 pilot");
+  "official inventory: mapped production IDs do not match current production coverage");
 const pendingPoliceEntries = inventory.filter((row) => row.normalized_family_key === "police"
   && row.implementation_status === "pending");
 assert(pendingPoliceEntries.length === 2
@@ -143,14 +155,13 @@ const familyRows = Map.groupBy(inventory, (row) => row.normalized_family_key);
 const familyPlan = new Map();
 for (const [family, rows] of familyRows) {
   const pendingBatches = new Set(rows
-    .filter((row) => row.implementation_status !== "production-pilot")
+    .filter((row) => !["production-pilot", "production-batch-1"].includes(row.implementation_status))
     .map((row) => row.recommended_batch));
   assert(pendingBatches.size <= 1, `official inventory: ${family} is assigned to multiple pending batches`);
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 11,
-  "Batch 1 - simple": 4,
+  "already implemented": 15,
   "Batch 2 - structured": 32,
   "Batch 3 - complex / review": 44,
 };
@@ -206,5 +217,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log("Official inventory: 142 rows, 91 families, 22 pilot source entries.");
+console.log("Official inventory: 142 rows, 91 families, 22 pilot and 5 Batch 1 production source entries.");
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");

@@ -1,16 +1,16 @@
 # Current State
 
-Last updated: 2026-08-11
+Last updated: 2026-08-12
 
 ## Current phase
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot is implemented, and Phase 5B-2 is in progress. Phase 5B-2-A full Standard intake audit is completed; bulk production-data import is still pending. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot is implemented, Phase 5B-2-A full Standard intake audit is completed, and Phase 5B-2 Batch 1 is completed. Batch 2 and Batch 3 remain pending. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2-A audit branch was created from `main` at `5a9c426834ff642878ab4117f6f166a9ebd72eff`.
+Phase 5B-2 Batch 1 branch was created from `main` at `ecfeef9878fb1bd3a50a510df1661680e40499a5`.
 
 ## Implemented
 
@@ -39,6 +39,7 @@ Phase 5B-2-A audit branch was created from `main` at `5a9c426834ff642878ab4117f6
 - dedicated `src/content/standard/occupations.ts` production module wired through `standardSettingPack.occupations`, with no dependency on testing fixtures
 - source/page audit documentation in `docs/STANDARD_OCCUPATION_SOURCES.md`, including the Excel data-pool assessment and PDF verification matrix
 - Phase 5B-2-A full intake audit with a 142-row official source inventory, 91 canonical family candidates, 118 expected production definitions, a complete 230-row Excel crosswalk, duplicate/source-boundary findings, and complexity-based import batches
+- Phase 5B-2 Batch 1 production import for `clergy`, `elected-official`, `judge`, and `museum-curator`, bringing Standard production coverage to 16 touched families / 19 definitions and mapping 5 additional official source entries as `production-batch-1`
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -105,7 +106,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- bulk verified Standard occupation production data beyond the Phase 5B-1 pilot (Phase 5B-2 implementation after the completed Phase 5B-2-A audit)
+- verified Standard occupation production data beyond the Phase 5B-1 pilot and completed Phase 5B-2 Batch 1
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -118,12 +119,12 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 production import from the completed Phase 5B-2-A audit is the next intended occupation-data work, but is not authorized by this document.
+Phase 5B-2 Batch 2 production import is the next intended occupation-data work, but is not authorized by this document.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
-- Standard occupations outside the Phase 5B-1 pilot still require entry-by-entry source verification in Phase 5B-2
+- Standard occupations outside the Phase 5B-1 pilot and Phase 5B-2 Batch 1 still require entry-by-entry source verification in later Phase 5B-2 batches
 - browser storage can be cleared, and long-term file backup is not implemented
