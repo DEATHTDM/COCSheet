@@ -1,16 +1,16 @@
 # Current State
 
-Last updated: 2026-08-12
+Last updated: 2026-08-13
 
 ## Current phase
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and the Batch 3A and Batch 3B engineering sub-batches are completed. Formal Batch 2 is completed; Batch 3 remains in progress for the source-variant families and `deprogrammer`. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and the Batch 3A, Batch 3B, and Batch 3C engineering sub-batches are completed. Formal Batch 2 is completed; Batch 3 remains in progress for the remaining source-variant families, `criminal`, and `deprogrammer`. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2 Batch 3B branch was created from `main` at `5dc4acd63e9c0438efce21770459f5f31e1d6c79`.
+Phase 5B-2 Batch 3C branch was created from `main` at `4f2223669e67b621138b2abeb19207af996bfd70`.
 
 ## Implemented
 
@@ -45,6 +45,7 @@ Phase 5B-2 Batch 3B branch was created from `main` at `5dc4acd63e9c0438efce21770
 - Phase 5B-2 Batch 2 Engine-pressure cleanup with the additive `one-branch` selector and production definitions for `bounty-hunter`, `cowboy`, and `tribe-member`, bringing coverage to 47 fully implemented families / 51 definitions and 63 mapped official source entries; all 36 Batch 2 source entries are now production and formal Batch 2 is completed
 - Phase 5B-2 Batch 3A canonical/fuzzy import for `acrobat`, `animal-trainer`, `athlete`, `bartender`, `boxer-wrestler`, `butler-valet-maid`, `craftsperson`, `cult-leader`, `designer`, `dilettante`, `diver`, `drifter`, `editor`, `engineer`, `entertainer`, and `farmer`, bringing coverage to 63 fully implemented families / 68 definitions and 85 mapped official source entries; Entertainer is split into two source mechanics variants after re-verification, 22 source rows are `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
 - Phase 5B-2 Batch 3B canonical/fuzzy import for `federal-agent`, `foreign-correspondent`, `hobo`, `librarian`, `mechanic`, `occultist`, `parapsychologist`, `private-investigator`, `prospector`, `psychologist-psychoanalyst`, `researcher`, `scientist`, `secretary`, `sex-worker`, `waiter`, and `zealot`, bringing coverage to 79 fully implemented families / 84 definitions and 105 mapped official source entries; all 16 definitions are canonical, 42 source rows are now `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
+- Phase 5B-2 Batch 3C source-variant import for `actor`, `computer-professional`, `driver`, `gangster`, and `military-officer`, bringing coverage to 84 fully implemented families / 95 definitions and 117 mapped official source entries; 12 source rows map to 11 production variants because the two mechanically identical Hacker entries share one modern-only definition, 54 source rows are now `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -111,7 +112,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond completed Phase 5B-2 Batch 3B
+- verified Standard occupation production data beyond completed Phase 5B-2 Batch 3C
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -124,7 +125,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 Batch 3 is in progress after Batch 3B. Remaining work is the 11 known source-variant families plus the separately reviewed `deprogrammer` pressure case, but this document does not authorize that later import or Engine work.
+Phase 5B-2 Batch 3 is in progress after Batch 3C. Remaining work is five non-criminal source-variant families, the `criminal` family, and the separately reviewed `deprogrammer` pressure case, but this document does not authorize that later import or Engine work.
 
 ## Known technical risks
 
@@ -132,5 +133,5 @@ Phase 5B-2 Batch 3 is in progress after Batch 3B. Remaining work is the 11 known
 - future import/export compatibility
 - Setting-specific extension evolution
 - `deprogrammer` remains the only unresolved Engine pressure because its Keeper-approved Hypnosis replacement of one existing occupation skill is not yet expressible
-- the 11 remaining Standard source-variant families still require entry-by-entry source verification; `deprogrammer` separately requires a deliberate Engine-pressure decision
+- the five remaining non-criminal Standard source-variant families and `criminal` still require entry-by-entry source verification; `deprogrammer` separately requires a deliberate Engine-pressure decision
 - browser storage can be cleared, and long-term file backup is not implemented
