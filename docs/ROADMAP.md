@@ -103,8 +103,8 @@ Status: Completed
 Status: In Progress
 
 - Batch 1 completed: `clergy`, `elected-official`, `judge`, and `museum-curator`
-- Batch 2 in progress: Batch 2A completed 14 production definitions, including `police-officer`; Batch 2B remains pending with 16 structured definitions
-- Batch 2 selector pressure pending: `bounty-hunter` and `cowboy` require `exclusive-selector-branch-with-repeatable-selection`
+- Batch 2 data intake completed except Engine pressure: Batch 2A added 14 production definitions and Batch 2B added 15 production definitions
+- Batch 2 selector pressure pending: `bounty-hunter`, `cowboy`, and `tribe-member` require `exclusive-selector-branch-with-repeatable-selection`
 - Batch 3 pending: complex occupations and the separately reviewed `deprogrammer` pressure case
 - enter the remaining confirmed Standard occupation definitions in complexity-based batches
 - preserve mechanical source variants and source/page metadata

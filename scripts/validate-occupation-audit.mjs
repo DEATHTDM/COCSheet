@@ -114,17 +114,29 @@ assert(inventory.filter((row) => row.implementation_status === "production-pilot
   "official inventory: pilot must map 22 source entries");
 const needsReviewRows = inventory.filter((row) => row.implementation_status === "needs-review");
 const needsReviewFamilies = new Set(needsReviewRows.map((row) => row.normalized_family_key));
-assert(needsReviewRows.length === 3
-    && needsReviewFamilies.size === 3
-    && ["deprogrammer", "bounty-hunter", "cowboy"].every((family) => needsReviewFamilies.has(family)),
-  "official inventory: Deprogrammer, Bounty Hunter, and Cowboy must be the needs-review families");
+const expectedNeedsReviewFamilies = new Set([
+  "deprogrammer",
+  "bounty-hunter",
+  "cowboy",
+  "tribe-member",
+]);
+assert(needsReviewRows.length === 5
+    && needsReviewFamilies.size === expectedNeedsReviewFamilies.size
+    && [...expectedNeedsReviewFamilies].every((family) => needsReviewFamilies.has(family)),
+  "official inventory: needs-review families must match the current audited Engine-pressure set");
 const repeatableBranchPressureRows = needsReviewRows.filter((row) =>
-  ["bounty-hunter", "cowboy"].includes(row.normalized_family_key));
-assert(repeatableBranchPressureRows.length === 2
+  ["bounty-hunter", "cowboy", "tribe-member"].includes(row.normalized_family_key));
+assert(repeatableBranchPressureRows.length === 4
     && repeatableBranchPressureRows.every((row) => row.recommended_batch === "Batch 2 - structured")
     && repeatableBranchPressureRows.every((row) => row.notes === "engine_pressure=exclusive-selector-branch-with-repeatable-selection")
     && repeatableBranchPressureRows.every((row) => !row.notes.includes("production_id=")),
   "official inventory: repeatable exclusive selector branch pressure rows must remain unmapped Batch 2 needs-review entries");
+const deprogrammerRows = needsReviewRows.filter((row) => row.normalized_family_key === "deprogrammer");
+assert(deprogrammerRows.length === 1
+    && deprogrammerRows[0].recommended_batch === "Batch 3 - complex / review"
+    && deprogrammerRows[0].keeper_approval === "KP may allow Hypnosis to replace one occupation skill"
+    && !deprogrammerRows[0].notes.includes("production_id="),
+  "official inventory: Deprogrammer must retain its verified replacement pressure without a production mapping");
 const batch1Families = new Set(["clergy", "elected-official", "judge", "museum-curator"]);
 const batch1Entries = inventory.filter((row) => batch1Families.has(row.normalized_family_key));
 assert(batch1Entries.length === 5
@@ -174,8 +186,59 @@ assert(batch2aEntries.length === batch2aSourceEntryIds.size
     && batch2aEntries.every((row) => row.notes === `production_id=${batch2aProductionIds.get(row.normalized_family_key)}`)
     && new Set(batch2aEntries.map((row) => row.normalized_family_key)).size === batch2aProductionIds.size,
   "official inventory: all 14 Batch 2A families must have the correct production mapping and retain the formal Batch 2 assignment");
-assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length === batch2aSourceEntryIds.size,
-  "official inventory: production-batch-2 must currently contain exactly the Batch 2A source entries");
+const batch2bProductionIds = new Map([
+  ["gambler", "gambler"],
+  ["gentleman-lady", "gentleman-lady"],
+  ["hospital-orderly", "hospital-orderly"],
+  ["mountain-climber", "mountain-climber"],
+  ["musician", "musician"],
+  ["outdoorsperson", "outdoorsperson"],
+  ["pharmacist", "pharmacist"],
+  ["psychiatrist", "psychiatrist"],
+  ["salesperson", "salesperson"],
+  ["shopkeeper", "shopkeeper"],
+  ["spy", "spy"],
+  ["stunt-performer", "stunt-performer"],
+  ["undertaker", "undertaker"],
+  ["union-activist", "union-activist"],
+  ["zookeeper", "zookeeper"],
+]);
+const batch2bSourceEntryIds = new Set([
+  "keeper-p41-musician",
+  "handbook-81-gambler",
+  "handbook-81-gentleman-lady",
+  "handbook-82-hospital-orderly",
+  "handbook-84-mountain-climber",
+  "handbook-84-musician",
+  "handbook-85-outdoorsman-outdoorswoman",
+  "handbook-86-pharmacist",
+  "handbook-88-psychiatrist",
+  "handbook-89-salesperson",
+  "handbook-90-shopkeeper",
+  "handbook-90-spy",
+  "handbook-90-stuntman",
+  "handbook-91-undertaker",
+  "handbook-91-union-activist",
+  "handbook-93-zookeeper",
+]);
+const batch2bEntries = inventory.filter((row) => batch2bSourceEntryIds.has(row.source_entry_id));
+assert(batch2bEntries.length === batch2bSourceEntryIds.size
+    && batch2bEntries.every((row) => row.implementation_status === "production-batch-2")
+    && batch2bEntries.every((row) => row.recommended_batch === "Batch 2 - structured")
+    && batch2bEntries.every((row) => row.notes.includes(`production_id=${batch2bProductionIds.get(row.normalized_family_key)}`))
+    && new Set(batch2bEntries.map((row) => row.normalized_family_key)).size === batch2bProductionIds.size,
+  "official inventory: all successful Batch 2B families must have the correct production mapping and retain the formal Batch 2 assignment");
+const batch2bFuzzyRequirementRows = inventory.filter((row) => [
+  "keeper-p41-musician",
+  "handbook-84-musician",
+  "handbook-84-mountain-climber",
+].includes(row.source_entry_id));
+assert(batch2bFuzzyRequirementRows.length === 3
+    && batch2bFuzzyRequirementRows.every((row) => row.fuzzy_requirement === "yes"),
+  "official inventory: Musician instrument and Mountain Climber environment choices must retain fuzzy review semantics");
+assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length ===
+    batch2aSourceEntryIds.size + batch2bSourceEntryIds.size,
+  "official inventory: production-batch-2 must contain exactly the successful Batch 2A and Batch 2B source entries");
 const policeDetectiveEntries = inventory.filter((row) => [
   "keeper-p41-police-detective",
   "handbook-87-police-detective",
@@ -229,6 +292,21 @@ const expectedProductionIds = new Set([
   "professor",
   "soldier-marine",
   "student-intern",
+  "gambler",
+  "gentleman-lady",
+  "hospital-orderly",
+  "mountain-climber",
+  "musician",
+  "outdoorsperson",
+  "pharmacist",
+  "psychiatrist",
+  "salesperson",
+  "shopkeeper",
+  "spy",
+  "stunt-performer",
+  "undertaker",
+  "union-activist",
+  "zookeeper",
 ]);
 assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
@@ -253,8 +331,8 @@ for (const [family, rows] of familyRows) {
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 29,
-  "Batch 2 - structured": 18,
+  "already implemented": 44,
+  "Batch 2 - structured": 3,
   "Batch 3 - complex / review": 44,
 };
 for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
@@ -309,5 +387,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and ${batch2aSourceEntryIds.size} Batch 2 production source entries.`);
+console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size} Batch 2 production source entries.`);
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");

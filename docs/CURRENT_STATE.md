@@ -6,11 +6,11 @@ Last updated: 2026-08-12
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, and the Batch 2A engineering sub-batch are completed. Batch 2B, the Batch 2 selector-pressure work, and Batch 3 remain pending. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, and Batch 2B are completed. Batch 2 Engine-pressure cleanup and Batch 3 remain pending. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2 Batch 2A branch was created from `main` at `b0e60ecb18618940e0d857a61e5910b973ac24bc`.
+Phase 5B-2 Batch 2B branch was created from `main` at `6bb1ef08eabdbcd8c616b2fd96d9317631d8fd1c`.
 
 ## Implemented
 
@@ -41,6 +41,7 @@ Phase 5B-2 Batch 2A branch was created from `main` at `b0e60ecb18618940e0d857a61
 - Phase 5B-2-A full intake audit with a 142-row official source inventory, 91 canonical family candidates, 118 expected production definitions, a complete 230-row Excel crosswalk, duplicate/source-boundary findings, and complexity-based import batches
 - Phase 5B-2 Batch 1 production import for `clergy`, `elected-official`, `judge`, and `museum-curator`, bringing Standard production coverage to 16 touched families / 19 definitions and mapping 5 additional official source entries as `production-batch-1`
 - Phase 5B-2 Batch 2A production import for 14 structured definitions (13 new complete families plus `police-officer`), bringing Standard production coverage to 29 fully implemented families / 33 definitions and mapping 16 additional official source entries as `production-batch-2`; `bounty-hunter` and `cowboy` remain Batch 2 `needs-review` pressure cases
+- Phase 5B-2 Batch 2B production import for 15 structured canonical definitions, bringing Standard production coverage to 44 fully implemented families / 48 definitions and mapping 16 additional official source entries as `production-batch-2`; `tribe-member` joins `bounty-hunter` and `cowboy` as an `exclusive-selector-branch-with-repeatable-selection` pressure case
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -107,7 +108,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond the completed Phase 5B-2 Batch 2A engineering sub-batch
+- verified Standard occupation production data beyond the completed Phase 5B-2 Batch 2B engineering sub-batch
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -120,13 +121,13 @@ Merged in the current enum:
 
 ## Next intended work
 
-The sequencing between Phase 5B-2 Batch 2B production import and the Batch 2 selector-pressure work is not yet decided or authorized by this document.
+The sequencing between Batch 2 Engine-pressure cleanup and Batch 3 is not yet decided or authorized by this document.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
-- the current Engine cannot express the `exclusive-selector-branch-with-repeatable-selection` semantics required by `bounty-hunter` and `cowboy`
-- Standard occupations outside the completed Phase 5B-2 Batch 2A engineering sub-batch still require entry-by-entry source verification in Batch 2B and Batch 3
+- the current Engine cannot express the `exclusive-selector-branch-with-repeatable-selection` semantics required by `bounty-hunter`, `cowboy`, and `tribe-member`
+- Standard occupations outside the completed Phase 5B-2 Batch 2B engineering sub-batch still require entry-by-entry source verification in Batch 3
 - browser storage can be cleared, and long-term file backup is not implemented
