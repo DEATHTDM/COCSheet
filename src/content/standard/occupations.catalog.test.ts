@@ -329,20 +329,20 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 63 个 canonical family 的 68 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 79 个 canonical family 的 84 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(68);
+    expect(standardSettingPack.occupations).toHaveLength(84);
     const families = new Set(standardSettingPack.occupations.map((occupation) =>
       occupation.variantOf ?? occupation.id,
     ));
-    expect(families.size).toBe(63);
+    expect(families.size).toBe(79);
   });
 
   it("所有 definition 通过 schema 与完整 Standard OccupationRegistry 注册", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(68);
+    expect(registry.definitions).toHaveLength(84);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -408,7 +408,12 @@ describe("Standard production occupation catalog", () => {
   it("搜索与 category/era filter 覆盖中文、英文与 alias", () => {
     expect(registry.search("会计师").map((occupation) => occupation.id)).toContain("accountant");
     expect(registry.search("Physician").map((occupation) => occupation.id)).toContain("doctor-of-medicine");
-    expect(registry.search("记者")).toHaveLength(3);
+    expect(registry.search("记者").map((occupation) => occupation.id)).toEqual([
+      "journalist-keeper-rulebook",
+      "journalist-investigative-handbook",
+      "journalist-reporter-handbook",
+      "foreign-correspondent",
+    ]);
     expect(registry.list({ category: "medical" }).map((occupation) => occupation.id)).toEqual([
       "doctor-of-medicine",
       "alienist",
@@ -418,11 +423,12 @@ describe("Standard production occupation catalog", () => {
       "hospital-orderly",
       "pharmacist",
       "psychiatrist",
+      "psychologist-psychoanalyst",
     ]);
     expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
     expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
-    expect(registry.list({ era: "classic-1920s" })).toHaveLength(68);
-    expect(registry.list({ era: "modern" })).toHaveLength(66);
+    expect(registry.list({ era: "classic-1920s" })).toHaveLength(84);
+    expect(registry.list({ era: "modern" })).toHaveLength(82);
   });
 
   it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {

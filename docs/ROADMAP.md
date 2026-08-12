@@ -105,7 +105,8 @@ Status: In Progress
 - Batch 1 completed: `clergy`, `elected-official`, `judge`, and `museum-curator`
 - Batch 2 completed: Batch 2A added 14 production definitions, Batch 2B added 15 production definitions, and the Engine-pressure cleanup added `one-branch` plus `bounty-hunter`, `cowboy`, and `tribe-member`
 - Batch 2 coverage is 32 production definitions across its imports and 36 mapped official source entries; the former `exclusive-selector-branch-with-repeatable-selection` pressure is resolved without changing `one-of`
-- Batch 3 in progress: Batch 3A completed 17 production definitions across 16 families, including two Entertainer source mechanics variants, and mapped 22 official source entries as `production-batch-3`; remaining Batch 3 occupations and the separately reviewed `deprogrammer` pressure case are pending
+- Batch 3 in progress: Batch 3A completed 17 production definitions across 16 families, including two Entertainer source mechanics variants; Batch 3B completed 16 canonical production definitions across 16 families; together they map 42 official source entries as `production-batch-3`
+- remaining Batch 3 work is 11 known source-variant families (34 expected definitions) plus the separately reviewed `deprogrammer` pressure case; 79 families / 84 definitions are currently production, with 12 families / 35 expected definitions remaining
 - enter the remaining confirmed Standard occupation definitions in complexity-based batches
 - preserve mechanical source variants and source/page metadata
 - use the Excel only as an intake checklist and re-verify every production mechanical field against official PDFs
