@@ -65,6 +65,9 @@ function validateSelector(selector: SkillSelector, skills: SkillRegistry): void 
       }
       return;
     }
+    case "one-branch":
+      selector.branches.forEach((branch) => validateSelector(branch.selector, skills));
+      return;
     case "one-of":
       selector.selectors.forEach((child) => validateSelector(child, skills));
       return;
@@ -77,6 +80,15 @@ function validateSelector(selector: SkillSelector, skills: SkillRegistry): void 
   }
 }
 
+function cardinalitiesOverlap(
+  left: SelectorCardinality,
+  right: SelectorCardinality,
+): boolean {
+  const minimum = Math.max(left.min, right.min);
+  const maximum = Math.min(left.max ?? Number.POSITIVE_INFINITY, right.max ?? Number.POSITIVE_INFINITY);
+  return minimum <= maximum;
+}
+
 function validateSelectorCardinality(
   selector: SkillSelector,
   cardinality: SelectorCardinality,
@@ -86,6 +98,17 @@ function validateSelectorCardinality(
     if (cardinality.min > 1 || (cardinality.max !== undefined && cardinality.max > 1)) {
       throw new Error(`${context} 的 exact selector 最多只能选择一项技能`);
     }
+    return;
+  }
+
+  if (selector.type === "one-branch") {
+    selector.branches.forEach((branch, index) => {
+      const branchContext = `${context}.one-branch[${index}]`;
+      validateSelectorCardinality(branch.selector, branch.cardinality, branchContext);
+      if (!cardinalitiesOverlap(cardinality, branch.cardinality)) {
+        throw new Error(`${branchContext} 的 cardinality 与外层 requirement 不相容`);
+      }
+    });
     return;
   }
 
@@ -129,6 +152,15 @@ function validateSelectorCardinality(
 
 function validateNestedSelectorStructure(selector: SkillSelector, context: string): void {
   switch (selector.type) {
+    case "one-branch":
+      selector.branches.forEach((branch, index) => {
+        validateSelectorCardinality(
+          branch.selector,
+          branch.cardinality,
+          `${context}.one-branch[${index}]`,
+        );
+      });
+      return;
     case "one-of":
       selector.selectors.forEach((child, index) => {
         validateNestedSelectorStructure(child, `${context}.one-of[${index}]`);

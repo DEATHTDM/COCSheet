@@ -126,6 +126,9 @@ export function matchesSkillSelector(ref: SkillRef, selector: SkillSelector): bo
         .map(normalizeDisplayName)
         .includes(actual);
     }
+    case "one-branch":
+      // This is union eligibility for one ref only. Whole-selection branch exclusivity is checked below.
+      return selector.branches.some((branch) => matchesSkillSelector(ref, branch.selector));
     case "one-of":
       return selector.selectors.some((candidate) => matchesSkillSelector(ref, candidate));
     case "any-skill":
@@ -189,6 +192,19 @@ function canAssignOneOf(
   return assign(0);
 }
 
+function canAssignOneBranch(
+  refs: readonly SkillRef[],
+  branches: Extract<SkillSelector, { type: "one-branch" }>["branches"],
+): boolean {
+  // one-of models distinct child slots and intentionally consumes each child at most once.
+  // one-branch instead derives one exclusive branch that accepts the complete selection
+  // under that branch's own cardinality; no chosen branch identity needs to be persisted.
+  return branches.some((branch) =>
+    cardinalityMatches(refs.length, branch.cardinality) &&
+    refs.every((ref) => matchesSkillSelector(ref, branch.selector)),
+  );
+}
+
 export function validateOccupationRequirementSelection(
   requirement: OccupationRequirement,
   refs: readonly SkillRef[],
@@ -218,7 +234,9 @@ export function validateOccupationRequirementSelection(
     ? canAssignAllOf(refs, requirement.selector.groups)
     : requirement.selector.type === "one-of"
       ? canAssignOneOf(refs, requirement.selector.selectors)
-      : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
+      : requirement.selector.type === "one-branch"
+        ? canAssignOneBranch(refs, requirement.selector.branches)
+        : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
   if (!selectorMatches) {
     errors.push({
       code: "selector-mismatch",
@@ -267,6 +285,27 @@ export function calculateCustomOccupationSkillCapacity(
   let hasUnboundedRequirement = false;
   const errors: string[] = [];
   for (const requirement of occupation.skillRequirements) {
+    if (requirement.selector.type === "one-branch") {
+      const branchCapacities = requirement.selector.branches.map((branch) => {
+        if (branch.cardinality.max !== undefined) return branch.cardinality.max;
+        if (branch.selector.type === "exact") return 1;
+        if (branch.selector.type === "specialization-of" &&
+          (branch.selector.definitionId === "fighting" || branch.selector.definitionId === "firearms")) {
+          return 1;
+        }
+        return requirement.cardinality.max;
+      });
+      if (branchCapacities.some((capacity) => capacity === undefined)) {
+        hasUnboundedRequirement = true;
+        errors.push(`自定义职业需求 ${requirement.id} 的 one-branch 无法证明有限容量`);
+        continue;
+      }
+      const branchMaximum = Math.max(...branchCapacities.map((capacity) => capacity ?? 0));
+      maximumSkills += requirement.cardinality.max === undefined
+        ? branchMaximum
+        : Math.min(branchMaximum, requirement.cardinality.max);
+      continue;
+    }
     if (requirement.cardinality.max !== undefined) {
       maximumSkills += requirement.cardinality.max;
       continue;

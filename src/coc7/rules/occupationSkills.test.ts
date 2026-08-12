@@ -185,6 +185,103 @@ describe("SkillSelector 与 requirement selection", () => {
     };
     expect(validateOccupationRequirementSelection(overlap, [firstAid, mechanicalRepair])).toEqual([]);
   });
+
+  it("one-of 社交 choose-two 继续消费两个不同 child，不能重复消费同一 child", () => {
+    const social: OccupationRequirement = {
+      id: "social",
+      selector: {
+        type: "one-of",
+        selectors: [
+          { type: "exact", ref: { type: "standard", definitionId: "charm" } },
+          { type: "exact", ref: { type: "standard", definitionId: "fast-talk" } },
+          { type: "exact", ref: { type: "standard", definitionId: "intimidate" } },
+          { type: "exact", ref: { type: "standard", definitionId: "persuade" } },
+        ],
+      },
+      cardinality: { min: 2, max: 2 },
+    };
+    const charm: SkillRef = { type: "standard", definitionId: "charm" };
+    const persuade: SkillRef = { type: "standard", definitionId: "persuade" };
+    expect(validateOccupationRequirementSelection(social, [charm, persuade])).toEqual([]);
+    expect(validateOccupationRequirementSelection(social, [charm, charm]).map((issue) => issue.code))
+      .toEqual(expect.arrayContaining(["duplicate-skill-selection", "selector-mismatch"]));
+  });
+
+  it("one-branch 允许 Fighting 或 Firearms branch 内多选，但拒绝跨 branch 混选", () => {
+    const requirement: OccupationRequirement = {
+      id: "fighting-or-firearms",
+      selector: {
+        type: "one-branch",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "fighting" },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "specialization-of", definitionId: "firearms" },
+            cardinality: { min: 1 },
+          },
+        ],
+      },
+      cardinality: { min: 1 },
+    };
+    const brawl: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "brawl" };
+    const sword: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "sword" };
+    const handgun: SkillRef = { type: "predefined", definitionId: "firearms", specializationId: "handgun" };
+    const rifle: SkillRef = {
+      type: "predefined",
+      definitionId: "firearms",
+      specializationId: "rifle-shotgun",
+    };
+
+    expect(matchesSkillSelector(brawl, requirement.selector)).toBe(true);
+    expect(matchesSkillSelector(handgun, requirement.selector)).toBe(true);
+    expect(matchesSkillSelector(medicine, requirement.selector)).toBe(false);
+    for (const refs of [[brawl], [brawl, sword], [handgun], [handgun, rifle]]) {
+      expect(validateOccupationRequirementSelection(requirement, refs)).toEqual([]);
+    }
+    for (const refs of [[brawl, handgun], [brawl, sword, handgun]]) {
+      expect(validateOccupationRequirementSelection(requirement, refs).map((issue) => issue.code))
+        .toContain("selector-mismatch");
+    }
+    expect(validateOccupationRequirementSelection(requirement, [brawl, brawl]).map((issue) => issue.code))
+      .toContain("duplicate-skill-selection");
+    expect(validateOccupationRequirementSelection(requirement, []).map((issue) => issue.code))
+      .toEqual(expect.arrayContaining(["requirement-cardinality", "selector-mismatch"]));
+  });
+
+  it("one-branch 允许 Fighting 1+ 或 Throw exactly one", () => {
+    const requirement: OccupationRequirement = {
+      id: "fighting-or-throw",
+      selector: {
+        type: "one-branch",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "fighting" },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "exact", ref: { type: "standard", definitionId: "throw" } },
+            cardinality: { min: 1, max: 1 },
+          },
+        ],
+      },
+      cardinality: { min: 1 },
+    };
+    const brawl: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "brawl" };
+    const sword: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "sword" };
+    const throwRef: SkillRef = { type: "standard", definitionId: "throw" };
+
+    for (const refs of [[throwRef], [brawl], [brawl, sword]]) {
+      expect(validateOccupationRequirementSelection(requirement, refs)).toEqual([]);
+    }
+    for (const refs of [[brawl, throwRef], [sword, throwRef]]) {
+      expect(validateOccupationRequirementSelection(requirement, refs).map((issue) => issue.code))
+        .toContain("selector-mismatch");
+    }
+    expect(validateOccupationRequirementSelection(requirement, [throwRef, throwRef]).map((issue) => issue.code))
+      .toEqual(expect.arrayContaining(["duplicate-skill-selection", "selector-mismatch"]));
+  });
 });
 
 describe("技能预算与 finalize plan", () => {
@@ -579,5 +676,74 @@ describe("Custom occupation foundation", () => {
       cardinality: { min: 1 },
     }]);
     expect(validateCustomOccupationDefinition(unboundedAny).join("；")).toContain("无法证明职业技能不超过八项");
+
+    const exclusiveCombatBranch = customWith([{
+      id: "exclusive-combat",
+      selector: {
+        type: "one-branch",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "fighting" },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "specialization-of", definitionId: "firearms" },
+            cardinality: { min: 1 },
+          },
+        ],
+      },
+      cardinality: { min: 1 },
+    }]);
+    expect(calculateCustomOccupationSkillCapacity(exclusiveCombatBranch)).toMatchObject({
+      valid: true,
+      maximumSkills: 1,
+    });
+
+    const fightingOrThrowBranch = customWith([{
+      id: "fighting-or-throw",
+      selector: {
+        type: "one-branch",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "fighting" },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "exact", ref: { type: "standard", definitionId: "throw" } },
+            cardinality: { min: 1, max: 1 },
+          },
+        ],
+      },
+      cardinality: { min: 1 },
+    }]);
+    expect(calculateCustomOccupationSkillCapacity(fightingOrThrowBranch)).toMatchObject({
+      valid: true,
+      maximumSkills: 1,
+    });
+
+    const unboundedNamedBranch = customWith([{
+      id: "unbounded-named-branch",
+      selector: {
+        type: "one-branch",
+        branches: [
+          {
+            selector: {
+              type: "named-custom-specialization",
+              definitionId: "art-craft",
+              name: { zh: "乐器", en: "Instrument" },
+            },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "exact", ref: medicine },
+            cardinality: { min: 1, max: 1 },
+          },
+        ],
+      },
+      cardinality: { min: 1 },
+    }]);
+    expect(calculateCustomOccupationSkillCapacity(unboundedNamedBranch).valid).toBe(false);
+    expect(calculateCustomOccupationSkillCapacity(unboundedNamedBranch).errors.join("；"))
+      .toContain("one-branch 无法证明有限容量");
   });
 });

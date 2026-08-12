@@ -55,6 +55,16 @@ describe("OccupationDefinition schema", () => {
       { type: "exact", ref: { type: "predefined", definitionId: "science", specializationId: "biology" } },
       { type: "specialization-of", definitionId: "science" },
       { type: "named-custom-specialization", definitionId: "language-other", name: { zh: "拉丁文", en: "Latin" } },
+      { type: "one-branch", branches: [
+        {
+          selector: { type: "specialization-of", definitionId: "fighting" },
+          cardinality: { min: 1 },
+        },
+        {
+          selector: { type: "exact", ref: { type: "standard", definitionId: "throw" } },
+          cardinality: { min: 1, max: 1 },
+        },
+      ] },
       { type: "one-of", selectors: [
         { type: "exact", ref: { type: "standard", definitionId: "charm" } },
         { type: "exact", ref: { type: "standard", definitionId: "persuade" } },
@@ -73,5 +83,29 @@ describe("OccupationDefinition schema", () => {
     ];
     selectors.forEach((selector) => expect(skillSelectorSchema.safeParse(selector).success).toBe(true));
     expect(skillSelectorSchema.safeParse({ type: "predicate", code: "return true" }).success).toBe(false);
+  });
+
+  it("one-branch 至少包含两个原子 branch，不接受组合 selector 嵌套", () => {
+    const branch = {
+      selector: { type: "specialization-of", definitionId: "fighting" },
+      cardinality: { min: 1 },
+    } as const;
+    expect(skillSelectorSchema.safeParse({ type: "one-branch", branches: [branch] }).success).toBe(false);
+    expect(skillSelectorSchema.safeParse({
+      type: "one-branch",
+      branches: [
+        branch,
+        {
+          selector: {
+            type: "one-of",
+            selectors: [
+              { type: "exact", ref: { type: "standard", definitionId: "charm" } },
+              { type: "exact", ref: { type: "standard", definitionId: "persuade" } },
+            ],
+          },
+          cardinality: { min: 1 },
+        },
+      ],
+    }).success).toBe(false);
   });
 });

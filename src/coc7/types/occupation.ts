@@ -110,6 +110,19 @@ export interface NamedCustomSpecializationSelector {
   readonly name: LocalizedSkillName;
 }
 
+export type OneBranchChildSkillSelector =
+  | ExactSkillSelector
+  | SpecializationOfSkillSelector
+  | NamedCustomSpecializationSelector;
+
+export interface OneBranchSkillSelector {
+  readonly type: "one-branch";
+  readonly branches: readonly {
+    readonly selector: OneBranchChildSkillSelector;
+    readonly cardinality: SelectorCardinality;
+  }[];
+}
+
 export interface OneOfSkillSelector {
   readonly type: "one-of";
   readonly selectors: readonly SkillSelector[];
@@ -132,6 +145,7 @@ export type SkillSelector =
   | ExactSkillSelector
   | SpecializationOfSkillSelector
   | NamedCustomSpecializationSelector
+  | OneBranchSkillSelector
   | OneOfSkillSelector
   | AnySkillSelector
   | AllOfSkillSelector;
@@ -156,6 +170,21 @@ const exactSkillRefSchema = z.discriminatedUnion("type", [
   }).strict(),
 ]);
 
+const oneBranchChildSkillSelectorSchema: z.ZodType<OneBranchChildSkillSelector> =
+  z.discriminatedUnion("type", [
+    z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
+    z.object({
+      type: z.literal("specialization-of"),
+      definitionId: skillDefinitionIdSchema,
+      exclude: z.array(exactSkillRefSchema).min(1).optional(),
+    }).strict(),
+    z.object({
+      type: z.literal("named-custom-specialization"),
+      definitionId: skillDefinitionIdSchema,
+      name: localizedSkillNameSchema,
+    }).strict(),
+  ]);
+
 export const skillSelectorSchema: z.ZodType<SkillSelector> = z.lazy(() =>
   z.discriminatedUnion("type", [
     z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
@@ -168,6 +197,13 @@ export const skillSelectorSchema: z.ZodType<SkillSelector> = z.lazy(() =>
       type: z.literal("named-custom-specialization"),
       definitionId: skillDefinitionIdSchema,
       name: localizedSkillNameSchema,
+    }).strict(),
+    z.object({
+      type: z.literal("one-branch"),
+      branches: z.array(z.object({
+        selector: oneBranchChildSkillSelectorSchema,
+        cardinality: selectorCardinalitySchema,
+      }).strict()).min(2),
     }).strict(),
     z.object({
       type: z.literal("one-of"),

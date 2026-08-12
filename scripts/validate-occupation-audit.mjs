@@ -2,6 +2,12 @@ import fs from "node:fs/promises";
 
 const inventoryPath = new URL("../docs/data/STANDARD_OCCUPATION_OFFICIAL_INVENTORY.csv", import.meta.url);
 const crosswalkPath = new URL("../docs/data/STANDARD_OCCUPATION_EXCEL_CROSSWALK.csv", import.meta.url);
+const productionModulePaths = [
+  new URL("../src/content/standard/occupations.ts", import.meta.url),
+  new URL("../src/content/standard/occupations/batch2a.ts", import.meta.url),
+  new URL("../src/content/standard/occupations/batch2b.ts", import.meta.url),
+  new URL("../src/content/standard/occupations/batch2-pressure.ts", import.meta.url),
+];
 
 function parseCsv(text) {
   const rows = [];
@@ -76,6 +82,12 @@ function assertRequired(records, keys, label) {
 
 const inventory = recordsFromCsv(await fs.readFile(inventoryPath, "utf8"), "official inventory");
 const crosswalk = recordsFromCsv(await fs.readFile(crosswalkPath, "utf8"), "Excel crosswalk");
+const productionModuleTexts = await Promise.all(
+  productionModulePaths.map((path) => fs.readFile(path, "utf8")),
+);
+const actualProductionIds = new Set(productionModuleTexts.flatMap((text) =>
+  [...text.matchAll(/defineOccupation\(\s*\r?\n\s*"([a-z0-9-]+)"/g)].map((match) => match[1])),
+);
 
 assert(inventory.length === 142, `official inventory: expected 142 rows, found ${inventory.length}`);
 assertUnique(inventory, "source_entry_id", "official inventory");
@@ -114,23 +126,10 @@ assert(inventory.filter((row) => row.implementation_status === "production-pilot
   "official inventory: pilot must map 22 source entries");
 const needsReviewRows = inventory.filter((row) => row.implementation_status === "needs-review");
 const needsReviewFamilies = new Set(needsReviewRows.map((row) => row.normalized_family_key));
-const expectedNeedsReviewFamilies = new Set([
-  "deprogrammer",
-  "bounty-hunter",
-  "cowboy",
-  "tribe-member",
-]);
-assert(needsReviewRows.length === 5
-    && needsReviewFamilies.size === expectedNeedsReviewFamilies.size
-    && [...expectedNeedsReviewFamilies].every((family) => needsReviewFamilies.has(family)),
-  "official inventory: needs-review families must match the current audited Engine-pressure set");
-const repeatableBranchPressureRows = needsReviewRows.filter((row) =>
-  ["bounty-hunter", "cowboy", "tribe-member"].includes(row.normalized_family_key));
-assert(repeatableBranchPressureRows.length === 4
-    && repeatableBranchPressureRows.every((row) => row.recommended_batch === "Batch 2 - structured")
-    && repeatableBranchPressureRows.every((row) => row.notes === "engine_pressure=exclusive-selector-branch-with-repeatable-selection")
-    && repeatableBranchPressureRows.every((row) => !row.notes.includes("production_id=")),
-  "official inventory: repeatable exclusive selector branch pressure rows must remain unmapped Batch 2 needs-review entries");
+assert(needsReviewRows.length === 1
+    && needsReviewFamilies.size === 1
+    && needsReviewFamilies.has("deprogrammer"),
+  "official inventory: Deprogrammer must be the only current needs-review family");
 const deprogrammerRows = needsReviewRows.filter((row) => row.normalized_family_key === "deprogrammer");
 assert(deprogrammerRows.length === 1
     && deprogrammerRows[0].recommended_batch === "Batch 3 - complex / review"
@@ -236,9 +235,30 @@ const batch2bFuzzyRequirementRows = inventory.filter((row) => [
 assert(batch2bFuzzyRequirementRows.length === 3
     && batch2bFuzzyRequirementRows.every((row) => row.fuzzy_requirement === "yes"),
   "official inventory: Musician instrument and Mountain Climber environment choices must retain fuzzy review semantics");
+const batch2PressureProductionIds = new Map([
+  ["bounty-hunter", "bounty-hunter"],
+  ["cowboy", "cowboy"],
+  ["tribe-member", "tribe-member"],
+]);
+const batch2PressureSourceEntryIds = new Set([
+  "keeper-p41-tribe-member",
+  "handbook-73-bounty-hunter",
+  "handbook-74-cowboy-cowgirl",
+  "handbook-91-tribe-member",
+]);
+const batch2PressureEntries = inventory.filter((row) =>
+  batch2PressureSourceEntryIds.has(row.source_entry_id));
+assert(batch2PressureEntries.length === batch2PressureSourceEntryIds.size
+    && batch2PressureEntries.every((row) => row.implementation_status === "production-batch-2")
+    && batch2PressureEntries.every((row) => row.recommended_batch === "Batch 2 - structured")
+    && batch2PressureEntries.every((row) =>
+      row.notes === `production_id=${batch2PressureProductionIds.get(row.normalized_family_key)}`)
+    && new Set(batch2PressureEntries.map((row) => row.normalized_family_key)).size ===
+      batch2PressureProductionIds.size,
+  "official inventory: resolved Batch 2 pressure families must have canonical production mappings");
 assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length ===
-    batch2aSourceEntryIds.size + batch2bSourceEntryIds.size,
-  "official inventory: production-batch-2 must contain exactly the successful Batch 2A and Batch 2B source entries");
+    batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size,
+  "official inventory: production-batch-2 must contain exactly 36 resolved Batch 2 source entries");
 const policeDetectiveEntries = inventory.filter((row) => [
   "keeper-p41-police-detective",
   "handbook-87-police-detective",
@@ -307,11 +327,19 @@ const expectedProductionIds = new Set([
   "undertaker",
   "union-activist",
   "zookeeper",
+  "bounty-hunter",
+  "cowboy",
+  "tribe-member",
 ]);
 assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
+assert(actualProductionIds.size === 51,
+  `production modules: expected 51 definitions, found ${actualProductionIds.size}`);
+assert(actualProductionIds.size === productionIds.size
+    && [...actualProductionIds].every((id) => productionIds.has(id)),
+  "official inventory: mapped production IDs do not match actual production modules");
 const pendingPoliceEntries = inventory.filter((row) => row.normalized_family_key === "police"
   && row.implementation_status === "pending");
 assert(pendingPoliceEntries.length === 0,
@@ -331,8 +359,8 @@ for (const [family, rows] of familyRows) {
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 44,
-  "Batch 2 - structured": 3,
+  "already implemented": 47,
+  "Batch 2 - structured": 0,
   "Batch 3 - complex / review": 44,
 };
 for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
@@ -387,5 +415,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size} Batch 2 production source entries.`);
+console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2 production source entries.`);
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");
