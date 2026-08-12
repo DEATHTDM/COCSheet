@@ -9,7 +9,7 @@ This document records the completed Phase 5B-2-A Standard occupation intake boun
 - `coc7-keeper-rulebook-40th-zh`: 《克苏鲁的呼唤 40 周年纪念版》
 - `coc7-investigator-handbook-zh-1-21`: 《克苏鲁的呼唤第七版调查员手册》
 
-The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Batch 2A and Batch 2B completed the lossless imports supported by the prior Engine. The subsequent Engine-pressure cleanup added the minimal `one-branch` selector and moved `bounty-hunter`, `cowboy`, and `tribe-member` into production. Formal Phase 5B-2 Batch 2 is completed. Batch 3 is now in progress: the Batch 3A engineering sub-batch completed 16 canonical families without changing the formal `Batch 3 - complex / review` audit classification. Phase 5C has not started.
+The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Batch 2A and Batch 2B completed the lossless imports supported by the prior Engine. The subsequent Engine-pressure cleanup added the minimal `one-branch` selector and moved `bounty-hunter`, `cowboy`, and `tribe-member` into production. Formal Phase 5B-2 Batch 2 is completed. Batch 3 is now in progress: the Batch 3A engineering sub-batch completed 17 production definitions across 16 families without changing the formal `Batch 3 - complex / review` audit classification. Phase 5C has not started.
 
 The full row-level results are in:
 
@@ -26,10 +26,10 @@ The full row-level results are in:
 | Investigator Handbook source occupation entries | 114 |
 | Total official source occupation entries | 142 |
 | Canonical family candidates after normalization | 91 |
-| Families containing mechanical variants | 14 |
-| Expected production definitions | 118 |
-| Additional definitions above one-per-family | 27 |
-| Definitions contained in the 14 variant families | 41 |
+| Families containing mechanical variants | 15 |
+| Expected production definitions | 119 |
+| Additional definitions above one-per-family | 28 |
+| Definitions contained in the 15 variant families | 43 |
 
 The 142 source entries are not 142 production definitions. Mechanically identical entries across the two official sources share one definition and retain both source references. Distinct formulas, Credit Rating ranges, deterministic requirements, cardinality, or approval semantics remain separate mechanics keys under a family.
 
@@ -41,12 +41,12 @@ The merged Phase 5B-1 pilot plus Phase 5B-2 Batch 1, completed Batch 2, and Batc
 | --- | ---: | ---: |
 | Canonical families touched | 63 | 91 |
 | Fully implemented families | 63 | 91 |
-| Production definitions | 67 | 118 expected |
+| Production definitions | 68 | 119 expected |
 | Official source entries mapped to those definitions | 85 | 142 |
 
-The 85 source-entry rows map to 67 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
+The 85 source-entry rows map to 68 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references, while genuine source mechanics variants retain distinct production IDs.
 
-Those definitions touch and fully implement 63 families. Batch 3A added 16 canonical definitions after PDF re-verification; it did not change the Engine.
+Those definitions touch and fully implement 63 families. Batch 3A added 17 definitions after PDF re-verification, including two Entertainer source mechanics variants; it did not change the Engine.
 
 The mapped production IDs are:
 
@@ -113,7 +113,8 @@ The mapped production IDs are:
 - `drifter`
 - `editor`
 - `engineer`
-- `entertainer`
+- `entertainer-keeper-rulebook`
+- `entertainer-investigator-handbook`
 - `farmer`
 - `missionary-keeper-rulebook`
 - `missionary-investigator-handbook`
@@ -182,7 +183,7 @@ All six exact duplicate-name groups are category C: the first row is a confirmed
 
 ## 6. Mechanical variant candidates
 
-The audit finds 14 variant families. The full source-entry fingerprints and mechanics keys are in the official inventory CSV.
+The audit finds 15 variant families. The full source-entry fingerprints and mechanics keys are in the official inventory CSV.
 
 | Family | Expected mechanics | Reason to remain distinct |
 | --- | ---: | --- |
@@ -190,6 +191,7 @@ The audit finds 14 variant families. The full source-entry fingerprints and mech
 | `computer-professional` | 2 | Programmer/technician and hacker requirements differ; the core Hacker matches the Handbook Hacker. |
 | `criminal` | 12 | The Keeper generic Criminal and 11 Handbook subtypes differ across CR, formula, requirements, and cardinality. |
 | `driver` | 3 | Chauffeur, general driver, and taxi driver have different CR/formula/requirements. |
+| `entertainer` | 2 | Keeper fixes Art / Craft (Acting) and unrestricted other skills; Handbook allows a Keeper-reviewed performance-related Art / Craft specialization and personal/era specialties. |
 | `gangster` | 2 | Boss and underling differ in CR, formula, and requirements. |
 | `journalist` | 3 | Keeper Journalist, Handbook Investigative Journalist, and Handbook Reporter have different deterministic requirements. |
 | `laborer` | 3 | Unskilled laborer, lumberjack, and miner have different deterministic requirements. |
@@ -294,11 +296,13 @@ The Engine-pressure cleanup added `bounty-hunter`, `cowboy`, and `tribe-member` 
 
 ### Batch 3 — complex / review — in progress
 
-The formal audit batch began with 44 families / 67 expected definitions. Batch 3A completed 16 canonical families / 16 definitions: `acrobat`, `animal-trainer`, `athlete`, `bartender`, `boxer-wrestler`, `butler-valet-maid`, `craftsperson`, `cult-leader`, `designer`, `dilettante`, `diver`, `drifter`, `editor`, `engineer`, `entertainer`, and `farmer`. Their 22 source rows retain `recommended_batch=Batch 3 - complex / review` and now use `implementation_status=production-batch-3`.
+The formal audit batch began with 44 families / 68 expected definitions. Batch 3A completed 17 production definitions across 16 families: `acrobat`, `animal-trainer`, `athlete`, `bartender`, `boxer-wrestler`, `butler-valet-maid`, `craftsperson`, `cult-leader`, `designer`, `dilettante`, `diver`, `drifter`, `editor`, `engineer`, two `entertainer` source variants, and `farmer`. Their 22 source rows retain `recommended_batch=Batch 3 - complex / review` and use `implementation_status=production-batch-3`.
 
-The six cross-source families—`athlete`, `dilettante`, `drifter`, `engineer`, `entertainer`, and `farmer`—were re-compared against both official PDFs. CR, formula, fixed skills, choice grouping, cardinality, specialization, and era all match. The Keeper Rulebook's page 40 occupation/era adaptation rule and the Handbook's personal/era wording support one canonical broad-selection mechanic with guidance and Keeper review; no source variant was created. `entertainer` retains a fuzzy Art / Craft parent selector because acting, singing, and comedy are examples, not an Acting-only restriction. `farmer` uses the canonical `drive-auto` identity because the Keeper Rulebook skill chapter explicitly treats Wagon Driving as the period-appropriate name for that generic skill. `butler-valet-maid` keeps CR 9–40; the employer-household status sentence is source guidance within that range, not a new dynamic CR formula.
+The five canonical cross-source families—`athlete`, `dilettante`, `drifter`, `engineer`, and `farmer`—were re-compared against both official PDFs. CR, formula, fixed skills, choice grouping, cardinality, specialization, and era match. The Keeper Rulebook's page 40 occupation/era adaptation rule and the Handbook's personal/era wording support one broad-selection mechanic with guidance and Keeper review for those families. `farmer` uses the canonical `drive-auto` identity because the Keeper Rulebook skill chapter explicitly treats Wagon Driving as the period-appropriate name for that generic skill. `butler-valet-maid` keeps CR 9–40; the employer-household status sentence is source guidance within that range, not a new dynamic CR formula.
 
-AUDIT CONFLICT — Batch 3A: none.
+### AUDIT CONFLICT — Batch 3A
+
+`entertainer` was previously classified as `canonical-match-across-sources`. Re-verification found different specialization-selection mechanics: Keeper Rulebook printed page 40 fixes Art / Craft (Acting), while Investigator Handbook printed page 79 allows one performance-related Art / Craft specialization and gives Acting, Singing, and Comedy as examples. The Keeper variant also has two unrestricted other skills, while the Handbook variant has two personal/era specialties. The family is corrected to two definitions—`entertainer-keeper-rulebook` and `entertainer-investigator-handbook`—with `variantOf: entertainer`. This is a source mechanics variant, not Engine pressure.
 
 NEW ENGINE PRESSURE — Batch 3A: none. `deprogrammer` is unchanged and remains the sole `needs-review` family.
 
@@ -312,7 +316,7 @@ These contain fuzzy personal/era/academic requirements, source variants, special
 
 | Measure | Count |
 | --- | ---: |
-| Current production definitions | 67 |
+| Current production definitions | 68 |
 | Fully implemented families | 63 |
 | Partially implemented families with work remaining | 0 |
 | Wholly unimplemented families | 28 |
@@ -324,7 +328,7 @@ These contain fuzzy personal/era/academic requirements, source variants, special
 | Completed Batch 2B production families / definitions | 15 / 15 |
 | Completed Batch 2 Engine-pressure cleanup families / definitions | 3 / 3 |
 | Production Batch 2 source entries | 36 |
-| Completed Batch 3A production families / definitions | 16 / 16 |
+| Completed Batch 3A production families / definitions | 16 / 17 |
 | Production Batch 3 source entries | 22 |
 | Batch 3 families remaining | 28 |
 | Batch 3 definitions remaining | 51 across 28 families |

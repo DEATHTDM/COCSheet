@@ -261,57 +261,46 @@ assert(batch2PressureEntries.length === batch2PressureSourceEntryIds.size
 assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length ===
     batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size,
   "official inventory: production-batch-2 must contain exactly 36 resolved Batch 2 source entries");
-const batch3aProductionIds = new Map([
-  ["acrobat", "acrobat"],
-  ["animal-trainer", "animal-trainer"],
-  ["athlete", "athlete"],
-  ["bartender", "bartender"],
-  ["boxer-wrestler", "boxer-wrestler"],
-  ["butler-valet-maid", "butler-valet-maid"],
-  ["craftsperson", "craftsperson"],
-  ["cult-leader", "cult-leader"],
-  ["designer", "designer"],
-  ["dilettante", "dilettante"],
-  ["diver", "diver"],
-  ["drifter", "drifter"],
-  ["editor", "editor"],
-  ["engineer", "engineer"],
-  ["entertainer", "entertainer"],
-  ["farmer", "farmer"],
+const batch3aProductionIdBySourceEntry = new Map([
+  ["keeper-p40-athlete", "athlete"],
+  ["keeper-p40-dilettante", "dilettante"],
+  ["keeper-p40-drifter", "drifter"],
+  ["keeper-p40-engineer", "engineer"],
+  ["keeper-p40-entertainer", "entertainer-keeper-rulebook"],
+  ["keeper-p40-farmer", "farmer"],
+  ["handbook-70-acrobat", "acrobat"],
+  ["handbook-71-animal-trainer", "animal-trainer"],
+  ["handbook-72-athlete", "athlete"],
+  ["handbook-73-bartender", "bartender"],
+  ["handbook-73-boxer-wrestler", "boxer-wrestler"],
+  ["handbook-74-butler-valet-maid", "butler-valet-maid"],
+  ["handbook-74-craftsperson", "craftsperson"],
+  ["handbook-77-cult-leader", "cult-leader"],
+  ["handbook-78-designer", "designer"],
+  ["handbook-78-dilettante", "dilettante"],
+  ["handbook-78-diver", "diver"],
+  ["handbook-78-drifter", "drifter"],
+  ["handbook-79-editor", "editor"],
+  ["handbook-79-engineer", "engineer"],
+  ["handbook-79-entertainer", "entertainer-investigator-handbook"],
+  ["handbook-80-farmer", "farmer"],
 ]);
-const batch3aSourceEntryIds = new Set([
-  "keeper-p40-athlete",
-  "keeper-p40-dilettante",
-  "keeper-p40-drifter",
-  "keeper-p40-engineer",
-  "keeper-p40-entertainer",
-  "keeper-p40-farmer",
-  "handbook-70-acrobat",
-  "handbook-71-animal-trainer",
-  "handbook-72-athlete",
-  "handbook-73-bartender",
-  "handbook-73-boxer-wrestler",
-  "handbook-74-butler-valet-maid",
-  "handbook-74-craftsperson",
-  "handbook-77-cult-leader",
-  "handbook-78-designer",
-  "handbook-78-dilettante",
-  "handbook-78-diver",
-  "handbook-78-drifter",
-  "handbook-79-editor",
-  "handbook-79-engineer",
-  "handbook-79-entertainer",
-  "handbook-80-farmer",
-]);
+const batch3aSourceEntryIds = new Set(batch3aProductionIdBySourceEntry.keys());
 const batch3aEntries = inventory.filter((row) => batch3aSourceEntryIds.has(row.source_entry_id));
 assert(batch3aEntries.length === batch3aSourceEntryIds.size
     && batch3aEntries.every((row) => row.implementation_status === "production-batch-3")
     && batch3aEntries.every((row) => row.recommended_batch === "Batch 3 - complex / review")
     && batch3aEntries.every((row) =>
-      row.notes === `production_id=${batch3aProductionIds.get(row.normalized_family_key)}`)
-    && new Set(batch3aEntries.map((row) => row.normalized_family_key)).size ===
-      batch3aProductionIds.size,
-  "official inventory: all 16 Batch 3A families must map to canonical production IDs and retain the formal Batch 3 assignment");
+      row.notes === `production_id=${batch3aProductionIdBySourceEntry.get(row.source_entry_id)}`)
+    && new Set(batch3aEntries.map((row) => row.normalized_family_key)).size === 16
+    && new Set(batch3aProductionIdBySourceEntry.values()).size === 17,
+  "official inventory: all Batch 3A source entries must map to 17 production definitions across 16 families and retain the formal Batch 3 assignment");
+const entertainerEntries = batch3aEntries.filter((row) => row.normalized_family_key === "entertainer");
+assert(entertainerEntries.length === 2
+    && entertainerEntries.every((row) => row.mechanical_comparison === "mechanical-variant-candidate")
+    && entertainerEntries.every((row) => row.variant_candidate === "yes")
+    && entertainerEntries.every((row) => row.canonical_family_candidate === "entertainer"),
+  "official inventory: Entertainer source rows must retain their corrected mechanical variant classification");
 assert(inventory.filter((row) => row.implementation_status === "production-batch-3").length ===
     batch3aSourceEntryIds.size,
   `official inventory: production-batch-3 must contain exactly ${batch3aSourceEntryIds.size} Batch 3A source entries`);
@@ -400,7 +389,8 @@ const expectedProductionIds = new Set([
   "drifter",
   "editor",
   "engineer",
-  "entertainer",
+  "entertainer-keeper-rulebook",
+  "entertainer-investigator-handbook",
   "farmer",
   "cowboy",
   "tribe-member",
@@ -409,8 +399,8 @@ assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
-assert(actualProductionIds.size === 67,
-  `production modules: expected 67 definitions, found ${actualProductionIds.size}`);
+assert(actualProductionIds.size === 68,
+  `production modules: expected 68 definitions, found ${actualProductionIds.size}`);
 assert(actualProductionIds.size === productionIds.size
     && [...actualProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match actual production modules");

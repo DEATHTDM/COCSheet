@@ -301,7 +301,26 @@ const expectedDefinitions = [
     sourcePages: ["coc7-keeper-rulebook-40th-zh:40", "coc7-investigator-handbook-zh-1-21:79"],
   },
   {
-    id: "entertainer",
+    id: "entertainer-keeper-rulebook",
+    name: { zh: "艺人", en: "Entertainer" },
+    aliases: undefined,
+    category: "media-art",
+    creditRating: { min: 9, max: 70 },
+    pointFormula: edu2Best("APP"),
+    requirements: [
+      ["acting", "exact", 1, 1],
+      ["disguise", "exact", 1, 1],
+      ["social", "one-of", 2, 2],
+      ["listen", "exact", 1, 1],
+      ["psychology", "exact", 1, 1],
+      ["other-skills", "any-skill", 2, 2],
+    ],
+    keeperReviewIds: [],
+    sourcePages: ["coc7-keeper-rulebook-40th-zh:40"],
+    variantOf: "entertainer",
+  },
+  {
+    id: "entertainer-investigator-handbook",
     name: { zh: "艺人", en: "Entertainer" },
     aliases: undefined,
     category: "media-art",
@@ -316,7 +335,8 @@ const expectedDefinitions = [
       ["personal-or-era-specialties", "any-skill", 2, 2],
     ],
     keeperReviewIds: ["performing-art-craft", "personal-or-era-specialties"],
-    sourcePages: ["coc7-keeper-rulebook-40th-zh:40", "coc7-investigator-handbook-zh-1-21:79"],
+    sourcePages: ["coc7-investigator-handbook-zh-1-21:79"],
+    variantOf: "entertainer",
   },
   {
     id: "farmer",
@@ -375,12 +395,17 @@ describe("Phase 5B-2 Batch 3A occupations", () => {
     )).toEqual(expected.keeperReviewIds);
     expect(occupation?.sourceRefs.map((source) => `${source.sourceId}:${source.page}`))
       .toEqual(expected.sourcePages);
-    expect(occupation?.variantOf).toBeUndefined();
+    expect(occupation?.variantOf).toBe("variantOf" in expected ? expected.variantOf : undefined);
   });
 
-  it("本批恰好导入 16 个 canonical definition", () => {
-    expect(batch3aOccupationDefinitions).toHaveLength(16);
-    expect(batch3aOccupationDefinitions.every((occupation) => occupation.variantOf === undefined)).toBe(true);
+  it("本批导入 17 个 definition、完整实现 16 个 family，并保留 Entertainer variant identity", () => {
+    expect(batch3aOccupationDefinitions).toHaveLength(17);
+    expect(new Set(batch3aOccupationDefinitions.map((occupation) => occupation.variantOf ?? occupation.id)).size)
+      .toBe(16);
+    expect(registry.get("entertainer")).toBeUndefined();
+    expect(registry.definitions.filter((occupation) => occupation.variantOf === "entertainer").map(
+      (occupation) => occupation.id,
+    )).toEqual(["entertainer-keeper-rulebook", "entertainer-investigator-handbook"]);
   });
 
   it("Craftsperson 的 Art / Craft choose-two 接受不同专业并拒绝重复 SkillRef", () => {
@@ -464,18 +489,64 @@ describe("Phase 5B-2 Batch 3A occupations", () => {
       .toEqual([]);
   });
 
-  it("Entertainer 的表演类 Art / Craft 是 fuzzy parent selector，而不是固定 Acting", () => {
-    const performance = requirement("entertainer", "performing-art-craft");
-    expect(performance.keeperReview).toBe(true);
-    expect(validateOccupationRequirementSelection(performance, [predefined("art-craft", "acting")])).toEqual([]);
-    expect(validateOccupationRequirementSelection(performance, [{
+  it("Keeper Entertainer 只接受固定 Acting，且自由两项技能不需要 Keeper review", () => {
+    const acting = requirement("entertainer-keeper-rulebook", "acting");
+    const otherSkills = requirement("entertainer-keeper-rulebook", "other-skills");
+    const singing: SkillRef = {
       type: "custom",
       definitionId: "art-craft",
       specializationId: "00000000-0000-4000-8000-000000000033",
       displayName: "声乐",
+    };
+    const comedy: SkillRef = {
+      type: "custom",
+      definitionId: "art-craft",
+      specializationId: "00000000-0000-4000-8000-000000000034",
+      displayName: "喜剧",
+    };
+
+    expect(validateOccupationRequirementSelection(acting, [predefined("art-craft", "acting")])).toEqual([]);
+    for (const ref of [singing, comedy, predefined("art-craft", "photography")]) {
+      expect(validateOccupationRequirementSelection(acting, [ref]).map((issue) => issue.code))
+        .toContain("selector-mismatch");
+    }
+    expect(otherSkills).toMatchObject({
+      selector: { type: "any-skill" },
+      cardinality: { min: 2, max: 2 },
+    });
+    expect(otherSkills.keeperReview).toBeUndefined();
+    expect(otherSkills.guidance).toBeUndefined();
+  });
+
+  it("Handbook Entertainer 接受表演类 Art / Craft parent selector，并保留两项 fuzzy 特长", () => {
+    const performance = requirement("entertainer-investigator-handbook", "performing-art-craft");
+    const personalOrEra = requirement("entertainer-investigator-handbook", "personal-or-era-specialties");
+    expect(performance.keeperReview).toBe(true);
+    expect(performance.guidance).toEqual({
+      zh: "适合表演行业的艺术／手艺专业，例如表演、声乐或喜剧",
+      en: "an Art / Craft specialization suited to performance, such as acting, singing, or comedy",
+    });
+    expect(validateOccupationRequirementSelection(performance, [predefined("art-craft", "acting")])).toEqual([]);
+    for (const [specializationId, displayName] of [
+      ["00000000-0000-4000-8000-000000000035", "声乐"],
+      ["00000000-0000-4000-8000-000000000036", "喜剧"],
+    ] as const) expect(validateOccupationRequirementSelection(performance, [{
+      type: "custom",
+      definitionId: "art-craft",
+      specializationId,
+      displayName,
     }])).toEqual([]);
     expect(validateOccupationRequirementSelection(performance, [standard("disguise")]).map((issue) => issue.code))
       .toContain("selector-mismatch");
+    expect(personalOrEra).toMatchObject({
+      selector: { type: "any-skill" },
+      cardinality: { min: 2, max: 2 },
+      keeperReview: true,
+      guidance: {
+        zh: "个人或时代特长",
+        en: "personal or era specialty",
+      },
+    });
   });
 
   it("one-of 只接受列明分支；Animal Trainer 固定使用 Animal Handling", () => {
