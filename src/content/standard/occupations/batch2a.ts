@@ -19,10 +19,6 @@ import {
 
 const brawl = exact(predefined("fighting", "brawl"));
 const genericFirearms = specializationOf("firearms");
-const fightingOrFirearms = oneOf(
-  specializationOf("fighting"),
-  specializationOf("firearms"),
-);
 
 export const batch2aOccupationDefinitions: readonly OccupationDefinition[] = [
   defineOccupation(
@@ -197,51 +193,6 @@ export const batch2aOccupationDefinitions: readonly OccupationDefinition[] = [
       requirement("social", socialSelector),
     ],
     "business-professional",
-  ),
-  defineOccupation(
-    "bounty-hunter",
-    "赏金猎人",
-    "Bounty Hunter",
-    [investigatorHandbook(73)],
-    { min: 9, max: 30 },
-    edu2Plus("DEX", "STR"),
-    [
-      requirement("drive-auto", exact(standard("drive-auto"))),
-      requirement("electronics-or-electrical-repair", oneOf(
-        exact(standard("electronics")),
-        exact(standard("electrical-repair")),
-      )),
-      requirement("fighting-or-firearms", fightingOrFirearms),
-      requirement("social", socialSelector),
-      requirement("law", exact(standard("law"))),
-      requirement("psychology", exact(standard("psychology"))),
-      requirement("track", exact(standard("track"))),
-      requirement("stealth", exact(standard("stealth"))),
-    ],
-    "investigation-security",
-  ),
-  defineOccupation(
-    "cowboy",
-    "牛仔",
-    "Cowboy / Cowgirl",
-    [investigatorHandbook(74)],
-    { min: 9, max: 20 },
-    edu2Plus("DEX", "STR"),
-    [
-      requirement("dodge", exact(standard("dodge"))),
-      requirement("fighting-or-firearms", fightingOrFirearms),
-      requirement("first-aid-or-natural-world", oneOf(
-        exact(standard("first-aid")),
-        exact(standard("natural-world")),
-      )),
-      requirement("jump", exact(standard("jump"))),
-      requirement("ride", exact(standard("ride"))),
-      requirement("survival", specializationOf("survival")),
-      requirement("throw", exact(standard("throw"))),
-      requirement("track", exact(standard("track"))),
-    ],
-    "outdoor-adventure",
-    { aliases: { zh: ["女牛仔"], en: ["Cowboy", "Cowgirl"] } },
   ),
   defineOccupation(
     "explorer",

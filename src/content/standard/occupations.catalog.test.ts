@@ -326,20 +326,20 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 31 个 canonical family 的 35 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 29 个 canonical family 的 33 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(35);
+    expect(standardSettingPack.occupations).toHaveLength(33);
     const families = new Set(standardSettingPack.occupations.map((occupation) =>
-      occupation.id === "police-detective" ? "police" : occupation.variantOf ?? occupation.id,
+      occupation.variantOf ?? occupation.id,
     ));
-    expect(families.size).toBe(31);
+    expect(families.size).toBe(29);
   });
 
   it("所有 definition 通过 schema 与完整 Standard OccupationRegistry 注册", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(35);
+    expect(registry.definitions).toHaveLength(33);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -354,7 +354,9 @@ describe("Standard production occupation catalog", () => {
     expect(registry.get("police")).toBeUndefined();
     expect(registry.definitions.filter((occupation) => occupation.variantOf === "journalist")).toHaveLength(3);
     expect(registry.definitions.filter((occupation) => occupation.variantOf === "missionary")).toHaveLength(2);
-    expect(registry.definitions.filter((occupation) => occupation.variantOf === "police")).toHaveLength(1);
+    expect(registry.get("police-detective")?.variantOf).toBe("police");
+    expect(registry.get("police-officer")?.variantOf).toBe("police");
+    expect(registry.definitions.filter((occupation) => occupation.variantOf === "police")).toHaveLength(2);
   });
 
   it("所有 exact、predefined、specialization 与 named custom selector 都可由 Standard skill catalog 解析", () => {
@@ -410,8 +412,8 @@ describe("Standard production occupation catalog", () => {
     ]);
     expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
     expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
-    expect(registry.list({ era: "classic-1920s" })).toHaveLength(35);
-    expect(registry.list({ era: "modern" })).toHaveLength(33);
+    expect(registry.list({ era: "classic-1920s" })).toHaveLength(33);
+    expect(registry.list({ era: "modern" })).toHaveLength(31);
   });
 
   it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {

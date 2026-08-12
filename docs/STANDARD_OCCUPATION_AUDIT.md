@@ -9,7 +9,7 @@ This document records the completed Phase 5B-2-A Standard occupation intake boun
 - `coc7-keeper-rulebook-40th-zh`: 《克苏鲁的呼唤 40 周年纪念版》
 - `coc7-investigator-handbook-zh-1-21`: 《克苏鲁的呼唤第七版调查员手册》
 
-The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Phase 5B-2 Batch 2 has started: the Batch 2A engineering sub-batch has added 16 production `OccupationDefinition` records without changing the Occupation Engine, starting Phase 5C, or importing the workbook into Git. Formal audit Batch 2 remains in progress because Batch 2B is still pending.
+The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Phase 5B-2 Batch 2 has started: the Batch 2A engineering sub-batch has added 14 production `OccupationDefinition` records without changing the Occupation Engine, starting Phase 5C, or importing the workbook into Git. Formal audit Batch 2 remains in progress because Batch 2B and two Engine-pressure families are still pending.
 
 The full row-level results are in:
 
@@ -39,14 +39,14 @@ The merged Phase 5B-1 pilot plus Phase 5B-2 Batch 1 and Batch 2A cover:
 
 | Measure | Covered | Total |
 | --- | ---: | ---: |
-| Canonical families touched | 31 | 91 |
-| Fully implemented families | 31 | 91 |
-| Production definitions | 35 | 118 expected |
-| Official source entries mapped to those definitions | 45 | 142 |
+| Canonical families touched | 29 | 91 |
+| Fully implemented families | 29 | 91 |
+| Production definitions | 33 | 118 expected |
+| Official source entries mapped to those definitions | 43 | 142 |
 
-The 45 source-entry rows map to 35 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
+The 43 source-entry rows map to 33 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
 
-Those definitions touch and fully implement 31 families. The `police` family is now complete: the existing `police-detective` mapping is unchanged, and both matching Keeper/Handbook uniformed-officer entries map to the new `police-officer` definition.
+Those definitions touch and fully implement 29 families. The `police` family is now complete: `police-detective` retains its mechanics and source mapping while gaining `variantOf: police`, and both matching Keeper/Handbook uniformed-officer entries map to the new `police-officer` definition.
 
 The mapped production IDs are:
 
@@ -62,9 +62,7 @@ The mapped production IDs are:
 - `author`
 - `big-game-hunter`
 - `book-dealer`
-- `bounty-hunter`
 - `clergy`
-- `cowboy`
 - `doctor-of-medicine`
 - `elected-official`
 - `explorer`
@@ -177,9 +175,9 @@ No official occupation mechanics block states a Characteristic prerequisite. Rea
 
 There are no unverified Excel rows under the current evidence boundary. The 115 out-of-scope rows remain future Setting/source intake material and must be re-opened only with their corresponding official books. In particular, the Excel source hints are enough for exclusion but are not authority for future Gaslight, Japanese, or Investigator Companion mechanics.
 
-One confirmed Standard family has `implementation_status=needs-review`: `deprogrammer`. Its source identity and canonicalization are verified; the review is an Engine-expression issue, not an unverified-source issue.
+Three confirmed Standard families have `implementation_status=needs-review`: `deprogrammer`, `bounty-hunter`, and `cowboy`. Their source identity and canonicalization are verified; each review is an Engine-expression issue, not an unverified-source issue.
 
-## 8. Engine pressure case
+## 8. Engine pressure cases
 
 ### `deprogrammer` — Investigator Handbook printed page 77
 
@@ -189,15 +187,25 @@ Affected layer: `OccupationRequirement` / `SkillSelector` composition and approv
 
 This audit does not change the Engine. The family remains in Batch 3 with `needs-review`.
 
+### `bounty-hunter` and `cowboy` — Investigator Handbook printed pages 73–74
+
+Both official mechanics require the player to choose one exclusive branch—Fighting or Firearms—and then select one or more specializations within that chosen branch, without mixing branches. The current `one-of` selector assigns at most one selected `SkillRef` to each child selector, so it cannot express an exclusive branch that itself allows repeatable selection.
+
+Stable pressure description: `exclusive-selector-branch-with-repeatable-selection`.
+
+Affected layer: `OccupationRequirement` / `SkillSelector` branch cardinality semantics.
+
+This hardening does not change the Engine. Both families retain `recommended_batch=Batch 2 - structured`, return to `needs-review`, and have no production ID until the pressure is resolved.
+
 The Occultist's optional Keeper-approved Cthulhu Mythos selection is not a new pressure case: the existing broad selection plus Cthulhu Mythos creation-point approval can represent it, while the source's suggested starting limit of 10 remains guidance.
 
 ## 9. Phase 5B-2 production plan
 
-Every one of the 91 confirmed Standard families is assigned exactly once in the implementation plan: 31 are fully implemented after Batch 2A, 16 remain in Batch 2B, and 44 are assigned to Batch 3. The completed Batch 2A sub-batch added the uniformed-officer definition without repeating or changing `police-detective`.
+Every one of the 91 confirmed Standard families is assigned exactly once in the implementation plan: 29 are fully implemented after Batch 2A, 18 remain in Batch 2 (16 Batch 2B families plus 2 Engine-pressure families), and 44 are assigned to Batch 3. The completed Batch 2A sub-batch added the uniformed-officer definition and only corrected `police-detective` family identity; its mechanics remain unchanged.
 
-### Already implemented — 31 complete families
+### Already implemented — 29 complete families
 
-Complete: `accountant`, `agency-detective`, `alienist`, `antiquarian`, `antique-dealer`, `archaeologist`, `architect`, `artist`, `asylum-attendant`, `author`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `clergy`, `cowboy`, `doctor-of-medicine`, `elected-official`, `explorer`, `firefighter`, `forensic-surgeon`, `journalist`, `judge`, `laboratory-assistant`, `lawyer`, `missionary`, `museum-curator`, `nurse`, `police`, `professor`, `soldier-marine`, `student-intern`.
+Complete: `accountant`, `agency-detective`, `alienist`, `antiquarian`, `antique-dealer`, `archaeologist`, `architect`, `artist`, `asylum-attendant`, `author`, `big-game-hunter`, `book-dealer`, `clergy`, `doctor-of-medicine`, `elected-official`, `explorer`, `firefighter`, `forensic-surgeon`, `journalist`, `judge`, `laboratory-assistant`, `lawyer`, `missionary`, `museum-curator`, `nurse`, `police`, `professor`, `soldier-marine`, `student-intern`.
 
 ### Batch 1 — simple — completed
 
@@ -207,9 +215,9 @@ All five corresponding official source entries retain `recommended_batch=Batch 1
 
 ### Batch 2 — structured — in progress
 
-Batch 2A completed 16 families / 16 definitions: `agency-detective`, `alienist`, `antique-dealer`, `archaeologist`, `architect`, `asylum-attendant`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `cowboy`, `explorer`, `firefighter`, `forensic-surgeon`, `lawyer`, `nurse`, and the `police` follow-up definition.
+Batch 2A completed 14 production definitions: 13 new complete families—`agency-detective`, `alienist`, `antique-dealer`, `archaeologist`, `architect`, `asylum-attendant`, `big-game-hunter`, `book-dealer`, `explorer`, `firefighter`, `forensic-surgeon`, `lawyer`, and `nurse`—plus the `police` follow-up definition.
 
-The 18 corresponding official source entries retain `recommended_batch=Batch 2 - structured` and are marked `implementation_status=production-batch-2`. This engineering split does not rename the formal audit batch.
+The 16 corresponding official source entries retain `recommended_batch=Batch 2 - structured` and are marked `implementation_status=production-batch-2`. `bounty-hunter` and `cowboy` retain the same recommended batch but are `needs-review`, not production entries. This engineering split does not rename the formal audit batch.
 
 Batch 2B remains: `gambler`, `gentleman-lady`, `hospital-orderly`, `mountain-climber`, `musician`, `outdoorsperson`, `pharmacist`, `psychiatrist`, `salesperson`, `shopkeeper`, `spy`, `stunt-performer`, `tribe-member`, `undertaker`, `union-activist`, `zookeeper`.
 
@@ -223,19 +231,19 @@ These contain fuzzy personal/era/academic requirements, source variants, special
 
 | Measure | Count |
 | --- | ---: |
-| Current production definitions | 35 |
-| Fully implemented families | 31 |
+| Current production definitions | 33 |
+| Fully implemented families | 29 |
 | Partially implemented families with work remaining | 0 |
-| Wholly unimplemented families | 60 |
-| Families not fully implemented | 60 |
-| Expected production definitions remaining | 83 |
+| Wholly unimplemented families | 62 |
+| Families not fully implemented | 62 |
+| Expected production definitions remaining | 85 |
 | Completed Batch 1 families | 4 |
 | Completed Batch 1 definitions | 4 |
-| Completed Batch 2A families | 16 (including completed `police`) |
-| Completed Batch 2A definitions | 16 (15 new families + 1 `police` follow-up) |
+| Completed Batch 2A production definitions | 14 (13 new families + 1 `police` follow-up) |
 | Remaining Batch 2B families / definitions | 16 / 16 |
+| Batch 2 Engine-pressure families | 2 |
 | Batch 3 families | 44 |
 | Batch 3 definitions | 67 across 44 families |
-| `needs-review` families | 1 |
+| `needs-review` families | 3 |
 
-Phase 5B-2-A intake audit, Batch 1, and the Batch 2A engineering sub-batch are complete. Formal Batch 2 is still in progress because Batch 2B remains, and Batch 3 is pending. Phase 5B is still in progress, and Phase 5C has not started.
+Phase 5B-2-A intake audit, Batch 1, and the Batch 2A engineering sub-batch are complete. Formal Batch 2 is still in progress because Batch 2B and two selector-pressure families remain; Batch 3 is pending. Phase 5B is still in progress, and Phase 5C has not started.

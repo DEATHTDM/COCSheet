@@ -342,7 +342,7 @@ export const standardOccupationDefinitions: readonly OccupationDefinition[] = [
       requirement("other-skill", anySkill()),
     ],
     "investigation-security",
-    { aliases: { zh: ["警探（原作向）"] } },
+    { variantOf: "police", aliases: { zh: ["警探（原作向）"] } },
   ),
   defineOccupation(
     "professor",

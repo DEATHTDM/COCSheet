@@ -6,7 +6,7 @@ Last updated: 2026-08-12
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, and the Batch 2A engineering sub-batch are completed. Batch 2B and Batch 3 remain pending. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, and the Batch 2A engineering sub-batch are completed. Batch 2B, the Batch 2 selector-pressure work, and Batch 3 remain pending. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
@@ -40,7 +40,7 @@ Phase 5B-2 Batch 2A branch was created from `main` at `b0e60ecb18618940e0d857a61
 - source/page audit documentation in `docs/STANDARD_OCCUPATION_SOURCES.md`, including the Excel data-pool assessment and PDF verification matrix
 - Phase 5B-2-A full intake audit with a 142-row official source inventory, 91 canonical family candidates, 118 expected production definitions, a complete 230-row Excel crosswalk, duplicate/source-boundary findings, and complexity-based import batches
 - Phase 5B-2 Batch 1 production import for `clergy`, `elected-official`, `judge`, and `museum-curator`, bringing Standard production coverage to 16 touched families / 19 definitions and mapping 5 additional official source entries as `production-batch-1`
-- Phase 5B-2 Batch 2A production import for 16 structured families, adding 16 definitions including `police-officer`, bringing Standard production coverage to 31 fully implemented families / 35 definitions and mapping 18 additional official source entries as `production-batch-2`
+- Phase 5B-2 Batch 2A production import for 14 structured definitions (13 new complete families plus `police-officer`), bringing Standard production coverage to 29 fully implemented families / 33 definitions and mapping 16 additional official source entries as `production-batch-2`; `bounty-hunter` and `cowboy` remain Batch 2 `needs-review` pressure cases
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -120,12 +120,13 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 Batch 2B production import is the next intended occupation-data work, but is not authorized by this document.
+The sequencing between Phase 5B-2 Batch 2B production import and the Batch 2 selector-pressure work is not yet decided or authorized by this document.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
+- the current Engine cannot express the `exclusive-selector-branch-with-repeatable-selection` semantics required by `bounty-hunter` and `cowboy`
 - Standard occupations outside the completed Phase 5B-2 Batch 2A engineering sub-batch still require entry-by-entry source verification in Batch 2B and Batch 3
 - browser storage can be cleared, and long-term file backup is not implemented

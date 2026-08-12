@@ -186,46 +186,6 @@ const expectedDefinitions = [
     variantOf: undefined,
   },
   {
-    id: "bounty-hunter",
-    name: { zh: "赏金猎人", en: "Bounty Hunter" },
-    aliases: undefined,
-    creditRating: { min: 9, max: 30 },
-    pointFormula: edu2Best("DEX", "STR"),
-    requirements: [
-      ["drive-auto", "exact", 1, 1],
-      ["electronics-or-electrical-repair", "one-of", 1, 1],
-      ["fighting-or-firearms", "one-of", 1, 1],
-      ["social", "one-of", 1, 1],
-      ["law", "exact", 1, 1],
-      ["psychology", "exact", 1, 1],
-      ["track", "exact", 1, 1],
-      ["stealth", "exact", 1, 1],
-    ],
-    sourcePages: ["coc7-investigator-handbook-zh-1-21:73"],
-    era: { type: "all" },
-    variantOf: undefined,
-  },
-  {
-    id: "cowboy",
-    name: { zh: "牛仔", en: "Cowboy / Cowgirl" },
-    aliases: { zh: ["女牛仔"], en: ["Cowboy", "Cowgirl"] },
-    creditRating: { min: 9, max: 20 },
-    pointFormula: edu2Best("DEX", "STR"),
-    requirements: [
-      ["dodge", "exact", 1, 1],
-      ["fighting-or-firearms", "one-of", 1, 1],
-      ["first-aid-or-natural-world", "one-of", 1, 1],
-      ["jump", "exact", 1, 1],
-      ["ride", "exact", 1, 1],
-      ["survival", "specialization-of", 1, 1],
-      ["throw", "exact", 1, 1],
-      ["track", "exact", 1, 1],
-    ],
-    sourcePages: ["coc7-investigator-handbook-zh-1-21:74"],
-    era: { type: "all" },
-    variantOf: undefined,
-  },
-  {
     id: "explorer",
     name: { zh: "探险家（古典）", en: "Explorer" },
     aliases: { zh: ["探险家"] },
@@ -377,15 +337,53 @@ describe("Phase 5B-2 Batch 2A occupations", () => {
     expect(occupation?.variantOf).toBe(expected.variantOf);
   });
 
-  it("本批恰好导入 16 个 definition，并保持 police-detective 不变", () => {
-    expect(batch2aOccupationDefinitions).toHaveLength(16);
-    expect(registry.get("police-detective")).toMatchObject({
+  it("本批恰好导入 14 个 definition，police-detective 仅补充 family identity", () => {
+    expect(batch2aOccupationDefinitions).toHaveLength(14);
+    expect(registry.get("police-detective")).toEqual({
+      version: 1,
       id: "police-detective",
       name: { zh: "警探", en: "Police Detective" },
       aliases: { zh: ["警探（原作向）"] },
       creditRating: { min: 20, max: 50 },
+      pointFormula: edu2Best("DEX", "STR"),
+      skillRequirements: [
+        {
+          id: "acting-or-disguise",
+          selector: {
+            type: "one-of",
+            selectors: [
+              { type: "exact", ref: { type: "predefined", definitionId: "art-craft", specializationId: "acting" } },
+              { type: "exact", ref: { type: "standard", definitionId: "disguise" } },
+            ],
+          },
+          cardinality: { min: 1, max: 1 },
+        },
+        { id: "firearms", selector: { type: "specialization-of", definitionId: "firearms" }, cardinality: { min: 1 } },
+        { id: "law", selector: { type: "exact", ref: { type: "standard", definitionId: "law" } }, cardinality: { min: 1, max: 1 } },
+        { id: "listen", selector: { type: "exact", ref: { type: "standard", definitionId: "listen" } }, cardinality: { min: 1, max: 1 } },
+        {
+          id: "social",
+          selector: {
+            type: "one-of",
+            selectors: ["charm", "fast-talk", "intimidate", "persuade"].map((definitionId) => ({
+              type: "exact" as const,
+              ref: { type: "standard" as const, definitionId },
+            })),
+          },
+          cardinality: { min: 1, max: 1 },
+        },
+        { id: "psychology", selector: { type: "exact", ref: { type: "standard", definitionId: "psychology" } }, cardinality: { min: 1, max: 1 } },
+        { id: "spot-hidden", selector: { type: "exact", ref: { type: "standard", definitionId: "spot-hidden" } }, cardinality: { min: 1, max: 1 } },
+        { id: "other-skill", selector: { type: "any-skill" }, cardinality: { min: 1, max: 1 } },
+      ],
+      category: "investigation-security",
+      era: { type: "all" },
+      sourceRefs: [
+        { sourceId: "coc7-keeper-rulebook-40th-zh", title: "《克苏鲁的呼唤 40 周年纪念版》", page: 41 },
+        { sourceId: "coc7-investigator-handbook-zh-1-21", title: "《克苏鲁的呼唤第七版调查员手册》", page: 87 },
+      ],
+      variantOf: "police",
     });
-    expect(registry.get("police-detective")?.variantOf).toBeUndefined();
   });
 
   it("choose-two social 接受两项不同技能并拒绝错误 cardinality、selector 与重复 SkillRef", () => {
@@ -401,20 +399,6 @@ describe("Phase 5B-2 Batch 2A occupations", () => {
       .toContain("selector-mismatch");
     expect(validateOccupationRequirementSelection(social, [charm, charm]).map((issue) => issue.code))
       .toContain("duplicate-skill-selection");
-  });
-
-  it("Fighting or Firearms 接受任一开放专业类别并拒绝同时消费两类或错误技能", () => {
-    const combat = requirement("bounty-hunter", "fighting-or-firearms");
-    const brawl: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "brawl" };
-    const handgun: SkillRef = { type: "predefined", definitionId: "firearms", specializationId: "handgun" };
-    const law: SkillRef = { type: "standard", definitionId: "law" };
-
-    expect(validateOccupationRequirementSelection(combat, [brawl])).toEqual([]);
-    expect(validateOccupationRequirementSelection(combat, [handgun])).toEqual([]);
-    expect(validateOccupationRequirementSelection(combat, [brawl, handgun]).map((issue) => issue.code))
-      .toContain("requirement-cardinality");
-    expect(validateOccupationRequirementSelection(combat, [law]).map((issue) => issue.code))
-      .toContain("selector-mismatch");
   });
 
   it("generic Firearms 接受多个不同专业并拒绝错误 selector 与重复 SkillRef", () => {
