@@ -9,7 +9,7 @@ This document records the completed Phase 5B-2-A Standard occupation intake boun
 - `coc7-keeper-rulebook-40th-zh`: 《克苏鲁的呼唤 40 周年纪念版》
 - `coc7-investigator-handbook-zh-1-21`: 《克苏鲁的呼唤第七版调查员手册》
 
-The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Batch 2A and Batch 2B completed the lossless imports supported by the prior Engine. The subsequent Engine-pressure cleanup added the minimal `one-branch` selector and moved `bounty-hunter`, `cowboy`, and `tribe-member` into production without starting Batch 3 or Phase 5C. Formal Phase 5B-2 Batch 2 is now completed.
+The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Batch 2A and Batch 2B completed the lossless imports supported by the prior Engine. The subsequent Engine-pressure cleanup added the minimal `one-branch` selector and moved `bounty-hunter`, `cowboy`, and `tribe-member` into production. Formal Phase 5B-2 Batch 2 is completed. Batch 3 is now in progress: the Batch 3A engineering sub-batch completed 16 canonical families without changing the formal `Batch 3 - complex / review` audit classification. Phase 5C has not started.
 
 The full row-level results are in:
 
@@ -35,18 +35,18 @@ The 142 source entries are not 142 production definitions. Mechanically identica
 
 ## 3. Current production coverage
 
-The merged Phase 5B-1 pilot plus Phase 5B-2 Batch 1 and completed Batch 2 cover:
+The merged Phase 5B-1 pilot plus Phase 5B-2 Batch 1, completed Batch 2, and Batch 3A cover:
 
 | Measure | Covered | Total |
 | --- | ---: | ---: |
-| Canonical families touched | 47 | 91 |
-| Fully implemented families | 47 | 91 |
-| Production definitions | 51 | 118 expected |
-| Official source entries mapped to those definitions | 63 | 142 |
+| Canonical families touched | 63 | 91 |
+| Fully implemented families | 63 | 91 |
+| Production definitions | 67 | 118 expected |
+| Official source entries mapped to those definitions | 85 | 142 |
 
-The 63 source-entry rows map to 51 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
+The 85 source-entry rows map to 67 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
 
-Those definitions touch and fully implement 47 families. The Engine-pressure cleanup added three canonical definitions after `one-branch` made their repeatable exclusive branches losslessly representable.
+Those definitions touch and fully implement 63 families. Batch 3A added 16 canonical definitions after PDF re-verification; it did not change the Engine.
 
 The mapped production IDs are:
 
@@ -99,6 +99,22 @@ The mapped production IDs are:
 - `undertaker`
 - `union-activist`
 - `zookeeper`
+- `acrobat`
+- `animal-trainer`
+- `athlete`
+- `bartender`
+- `boxer-wrestler`
+- `butler-valet-maid`
+- `craftsperson`
+- `cult-leader`
+- `designer`
+- `dilettante`
+- `diver`
+- `drifter`
+- `editor`
+- `engineer`
+- `entertainer`
+- `farmer`
 - `missionary-keeper-rulebook`
 - `missionary-investigator-handbook`
 
@@ -245,11 +261,11 @@ The Occultist's optional Keeper-approved Cthulhu Mythos selection is not a new p
 
 ## 9. Phase 5B-2 production plan
 
-Every one of the 91 confirmed Standard families is assigned exactly once in the implementation plan: 47 are fully implemented after completed Batch 2, and 44 are assigned to Batch 3. The completed Batch 2A sub-batch added the uniformed-officer definition and only corrected `police-detective` family identity; its mechanics remain unchanged.
+Every one of the 91 confirmed Standard families is assigned exactly once in the implementation plan: 63 are fully implemented after Batch 3A, and 28 remain in Batch 3. The completed Batch 2A sub-batch added the uniformed-officer definition and only corrected `police-detective` family identity; its mechanics remain unchanged.
 
-### Already implemented — 47 complete families
+### Already implemented — 63 complete families
 
-Complete: `accountant`, `agency-detective`, `alienist`, `antiquarian`, `antique-dealer`, `archaeologist`, `architect`, `artist`, `asylum-attendant`, `author`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `clergy`, `cowboy`, `doctor-of-medicine`, `elected-official`, `explorer`, `firefighter`, `forensic-surgeon`, `gambler`, `gentleman-lady`, `hospital-orderly`, `journalist`, `judge`, `laboratory-assistant`, `lawyer`, `missionary`, `mountain-climber`, `museum-curator`, `musician`, `nurse`, `outdoorsperson`, `pharmacist`, `police`, `professor`, `psychiatrist`, `salesperson`, `shopkeeper`, `soldier-marine`, `spy`, `stunt-performer`, `student-intern`, `tribe-member`, `undertaker`, `union-activist`, `zookeeper`.
+Complete: `accountant`, `acrobat`, `agency-detective`, `alienist`, `animal-trainer`, `antiquarian`, `antique-dealer`, `archaeologist`, `architect`, `artist`, `asylum-attendant`, `athlete`, `author`, `bartender`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `boxer-wrestler`, `butler-valet-maid`, `clergy`, `cowboy`, `craftsperson`, `cult-leader`, `designer`, `dilettante`, `diver`, `doctor-of-medicine`, `drifter`, `editor`, `elected-official`, `engineer`, `entertainer`, `explorer`, `farmer`, `firefighter`, `forensic-surgeon`, `gambler`, `gentleman-lady`, `hospital-orderly`, `journalist`, `judge`, `laboratory-assistant`, `lawyer`, `missionary`, `mountain-climber`, `museum-curator`, `musician`, `nurse`, `outdoorsperson`, `pharmacist`, `police`, `professor`, `psychiatrist`, `salesperson`, `shopkeeper`, `soldier-marine`, `spy`, `stunt-performer`, `student-intern`, `tribe-member`, `undertaker`, `union-activist`, `zookeeper`.
 
 ### Batch 1 — simple — completed
 
@@ -276,9 +292,19 @@ The Engine-pressure cleanup added `bounty-hunter`, `cowboy`, and `tribe-member` 
 - The intake audit previously left `tribe-member` as ordinary pending Batch 2 data. Reapplying the frozen generic Fighting cardinality during Batch 2B showed that “Fighting or Throw” required an exclusive selector branch with repeatable Fighting selection, so both source rows were withheld until the later `one-branch` cleanup mapped them to production.
 - No CR, point-formula, source-variant, page, name, or era conflicts were found.
 
-### Batch 3 — complex / review — 44 families
+### Batch 3 — complex / review — in progress
 
-`acrobat`, `actor`, `animal-trainer`, `athlete`, `bartender`, `boxer-wrestler`, `butler-valet-maid`, `computer-professional`, `craftsperson`, `criminal`, `cult-leader`, `deprogrammer`, `designer`, `dilettante`, `diver`, `drifter`, `driver`, `editor`, `engineer`, `entertainer`, `farmer`, `federal-agent`, `foreign-correspondent`, `gangster`, `hobo`, `laborer`, `librarian`, `mechanic`, `military-officer`, `occultist`, `parapsychologist`, `photographer`, `pilot`, `private-investigator`, `prospector`, `psychologist-psychoanalyst`, `researcher`, `sailor`, `scientist`, `secretary`, `sex-worker`, `waiter`, `white-collar-worker`, `zealot`.
+The formal audit batch began with 44 families / 67 expected definitions. Batch 3A completed 16 canonical families / 16 definitions: `acrobat`, `animal-trainer`, `athlete`, `bartender`, `boxer-wrestler`, `butler-valet-maid`, `craftsperson`, `cult-leader`, `designer`, `dilettante`, `diver`, `drifter`, `editor`, `engineer`, `entertainer`, and `farmer`. Their 22 source rows retain `recommended_batch=Batch 3 - complex / review` and now use `implementation_status=production-batch-3`.
+
+The six cross-source families—`athlete`, `dilettante`, `drifter`, `engineer`, `entertainer`, and `farmer`—were re-compared against both official PDFs. CR, formula, fixed skills, choice grouping, cardinality, specialization, and era all match. The Keeper Rulebook's page 40 occupation/era adaptation rule and the Handbook's personal/era wording support one canonical broad-selection mechanic with guidance and Keeper review; no source variant was created. `entertainer` retains a fuzzy Art / Craft parent selector because acting, singing, and comedy are examples, not an Acting-only restriction. `farmer` uses the canonical `drive-auto` identity because the Keeper Rulebook skill chapter explicitly treats Wagon Driving as the period-appropriate name for that generic skill. `butler-valet-maid` keeps CR 9–40; the employer-household status sentence is source guidance within that range, not a new dynamic CR formula.
+
+AUDIT CONFLICT — Batch 3A: none.
+
+NEW ENGINE PRESSURE — Batch 3A: none. `deprogrammer` is unchanged and remains the sole `needs-review` family.
+
+The 28 remaining Batch 3 families are:
+
+`actor`, `computer-professional`, `criminal`, `deprogrammer`, `driver`, `federal-agent`, `foreign-correspondent`, `gangster`, `hobo`, `laborer`, `librarian`, `mechanic`, `military-officer`, `occultist`, `parapsychologist`, `photographer`, `pilot`, `private-investigator`, `prospector`, `psychologist-psychoanalyst`, `researcher`, `sailor`, `scientist`, `secretary`, `sex-worker`, `waiter`, `white-collar-worker`, `zealot`.
 
 These contain fuzzy personal/era/academic requirements, source variants, special Keeper approval, source-dependent CR guidance, or other mechanics that deserve entry-by-entry review.
 
@@ -286,20 +312,22 @@ These contain fuzzy personal/era/academic requirements, source variants, special
 
 | Measure | Count |
 | --- | ---: |
-| Current production definitions | 51 |
-| Fully implemented families | 47 |
+| Current production definitions | 67 |
+| Fully implemented families | 63 |
 | Partially implemented families with work remaining | 0 |
-| Wholly unimplemented families | 44 |
-| Families not fully implemented | 44 |
-| Expected production definitions remaining | 67 |
+| Wholly unimplemented families | 28 |
+| Families not fully implemented | 28 |
+| Expected production definitions remaining | 51 |
 | Completed Batch 1 families | 4 |
 | Completed Batch 1 definitions | 4 |
 | Completed Batch 2A production definitions | 14 (13 new families + 1 `police` follow-up) |
 | Completed Batch 2B production families / definitions | 15 / 15 |
 | Completed Batch 2 Engine-pressure cleanup families / definitions | 3 / 3 |
 | Production Batch 2 source entries | 36 |
-| Batch 3 families | 44 |
-| Batch 3 definitions | 67 across 44 families |
+| Completed Batch 3A production families / definitions | 16 / 16 |
+| Production Batch 3 source entries | 22 |
+| Batch 3 families remaining | 28 |
+| Batch 3 definitions remaining | 51 across 28 families |
 | `needs-review` families | 1 (`deprogrammer`) |
 
-Phase 5B-2-A intake audit, Batch 1, Batch 2A, Batch 2B, and the Batch 2 Engine-pressure cleanup are complete. Formal Batch 2 is completed; Batch 3 is pending with 44 families / 67 expected definitions. Phase 5B and Phase 5B-2 are still in progress, and Phase 5C has not started.
+Phase 5B-2-A intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and Batch 3A are complete. Formal Batch 2 is completed; Batch 3 is in progress with 28 families / 51 expected definitions remaining. Phase 5B and Phase 5B-2 are still in progress, and Phase 5C has not started.

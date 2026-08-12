@@ -7,6 +7,7 @@ const productionModulePaths = [
   new URL("../src/content/standard/occupations/batch2a.ts", import.meta.url),
   new URL("../src/content/standard/occupations/batch2b.ts", import.meta.url),
   new URL("../src/content/standard/occupations/batch2-pressure.ts", import.meta.url),
+  new URL("../src/content/standard/occupations/batch3a.ts", import.meta.url),
 ];
 
 function parseCsv(text) {
@@ -117,6 +118,7 @@ const implementationStatuses = new Set([
   "production-pilot",
   "production-batch-1",
   "production-batch-2",
+  "production-batch-3",
   "pending",
   "needs-review",
 ]);
@@ -259,6 +261,62 @@ assert(batch2PressureEntries.length === batch2PressureSourceEntryIds.size
 assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length ===
     batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size,
   "official inventory: production-batch-2 must contain exactly 36 resolved Batch 2 source entries");
+const batch3aProductionIds = new Map([
+  ["acrobat", "acrobat"],
+  ["animal-trainer", "animal-trainer"],
+  ["athlete", "athlete"],
+  ["bartender", "bartender"],
+  ["boxer-wrestler", "boxer-wrestler"],
+  ["butler-valet-maid", "butler-valet-maid"],
+  ["craftsperson", "craftsperson"],
+  ["cult-leader", "cult-leader"],
+  ["designer", "designer"],
+  ["dilettante", "dilettante"],
+  ["diver", "diver"],
+  ["drifter", "drifter"],
+  ["editor", "editor"],
+  ["engineer", "engineer"],
+  ["entertainer", "entertainer"],
+  ["farmer", "farmer"],
+]);
+const batch3aSourceEntryIds = new Set([
+  "keeper-p40-athlete",
+  "keeper-p40-dilettante",
+  "keeper-p40-drifter",
+  "keeper-p40-engineer",
+  "keeper-p40-entertainer",
+  "keeper-p40-farmer",
+  "handbook-70-acrobat",
+  "handbook-71-animal-trainer",
+  "handbook-72-athlete",
+  "handbook-73-bartender",
+  "handbook-73-boxer-wrestler",
+  "handbook-74-butler-valet-maid",
+  "handbook-74-craftsperson",
+  "handbook-77-cult-leader",
+  "handbook-78-designer",
+  "handbook-78-dilettante",
+  "handbook-78-diver",
+  "handbook-78-drifter",
+  "handbook-79-editor",
+  "handbook-79-engineer",
+  "handbook-79-entertainer",
+  "handbook-80-farmer",
+]);
+const batch3aEntries = inventory.filter((row) => batch3aSourceEntryIds.has(row.source_entry_id));
+assert(batch3aEntries.length === batch3aSourceEntryIds.size
+    && batch3aEntries.every((row) => row.implementation_status === "production-batch-3")
+    && batch3aEntries.every((row) => row.recommended_batch === "Batch 3 - complex / review")
+    && batch3aEntries.every((row) =>
+      row.notes === `production_id=${batch3aProductionIds.get(row.normalized_family_key)}`)
+    && new Set(batch3aEntries.map((row) => row.normalized_family_key)).size ===
+      batch3aProductionIds.size,
+  "official inventory: all 16 Batch 3A families must map to canonical production IDs and retain the formal Batch 3 assignment");
+assert(inventory.filter((row) => row.implementation_status === "production-batch-3").length ===
+    batch3aSourceEntryIds.size,
+  `official inventory: production-batch-3 must contain exactly ${batch3aSourceEntryIds.size} Batch 3A source entries`);
+assert(batch3aEntries.filter((row) => row.fuzzy_requirement === "yes").length === 16,
+  "official inventory: all 16 Handbook Batch 3A source entries must retain fuzzy requirement classification");
 const policeDetectiveEntries = inventory.filter((row) => [
   "keeper-p41-police-detective",
   "handbook-87-police-detective",
@@ -328,6 +386,22 @@ const expectedProductionIds = new Set([
   "union-activist",
   "zookeeper",
   "bounty-hunter",
+  "acrobat",
+  "animal-trainer",
+  "athlete",
+  "bartender",
+  "boxer-wrestler",
+  "butler-valet-maid",
+  "craftsperson",
+  "cult-leader",
+  "designer",
+  "dilettante",
+  "diver",
+  "drifter",
+  "editor",
+  "engineer",
+  "entertainer",
+  "farmer",
   "cowboy",
   "tribe-member",
 ]);
@@ -335,8 +409,8 @@ assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
-assert(actualProductionIds.size === 51,
-  `production modules: expected 51 definitions, found ${actualProductionIds.size}`);
+assert(actualProductionIds.size === 67,
+  `production modules: expected 67 definitions, found ${actualProductionIds.size}`);
 assert(actualProductionIds.size === productionIds.size
     && [...actualProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match actual production modules");
@@ -353,15 +427,16 @@ for (const [family, rows] of familyRows) {
       "production-pilot",
       "production-batch-1",
       "production-batch-2",
+      "production-batch-3",
     ].includes(row.implementation_status))
     .map((row) => row.recommended_batch));
   assert(pendingBatches.size <= 1, `official inventory: ${family} is assigned to multiple pending batches`);
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 47,
+  "already implemented": 63,
   "Batch 2 - structured": 0,
-  "Batch 3 - complex / review": 44,
+  "Batch 3 - complex / review": 28,
 };
 for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
   const actual = [...familyPlan.values()].filter((value) => value === batch).length;
@@ -415,5 +490,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2 production source entries.`);
+console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2, and ${batch3aSourceEntryIds.size} Batch 3 production source entries.`);
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");

@@ -329,20 +329,20 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 47 个 canonical family 的 51 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 63 个 canonical family 的 67 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(51);
+    expect(standardSettingPack.occupations).toHaveLength(67);
     const families = new Set(standardSettingPack.occupations.map((occupation) =>
       occupation.variantOf ?? occupation.id,
     ));
-    expect(families.size).toBe(47);
+    expect(families.size).toBe(63);
   });
 
   it("所有 definition 通过 schema 与完整 Standard OccupationRegistry 注册", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(51);
+    expect(registry.definitions).toHaveLength(67);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -418,8 +418,8 @@ describe("Standard production occupation catalog", () => {
     ]);
     expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
     expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
-    expect(registry.list({ era: "classic-1920s" })).toHaveLength(51);
-    expect(registry.list({ era: "modern" })).toHaveLength(49);
+    expect(registry.list({ era: "classic-1920s" })).toHaveLength(67);
+    expect(registry.list({ era: "modern" })).toHaveLength(65);
   });
 
   it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {

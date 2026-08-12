@@ -6,11 +6,11 @@ Last updated: 2026-08-12
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, and the Batch 2 Engine-pressure cleanup are completed. Formal Batch 2 is completed; Batch 3 remains pending. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and the Batch 3A engineering sub-batch are completed. Formal Batch 2 is completed; Batch 3 is in progress with remaining work pending. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2 Batch 2 Engine-pressure cleanup branch was created from `main` at `1aab8a23e4ee0fdee8d3c7c30b787f68448507c0`.
+Phase 5B-2 Batch 3A branch was created from `main` at `3b9226e2f503597ac1b24ab0a4ba98f99ead9c91`.
 
 ## Implemented
 
@@ -43,6 +43,7 @@ Phase 5B-2 Batch 2 Engine-pressure cleanup branch was created from `main` at `1a
 - Phase 5B-2 Batch 2A production import for 14 structured definitions (13 new complete families plus `police-officer`), bringing Standard production coverage to 29 fully implemented families / 33 definitions and mapping 16 additional official source entries as `production-batch-2`; `bounty-hunter` and `cowboy` remain Batch 2 `needs-review` pressure cases
 - Phase 5B-2 Batch 2B production import for 15 structured canonical definitions, bringing Standard production coverage to 44 fully implemented families / 48 definitions and mapping 16 additional official source entries as `production-batch-2`; `tribe-member` joins `bounty-hunter` and `cowboy` as an `exclusive-selector-branch-with-repeatable-selection` pressure case
 - Phase 5B-2 Batch 2 Engine-pressure cleanup with the additive `one-branch` selector and production definitions for `bounty-hunter`, `cowboy`, and `tribe-member`, bringing coverage to 47 fully implemented families / 51 definitions and 63 mapped official source entries; all 36 Batch 2 source entries are now production and formal Batch 2 is completed
+- Phase 5B-2 Batch 3A canonical/fuzzy import for `acrobat`, `animal-trainer`, `athlete`, `bartender`, `boxer-wrestler`, `butler-valet-maid`, `craftsperson`, `cult-leader`, `designer`, `dilettante`, `diver`, `drifter`, `editor`, `engineer`, `entertainer`, and `farmer`, bringing coverage to 63 fully implemented families / 67 definitions and 85 mapped official source entries; 22 source rows are `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -109,7 +110,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond completed Phase 5B-2 Batch 2
+- verified Standard occupation production data beyond completed Phase 5B-2 Batch 3A
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -122,7 +123,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 Batch 3 is the next pending data phase, but this document does not authorize starting it.
+Phase 5B-2 Batch 3 is in progress after Batch 3A; the remaining Batch 3 work is pending, but this document does not authorize a later sub-batch.
 
 ## Known technical risks
 
@@ -130,5 +131,5 @@ Phase 5B-2 Batch 3 is the next pending data phase, but this document does not au
 - future import/export compatibility
 - Setting-specific extension evolution
 - `deprogrammer` remains the only unresolved Engine pressure because its Keeper-approved Hypnosis replacement of one existing occupation skill is not yet expressible
-- Standard occupations outside completed Phase 5B-2 Batch 2 still require entry-by-entry source verification in Batch 3
+- Standard occupations outside completed Phase 5B-2 Batch 3A still require entry-by-entry source verification in the remaining Batch 3 work
 - browser storage can be cleared, and long-term file backup is not implemented
