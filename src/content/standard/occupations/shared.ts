@@ -1,7 +1,14 @@
 import type {
+  AnySkillSelector,
+  ComposableSkillSelector,
+  ExactSkillSelector,
+  NamedCustomSpecializationSelector,
   OccupationDefinition,
   OccupationPointFormula,
   OccupationRequirement,
+  OneBranchSkillSelector,
+  OneOfSkillSelector,
+  SpecializationOfSkillSelector,
   SkillSelector,
 } from "../../../coc7/types/occupation";
 import type { SourceReference } from "../../../coc7/types/source";
@@ -49,7 +56,7 @@ export const predefined = (definitionId: string, specializationId: string): Skil
   specializationId,
 });
 
-export const exact = (ref: SkillRef): SkillSelector => {
+export const exact = (ref: SkillRef): ExactSkillSelector => {
   if (ref.type === "custom") throw new Error("静态职业 selector 不接受 custom UUID");
   return { type: "exact", ref };
 };
@@ -57,7 +64,7 @@ export const exact = (ref: SkillRef): SkillSelector => {
 export const specializationOf = (
   definitionId: string,
   exclude?: readonly SkillRef[],
-): SkillSelector => ({
+): SpecializationOfSkillSelector => ({
   type: "specialization-of",
   definitionId,
   ...(exclude ? {
@@ -72,18 +79,25 @@ export const namedCustomSpecialization = (
   definitionId: string,
   zh: string,
   en: string,
-): SkillSelector => ({
+): NamedCustomSpecializationSelector => ({
   type: "named-custom-specialization",
   definitionId,
   name: { zh, en },
 });
 
-export const oneOf = (...selectors: SkillSelector[]): SkillSelector => ({
+export const oneOf = (...selectors: ComposableSkillSelector[]): OneOfSkillSelector => ({
   type: "one-of",
   selectors,
 });
 
-export const anySkill = (...exclude: SkillSelector[]): SkillSelector => ({
+export const oneBranch = (
+  ...branches: OneBranchSkillSelector["branches"]
+): OneBranchSkillSelector => ({
+  type: "one-branch",
+  branches,
+});
+
+export const anySkill = (...exclude: ComposableSkillSelector[]): AnySkillSelector => ({
   type: "any-skill",
   ...(exclude.length > 0 ? { exclude } : {}),
 });

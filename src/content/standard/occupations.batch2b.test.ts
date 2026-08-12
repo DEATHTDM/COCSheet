@@ -357,9 +357,12 @@ describe("Phase 5B-2 Batch 2B occupations", () => {
     expect(occupation?.variantOf).toBeUndefined();
   });
 
-  it("本批只导入 15 个无损 definition，并 withholding Tribe Member", () => {
+  it("Batch 2B 历史模块仍只包含 15 个无损 definition，不回填 Tribe Member", () => {
     expect(batch2bOccupationDefinitions).toHaveLength(15);
-    expect(registry.get("tribe-member")).toBeUndefined();
+    expect(batch2bOccupationDefinitions.some((occupation) => occupation.id === "tribe-member")).toBe(false);
+    expect(registry.get("tribe-member")?.skillRequirements.find(
+      (candidate) => candidate.id === "fighting-or-throw",
+    )?.selector.type).toBe("one-branch");
   });
 
   it("choose-two social 接受不同技能，并拒绝错误 cardinality、selector 与重复 SkillRef", () => {

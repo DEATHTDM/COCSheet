@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { occupationDefinitionSchema } from "../coc7/types/occupation";
+import {
+  occupationDefinitionSchema,
+  type OneBranchSkillSelector,
+  type SelectorCardinality,
+} from "../coc7/types/occupation";
 import { phase5aOccupationFixtures } from "../coc7/testing/occupationFixtures";
 import { createOccupationRegistry } from "./occupationRegistry";
 import { createSkillRegistry, getStandardSkillCatalog } from "./skillRegistry";
@@ -187,5 +191,83 @@ describe("OccupationRegistry", () => {
         }],
       }],
     }, skills)).toThrow("外层 min 5 超过 all-of 内部 maximum 4");
+  });
+
+  it("注册 one-branch 并拒绝未知引用、impossible exact 与内外 cardinality 矛盾", () => {
+    const doctor = phase5aOccupationFixtures.find((occupation) => occupation.id === "doctor");
+    if (!doctor) throw new Error("缺少 doctor fixture");
+    const fightingBranch = {
+      selector: { type: "specialization-of" as const, definitionId: "fighting" },
+      cardinality: { min: 1 },
+    };
+    const firearmsBranch = {
+      selector: { type: "specialization-of" as const, definitionId: "firearms" },
+      cardinality: { min: 1 },
+    };
+    const throwBranch = {
+      selector: {
+        type: "exact" as const,
+        ref: { type: "standard" as const, definitionId: "throw" },
+      },
+      cardinality: { min: 1, max: 1 },
+    };
+    const withRequirement = (
+      id: string,
+      branches: OneBranchSkillSelector["branches"],
+      cardinality: SelectorCardinality = { min: 1 },
+    ) => ({
+      ...doctor,
+      id,
+      skillRequirements: [{
+        id: "exclusive-branch",
+        selector: { type: "one-branch" as const, branches },
+        cardinality,
+      }],
+    });
+
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [withRequirement("valid-fighting-firearms", [fightingBranch, firearmsBranch])],
+    }, skills)).not.toThrow();
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [withRequirement("valid-fighting-throw", [fightingBranch, throwBranch])],
+    }, skills)).not.toThrow();
+
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [withRequirement("unknown-branch-skill", [fightingBranch, {
+        selector: {
+          type: "exact",
+          ref: { type: "standard", definitionId: "not-real" },
+        },
+        cardinality: { min: 1, max: 1 },
+      }])],
+    }, skills)).toThrow("未知技能");
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [withRequirement("impossible-exact-branch", [fightingBranch, {
+        ...throwBranch,
+        cardinality: { min: 1, max: 2 },
+      }])],
+    }, skills)).toThrow("exact selector 最多只能选择一项技能");
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [withRequirement(
+        "incompatible-branch-cardinality",
+        [{ ...fightingBranch, cardinality: { min: 2 } }, throwBranch],
+        { min: 1, max: 1 },
+      )],
+    }, skills)).toThrow("与外层 requirement 不相容");
+
+    expect(occupationDefinitionSchema.safeParse({
+      ...doctor,
+      id: "too-few-branches",
+      skillRequirements: [{
+        id: "exclusive-branch",
+        selector: { type: "one-branch", branches: [fightingBranch] },
+        cardinality: { min: 1 },
+      }],
+    }).success).toBe(false);
   });
 });

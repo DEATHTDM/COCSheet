@@ -6,11 +6,11 @@ Last updated: 2026-08-12
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, and Batch 2B are completed. Batch 2 Engine-pressure cleanup and Batch 3 remain pending. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, and the Batch 2 Engine-pressure cleanup are completed. Formal Batch 2 is completed; Batch 3 remains pending. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2 Batch 2B branch was created from `main` at `6bb1ef08eabdbcd8c616b2fd96d9317631d8fd1c`.
+Phase 5B-2 Batch 2 Engine-pressure cleanup branch was created from `main` at `1aab8a23e4ee0fdee8d3c7c30b787f68448507c0`.
 
 ## Implemented
 
@@ -21,16 +21,16 @@ Phase 5B-2 Batch 2B branch was created from `main` at `6bb1ef08eabdbcd8c616b2fd9
 - internal Extension Registry and allow-listed extension IDs
 - minimal `Character`, `CreationSession`, and `CreationPreset` schemas
 - Occupation schema, occupation point formula calculation, and attribute prerequisite validation foundations
-- closed OccupationRequirement + SkillSelector model with stable requirement IDs, cardinality, fixed-name custom specialization, finite candidates, exclusions and declarative composition
+- closed OccupationRequirement + SkillSelector model with stable requirement IDs, cardinality, fixed-name custom specialization, finite candidates, exclusions, declarative composition, and exclusive `one-branch` selection with branch-local cardinality
 - hardened OccupationPointFormula schema with duplicate-free best-of attributes and all verified Standard formula shapes
 - OccupationRegistry sourced only from SettingPack.occupations, with localized search and category/tag/era filters plus registration validation
 - explicit source mechanics variants through variantOf, while guidance-only source wording shares canonical mechanics and multiple sourceRefs
 - strongly typed CreationSession occupation mechanics snapshot and skill creation state containing requirement selections, SkillRef allocation rows, Credit Rating override and reasoned Keeper approvals
-- pure occupation/interest budget, selection uniqueness, one-of child-selector one-to-one assignment, creation-point policy, occupation-scoped Credit Rating range override, skill final-limit and unused-point warning rules
+- pure occupation/interest budget, selection uniqueness, one-of child-selector one-to-one assignment, one-branch whole-selection exclusivity, creation-point policy, occupation-scoped Credit Rating range override, skill final-limit and unused-point warning rules
 - pure structured-allocation conflict detection for existing Phase 4 Character.skills, with no silent adoption, reverse engineering or overwrite
 - pure finalize plan rebuilding CharacterSkill values from current resolved base + occupation allocation + interest allocation, followed by Phase 4 Character.skills domain validation
 - optional lightweight Character occupation identity snapshot without copied occupation mechanics
-- explicit custom occupation foundation with UUID identity and an eight-occupational-skill capacity proof based on requirement cardinality
+- explicit custom occupation foundation with UUID identity and an eight-occupational-skill capacity proof based on requirement cardinality; one-branch counts the maximum capacity of one branch rather than summing mutually exclusive branches
 - skills CreationStep and pure occupation-switch/reset draft actions that preserve allocations until explicit reset
 - atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to review in one Dexie transaction without changing HP/MP or restoring SAN
 - legacy CreationPreset.skillCaps read compatibility without inferred mapping or validator effect, alongside explicit final-value skillLimits
@@ -42,6 +42,7 @@ Phase 5B-2 Batch 2B branch was created from `main` at `6bb1ef08eabdbcd8c616b2fd9
 - Phase 5B-2 Batch 1 production import for `clergy`, `elected-official`, `judge`, and `museum-curator`, bringing Standard production coverage to 16 touched families / 19 definitions and mapping 5 additional official source entries as `production-batch-1`
 - Phase 5B-2 Batch 2A production import for 14 structured definitions (13 new complete families plus `police-officer`), bringing Standard production coverage to 29 fully implemented families / 33 definitions and mapping 16 additional official source entries as `production-batch-2`; `bounty-hunter` and `cowboy` remain Batch 2 `needs-review` pressure cases
 - Phase 5B-2 Batch 2B production import for 15 structured canonical definitions, bringing Standard production coverage to 44 fully implemented families / 48 definitions and mapping 16 additional official source entries as `production-batch-2`; `tribe-member` joins `bounty-hunter` and `cowboy` as an `exclusive-selector-branch-with-repeatable-selection` pressure case
+- Phase 5B-2 Batch 2 Engine-pressure cleanup with the additive `one-branch` selector and production definitions for `bounty-hunter`, `cowboy`, and `tribe-member`, bringing coverage to 47 fully implemented families / 51 definitions and 63 mapped official source entries; all 36 Batch 2 source entries are now production and formal Batch 2 is completed
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -108,7 +109,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond the completed Phase 5B-2 Batch 2B engineering sub-batch
+- verified Standard occupation production data beyond completed Phase 5B-2 Batch 2
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -121,13 +122,13 @@ Merged in the current enum:
 
 ## Next intended work
 
-The sequencing between Batch 2 Engine-pressure cleanup and Batch 3 is not yet decided or authorized by this document.
+Phase 5B-2 Batch 3 is the next pending data phase, but this document does not authorize starting it.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
-- the current Engine cannot express the `exclusive-selector-branch-with-repeatable-selection` semantics required by `bounty-hunter`, `cowboy`, and `tribe-member`
-- Standard occupations outside the completed Phase 5B-2 Batch 2B engineering sub-batch still require entry-by-entry source verification in Batch 3
+- `deprogrammer` remains the only unresolved Engine pressure because its Keeper-approved Hypnosis replacement of one existing occupation skill is not yet expressible
+- Standard occupations outside completed Phase 5B-2 Batch 2 still require entry-by-entry source verification in Batch 3
 - browser storage can be cleared, and long-term file backup is not implemented

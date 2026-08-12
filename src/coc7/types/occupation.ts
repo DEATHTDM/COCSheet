@@ -110,31 +110,46 @@ export interface NamedCustomSpecializationSelector {
   readonly name: LocalizedSkillName;
 }
 
+export type AtomicSkillSelector =
+  | ExactSkillSelector
+  | SpecializationOfSkillSelector
+  | NamedCustomSpecializationSelector;
+
+export type OneBranchChildSkillSelector = AtomicSkillSelector;
+
+export interface OneBranchSkillSelector {
+  readonly type: "one-branch";
+  readonly branches: readonly {
+    readonly selector: OneBranchChildSkillSelector;
+    readonly cardinality: SelectorCardinality;
+  }[];
+}
+
 export interface OneOfSkillSelector {
   readonly type: "one-of";
-  readonly selectors: readonly SkillSelector[];
+  readonly selectors: readonly ComposableSkillSelector[];
 }
 
 export interface AnySkillSelector {
   readonly type: "any-skill";
-  readonly exclude?: readonly SkillSelector[] | undefined;
+  readonly exclude?: readonly ComposableSkillSelector[] | undefined;
 }
 
 export interface AllOfSkillSelector {
   readonly type: "all-of";
   readonly groups: readonly {
-    readonly selector: SkillSelector;
+    readonly selector: ComposableSkillSelector;
     readonly cardinality: SelectorCardinality;
   }[];
 }
 
-export type SkillSelector =
-  | ExactSkillSelector
-  | SpecializationOfSkillSelector
-  | NamedCustomSpecializationSelector
+export type ComposableSkillSelector =
+  | AtomicSkillSelector
   | OneOfSkillSelector
   | AnySkillSelector
   | AllOfSkillSelector;
+
+export type SkillSelector = ComposableSkillSelector | OneBranchSkillSelector;
 
 const selectorCardinalitySchema = z
   .object({
@@ -156,7 +171,30 @@ const exactSkillRefSchema = z.discriminatedUnion("type", [
   }).strict(),
 ]);
 
-export const skillSelectorSchema: z.ZodType<SkillSelector> = z.lazy(() =>
+const atomicSkillSelectorSchema: z.ZodType<AtomicSkillSelector> =
+  z.discriminatedUnion("type", [
+    z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
+    z.object({
+      type: z.literal("specialization-of"),
+      definitionId: skillDefinitionIdSchema,
+      exclude: z.array(exactSkillRefSchema).min(1).optional(),
+    }).strict(),
+    z.object({
+      type: z.literal("named-custom-specialization"),
+      definitionId: skillDefinitionIdSchema,
+      name: localizedSkillNameSchema,
+    }).strict(),
+  ]);
+
+const oneBranchSkillSelectorSchema: z.ZodType<OneBranchSkillSelector> = z.object({
+  type: z.literal("one-branch"),
+  branches: z.array(z.object({
+    selector: atomicSkillSelectorSchema,
+    cardinality: selectorCardinalitySchema,
+  }).strict()).min(2),
+}).strict();
+
+export const composableSkillSelectorSchema: z.ZodType<ComposableSkillSelector> = z.lazy(() =>
   z.discriminatedUnion("type", [
     z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
     z.object({
@@ -171,21 +209,26 @@ export const skillSelectorSchema: z.ZodType<SkillSelector> = z.lazy(() =>
     }).strict(),
     z.object({
       type: z.literal("one-of"),
-      selectors: z.array(skillSelectorSchema).min(2),
+      selectors: z.array(composableSkillSelectorSchema).min(2),
     }).strict(),
     z.object({
       type: z.literal("any-skill"),
-      exclude: z.array(skillSelectorSchema).min(1).optional(),
+      exclude: z.array(composableSkillSelectorSchema).min(1).optional(),
     }).strict(),
     z.object({
       type: z.literal("all-of"),
       groups: z.array(z.object({
-        selector: skillSelectorSchema,
+        selector: composableSkillSelectorSchema,
         cardinality: selectorCardinalitySchema,
       }).strict()).min(2),
     }).strict(),
   ]),
 );
+
+export const skillSelectorSchema: z.ZodType<SkillSelector> = z.union([
+  composableSkillSelectorSchema,
+  oneBranchSkillSelectorSchema,
+]);
 
 export const occupationRequirementSchema = z
   .object({
