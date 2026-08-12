@@ -7,6 +7,7 @@ const productionModulePaths = [
   new URL("../src/content/standard/occupations/batch2a.ts", import.meta.url),
   new URL("../src/content/standard/occupations/batch2b.ts", import.meta.url),
   new URL("../src/content/standard/occupations/batch2-pressure.ts", import.meta.url),
+  new URL("../src/content/standard/occupations/batch3a.ts", import.meta.url),
 ];
 
 function parseCsv(text) {
@@ -117,6 +118,7 @@ const implementationStatuses = new Set([
   "production-pilot",
   "production-batch-1",
   "production-batch-2",
+  "production-batch-3",
   "pending",
   "needs-review",
 ]);
@@ -259,6 +261,51 @@ assert(batch2PressureEntries.length === batch2PressureSourceEntryIds.size
 assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length ===
     batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size,
   "official inventory: production-batch-2 must contain exactly 36 resolved Batch 2 source entries");
+const batch3aProductionIdBySourceEntry = new Map([
+  ["keeper-p40-athlete", "athlete"],
+  ["keeper-p40-dilettante", "dilettante"],
+  ["keeper-p40-drifter", "drifter"],
+  ["keeper-p40-engineer", "engineer"],
+  ["keeper-p40-entertainer", "entertainer-keeper-rulebook"],
+  ["keeper-p40-farmer", "farmer"],
+  ["handbook-70-acrobat", "acrobat"],
+  ["handbook-71-animal-trainer", "animal-trainer"],
+  ["handbook-72-athlete", "athlete"],
+  ["handbook-73-bartender", "bartender"],
+  ["handbook-73-boxer-wrestler", "boxer-wrestler"],
+  ["handbook-74-butler-valet-maid", "butler-valet-maid"],
+  ["handbook-74-craftsperson", "craftsperson"],
+  ["handbook-77-cult-leader", "cult-leader"],
+  ["handbook-78-designer", "designer"],
+  ["handbook-78-dilettante", "dilettante"],
+  ["handbook-78-diver", "diver"],
+  ["handbook-78-drifter", "drifter"],
+  ["handbook-79-editor", "editor"],
+  ["handbook-79-engineer", "engineer"],
+  ["handbook-79-entertainer", "entertainer-investigator-handbook"],
+  ["handbook-80-farmer", "farmer"],
+]);
+const batch3aSourceEntryIds = new Set(batch3aProductionIdBySourceEntry.keys());
+const batch3aEntries = inventory.filter((row) => batch3aSourceEntryIds.has(row.source_entry_id));
+assert(batch3aEntries.length === batch3aSourceEntryIds.size
+    && batch3aEntries.every((row) => row.implementation_status === "production-batch-3")
+    && batch3aEntries.every((row) => row.recommended_batch === "Batch 3 - complex / review")
+    && batch3aEntries.every((row) =>
+      row.notes === `production_id=${batch3aProductionIdBySourceEntry.get(row.source_entry_id)}`)
+    && new Set(batch3aEntries.map((row) => row.normalized_family_key)).size === 16
+    && new Set(batch3aProductionIdBySourceEntry.values()).size === 17,
+  "official inventory: all Batch 3A source entries must map to 17 production definitions across 16 families and retain the formal Batch 3 assignment");
+const entertainerEntries = batch3aEntries.filter((row) => row.normalized_family_key === "entertainer");
+assert(entertainerEntries.length === 2
+    && entertainerEntries.every((row) => row.mechanical_comparison === "mechanical-variant-candidate")
+    && entertainerEntries.every((row) => row.variant_candidate === "yes")
+    && entertainerEntries.every((row) => row.canonical_family_candidate === "entertainer"),
+  "official inventory: Entertainer source rows must retain their corrected mechanical variant classification");
+assert(inventory.filter((row) => row.implementation_status === "production-batch-3").length ===
+    batch3aSourceEntryIds.size,
+  `official inventory: production-batch-3 must contain exactly ${batch3aSourceEntryIds.size} Batch 3A source entries`);
+assert(batch3aEntries.filter((row) => row.fuzzy_requirement === "yes").length === 16,
+  "official inventory: all 16 Handbook Batch 3A source entries must retain fuzzy requirement classification");
 const policeDetectiveEntries = inventory.filter((row) => [
   "keeper-p41-police-detective",
   "handbook-87-police-detective",
@@ -328,6 +375,23 @@ const expectedProductionIds = new Set([
   "union-activist",
   "zookeeper",
   "bounty-hunter",
+  "acrobat",
+  "animal-trainer",
+  "athlete",
+  "bartender",
+  "boxer-wrestler",
+  "butler-valet-maid",
+  "craftsperson",
+  "cult-leader",
+  "designer",
+  "dilettante",
+  "diver",
+  "drifter",
+  "editor",
+  "engineer",
+  "entertainer-keeper-rulebook",
+  "entertainer-investigator-handbook",
+  "farmer",
   "cowboy",
   "tribe-member",
 ]);
@@ -335,8 +399,8 @@ assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
-assert(actualProductionIds.size === 51,
-  `production modules: expected 51 definitions, found ${actualProductionIds.size}`);
+assert(actualProductionIds.size === 68,
+  `production modules: expected 68 definitions, found ${actualProductionIds.size}`);
 assert(actualProductionIds.size === productionIds.size
     && [...actualProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match actual production modules");
@@ -353,15 +417,16 @@ for (const [family, rows] of familyRows) {
       "production-pilot",
       "production-batch-1",
       "production-batch-2",
+      "production-batch-3",
     ].includes(row.implementation_status))
     .map((row) => row.recommended_batch));
   assert(pendingBatches.size <= 1, `official inventory: ${family} is assigned to multiple pending batches`);
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 47,
+  "already implemented": 63,
   "Batch 2 - structured": 0,
-  "Batch 3 - complex / review": 44,
+  "Batch 3 - complex / review": 28,
 };
 for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
   const actual = [...familyPlan.values()].filter((value) => value === batch).length;
@@ -415,5 +480,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2 production source entries.`);
+console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2, and ${batch3aSourceEntryIds.size} Batch 3 production source entries.`);
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");
