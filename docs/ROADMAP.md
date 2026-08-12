@@ -103,7 +103,7 @@ Status: Completed
 Status: In Progress
 
 - Batch 1 completed: `clergy`, `elected-official`, `judge`, and `museum-curator`
-- Batch 2 pending: structured occupations, including the remaining uniformed `police` definition
+- Batch 2 in progress: Batch 2A completed 16 structured definitions, including `police-officer`; Batch 2B remains pending with 16 structured definitions
 - Batch 3 pending: complex occupations and the separately reviewed `deprogrammer` pressure case
 - enter the remaining confirmed Standard occupation definitions in complexity-based batches
 - preserve mechanical source variants and source/page metadata

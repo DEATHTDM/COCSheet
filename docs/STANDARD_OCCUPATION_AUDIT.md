@@ -9,7 +9,7 @@ This document records the completed Phase 5B-2-A Standard occupation intake boun
 - `coc7-keeper-rulebook-40th-zh`: 《克苏鲁的呼唤 40 周年纪念版》
 - `coc7-investigator-handbook-zh-1-21`: 《克苏鲁的呼唤第七版调查员手册》
 
-The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Phase 5B-2 Batch 1 has now added four production `OccupationDefinition` records without changing the Occupation Engine, starting Phase 5C, or importing the workbook into Git.
+The official PDFs are the mechanical authority. `COC7空白卡CY23Final(1).xlsx` is used only as an intake checklist and crosswalk source. Phase 5B-2 Batch 2 has started: the Batch 2A engineering sub-batch has added 16 production `OccupationDefinition` records without changing the Occupation Engine, starting Phase 5C, or importing the workbook into Git. Formal audit Batch 2 remains in progress because Batch 2B is still pending.
 
 The full row-level results are in:
 
@@ -35,35 +35,51 @@ The 142 source entries are not 142 production definitions. Mechanically identica
 
 ## 3. Current production coverage
 
-The merged Phase 5B-1 pilot plus Phase 5B-2 Batch 1 cover:
+The merged Phase 5B-1 pilot plus Phase 5B-2 Batch 1 and Batch 2A cover:
 
 | Measure | Covered | Total |
 | --- | ---: | ---: |
-| Canonical families touched | 16 | 91 |
-| Fully implemented families | 15 | 91 |
-| Production definitions | 19 | 118 expected |
-| Official source entries mapped to those definitions | 27 | 142 |
+| Canonical families touched | 31 | 91 |
+| Fully implemented families | 31 | 91 |
+| Production definitions | 35 | 118 expected |
+| Official source entries mapped to those definitions | 45 | 142 |
 
-The 27 source-entry rows map to 19 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
+The 45 source-entry rows map to 35 definitions because several canonical definitions retain matching Keeper Rulebook and Investigator Handbook references.
 
-Those definitions touch 16 families, of which 15 are complete. `police` remains partially implemented: `police-detective` is in production, while the matching Keeper/Handbook uniformed-officer entries still require one production definition.
+Those definitions touch and fully implement 31 families. The `police` family is now complete: the existing `police-detective` mapping is unchanged, and both matching Keeper/Handbook uniformed-officer entries map to the new `police-officer` definition.
 
 The mapped production IDs are:
 
 - `accountant`
+- `agency-detective`
+- `alienist`
 - `antiquarian`
+- `antique-dealer`
+- `archaeologist`
+- `architect`
 - `artist`
+- `asylum-attendant`
 - `author`
+- `big-game-hunter`
+- `book-dealer`
+- `bounty-hunter`
 - `clergy`
+- `cowboy`
 - `doctor-of-medicine`
 - `elected-official`
+- `explorer`
+- `firefighter`
+- `forensic-surgeon`
 - `journalist-keeper-rulebook`
 - `journalist-investigative-handbook`
 - `journalist-reporter-handbook`
 - `judge`
 - `laboratory-assistant`
+- `lawyer`
 - `museum-curator`
+- `nurse`
 - `police-detective`
+- `police-officer`
 - `professor`
 - `soldier-marine`
 - `student-intern`
@@ -177,13 +193,11 @@ The Occultist's optional Keeper-approved Cthulhu Mythos selection is not a new p
 
 ## 9. Phase 5B-2 production plan
 
-Every one of the 91 confirmed Standard families is assigned exactly once in the implementation plan: 15 are fully implemented after Batch 1, 32 are assigned to Batch 2, and 44 are assigned to Batch 3. `police` is assigned to Batch 2 because the family is only partially implemented; that batch adds the uniformed-officer definition without repeating `police-detective`.
+Every one of the 91 confirmed Standard families is assigned exactly once in the implementation plan: 31 are fully implemented after Batch 2A, 16 remain in Batch 2B, and 44 are assigned to Batch 3. The completed Batch 2A sub-batch added the uniformed-officer definition without repeating or changing `police-detective`.
 
-### Already implemented — 15 complete families
+### Already implemented — 31 complete families
 
-Complete: `accountant`, `antiquarian`, `artist`, `author`, `clergy`, `doctor-of-medicine`, `elected-official`, `journalist`, `judge`, `laboratory-assistant`, `missionary`, `museum-curator`, `professor`, `soldier-marine`, `student-intern`.
-
-Pilot coverage also touches `police`, but that incomplete family is assigned to Batch 2 below.
+Complete: `accountant`, `agency-detective`, `alienist`, `antiquarian`, `antique-dealer`, `archaeologist`, `architect`, `artist`, `asylum-attendant`, `author`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `clergy`, `cowboy`, `doctor-of-medicine`, `elected-official`, `explorer`, `firefighter`, `forensic-surgeon`, `journalist`, `judge`, `laboratory-assistant`, `lawyer`, `missionary`, `museum-curator`, `nurse`, `police`, `professor`, `soldier-marine`, `student-intern`.
 
 ### Batch 1 — simple — completed
 
@@ -191,13 +205,13 @@ Pilot coverage also touches `police`, but that incomplete family is assigned to 
 
 All five corresponding official source entries retain `recommended_batch=Batch 1 - simple` and are marked `implementation_status=production-batch-1`. The four families are canonical, use already-supported formulas and selectors, and introduced no audit conflict or Engine pressure.
 
-### Batch 2 — structured — 32 families
+### Batch 2 — structured — in progress
 
-`agency-detective`, `alienist`, `antique-dealer`, `archaeologist`, `architect`, `asylum-attendant`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `cowboy`, `explorer`, `firefighter`, `forensic-surgeon`, `gambler`, `gentleman-lady`, `hospital-orderly`, `lawyer`, `mountain-climber`, `musician`, `nurse`, `outdoorsperson`, `pharmacist`, `police`, `psychiatrist`, `salesperson`, `shopkeeper`, `spy`, `stunt-performer`, `tribe-member`, `undertaker`, `union-activist`, `zookeeper`.
+Batch 2A completed 16 families / 16 definitions: `agency-detective`, `alienist`, `antique-dealer`, `archaeologist`, `architect`, `asylum-attendant`, `big-game-hunter`, `book-dealer`, `bounty-hunter`, `cowboy`, `explorer`, `firefighter`, `forensic-surgeon`, `lawyer`, `nurse`, and the `police` follow-up definition.
 
-These require supported choose-N, multiple specializations, nontrivial one-of groups, generic Fighting/Firearms, or several structured requirement groups.
+The 18 corresponding official source entries retain `recommended_batch=Batch 2 - structured` and are marked `implementation_status=production-batch-2`. This engineering split does not rename the formal audit batch.
 
-For `police`, only add the uniformed-officer definition; its two matching official source entries are assigned to this batch in the inventory, while the existing `police-detective` stays marked `production-pilot`.
+Batch 2B remains: `gambler`, `gentleman-lady`, `hospital-orderly`, `mountain-climber`, `musician`, `outdoorsperson`, `pharmacist`, `psychiatrist`, `salesperson`, `shopkeeper`, `spy`, `stunt-performer`, `tribe-member`, `undertaker`, `union-activist`, `zookeeper`.
 
 ### Batch 3 — complex / review — 44 families
 
@@ -209,18 +223,19 @@ These contain fuzzy personal/era/academic requirements, source variants, special
 
 | Measure | Count |
 | --- | ---: |
-| Current production definitions | 19 |
-| Fully implemented families | 15 |
-| Partially implemented families with work remaining | 1 |
-| Wholly unimplemented families | 75 |
-| Families not fully implemented | 76 |
-| Expected production definitions remaining | 99 |
+| Current production definitions | 35 |
+| Fully implemented families | 31 |
+| Partially implemented families with work remaining | 0 |
+| Wholly unimplemented families | 60 |
+| Families not fully implemented | 60 |
+| Expected production definitions remaining | 83 |
 | Completed Batch 1 families | 4 |
 | Completed Batch 1 definitions | 4 |
-| Batch 2 families | 32 (including partial `police`) |
-| Batch 2 definitions | 32 (31 new families + 1 `police` follow-up) |
+| Completed Batch 2A families | 16 (including completed `police`) |
+| Completed Batch 2A definitions | 16 (15 new families + 1 `police` follow-up) |
+| Remaining Batch 2B families / definitions | 16 / 16 |
 | Batch 3 families | 44 |
 | Batch 3 definitions | 67 across 44 families |
 | `needs-review` families | 1 |
 
-Phase 5B-2-A and Phase 5B-2 Batch 1 are complete. Batch 2 is the next production-import batch; Batch 2 and Batch 3 remain pending. Phase 5B is still in progress, and Phase 5C has not started.
+Phase 5B-2-A intake audit, Batch 1, and the Batch 2A engineering sub-batch are complete. Formal Batch 2 is still in progress because Batch 2B remains, and Batch 3 is pending. Phase 5B is still in progress, and Phase 5C has not started.

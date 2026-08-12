@@ -101,7 +101,13 @@ assert(inventory.filter((row) => row.source_id === "coc7-investigator-handbook-z
 assert(new Set(inventory.map((row) => row.normalized_family_key)).size === 91,
   "official inventory: canonical-family count must be 91");
 
-const implementationStatuses = new Set(["production-pilot", "production-batch-1", "pending", "needs-review"]);
+const implementationStatuses = new Set([
+  "production-pilot",
+  "production-batch-1",
+  "production-batch-2",
+  "pending",
+  "needs-review",
+]);
 assert(inventory.every((row) => implementationStatuses.has(row.implementation_status)),
   "official inventory: illegal implementation_status");
 assert(inventory.filter((row) => row.implementation_status === "production-pilot").length === 22,
@@ -117,26 +123,105 @@ assert(batch1Entries.length === 5
     && batch1Entries.every((row) => row.notes === `production_id=${row.normalized_family_key}`)
     && new Set(batch1Entries.map((row) => row.normalized_family_key)).size === batch1Families.size,
   "official inventory: all four Batch 1 families must map to their canonical production ID and retain their batch assignment");
+const batch2aProductionIds = new Map([
+  ["agency-detective", "agency-detective"],
+  ["alienist", "alienist"],
+  ["antique-dealer", "antique-dealer"],
+  ["archaeologist", "archaeologist"],
+  ["architect", "architect"],
+  ["asylum-attendant", "asylum-attendant"],
+  ["big-game-hunter", "big-game-hunter"],
+  ["book-dealer", "book-dealer"],
+  ["bounty-hunter", "bounty-hunter"],
+  ["cowboy", "cowboy"],
+  ["explorer", "explorer"],
+  ["firefighter", "firefighter"],
+  ["forensic-surgeon", "forensic-surgeon"],
+  ["lawyer", "lawyer"],
+  ["nurse", "nurse"],
+  ["police", "police-officer"],
+]);
+const batch2aSourceEntryIds = new Set([
+  "keeper-p41-lawyer",
+  "keeper-p41-police-officer",
+  "handbook-71-agency-detective",
+  "handbook-71-alienist",
+  "handbook-71-antique-dealer",
+  "handbook-72-archaeologist",
+  "handbook-72-architect",
+  "handbook-72-asylum-attendant",
+  "handbook-73-big-game-hunter",
+  "handbook-73-book-dealer",
+  "handbook-73-bounty-hunter",
+  "handbook-74-cowboy-cowgirl",
+  "handbook-80-explorer",
+  "handbook-80-firefighter",
+  "handbook-80-forensic-surgeon",
+  "handbook-83-lawyer",
+  "handbook-84-nurse",
+  "handbook-87-uniformed-police-officer",
+]);
+const batch2aEntries = inventory.filter((row) => batch2aSourceEntryIds.has(row.source_entry_id));
+assert(batch2aEntries.length === batch2aSourceEntryIds.size
+    && batch2aEntries.every((row) => row.implementation_status === "production-batch-2")
+    && batch2aEntries.every((row) => row.recommended_batch === "Batch 2 - structured")
+    && batch2aEntries.every((row) => row.notes === `production_id=${batch2aProductionIds.get(row.normalized_family_key)}`)
+    && new Set(batch2aEntries.map((row) => row.normalized_family_key)).size === batch2aProductionIds.size,
+  "official inventory: all 16 Batch 2A families must have the correct production mapping and retain the formal Batch 2 assignment");
+assert(inventory.filter((row) => row.implementation_status === "production-batch-2").length === batch2aSourceEntryIds.size,
+  "official inventory: production-batch-2 must currently contain exactly the Batch 2A source entries");
+const policeDetectiveEntries = inventory.filter((row) => [
+  "keeper-p41-police-detective",
+  "handbook-87-police-detective",
+].includes(row.source_entry_id));
+assert(policeDetectiveEntries.length === 2
+    && policeDetectiveEntries.every((row) => row.implementation_status === "production-pilot")
+    && policeDetectiveEntries.every((row) => row.notes === "production_id=police-detective"),
+  "official inventory: police-detective production mapping must remain unchanged");
+const policeOfficerEntries = inventory.filter((row) => [
+  "keeper-p41-police-officer",
+  "handbook-87-uniformed-police-officer",
+].includes(row.source_entry_id));
+assert(policeOfficerEntries.length === 2
+    && policeOfficerEntries.every((row) => row.implementation_status === "production-batch-2")
+    && policeOfficerEntries.every((row) => row.notes === "production_id=police-officer"),
+  "official inventory: both Police Officer source entries must map to police-officer");
 const productionIds = new Set(
   inventory.flatMap((row) => row.notes.match(/production_id=([a-z0-9-]+)/)?.[1] ?? []),
 );
 const expectedProductionIds = new Set([
   "accountant",
+  "agency-detective",
+  "alienist",
   "antiquarian",
+  "antique-dealer",
+  "archaeologist",
+  "architect",
   "artist",
+  "asylum-attendant",
   "author",
+  "big-game-hunter",
+  "book-dealer",
+  "bounty-hunter",
   "clergy",
+  "cowboy",
   "doctor-of-medicine",
   "elected-official",
+  "explorer",
+  "firefighter",
+  "forensic-surgeon",
   "journalist-investigative-handbook",
   "journalist-keeper-rulebook",
   "journalist-reporter-handbook",
   "judge",
   "laboratory-assistant",
+  "lawyer",
   "missionary-investigator-handbook",
   "missionary-keeper-rulebook",
   "museum-curator",
+  "nurse",
   "police-detective",
+  "police-officer",
   "professor",
   "soldier-marine",
   "student-intern",
@@ -147,22 +232,25 @@ assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
 const pendingPoliceEntries = inventory.filter((row) => row.normalized_family_key === "police"
   && row.implementation_status === "pending");
-assert(pendingPoliceEntries.length === 2
-    && pendingPoliceEntries.every((row) => row.recommended_batch === "Batch 2 - structured"),
-  "official inventory: the two uniformed-officer source entries must remain pending in Batch 2");
+assert(pendingPoliceEntries.length === 0,
+  "official inventory: police must have no pending source entry after Police Officer production import");
 
 const familyRows = Map.groupBy(inventory, (row) => row.normalized_family_key);
 const familyPlan = new Map();
 for (const [family, rows] of familyRows) {
   const pendingBatches = new Set(rows
-    .filter((row) => !["production-pilot", "production-batch-1"].includes(row.implementation_status))
+    .filter((row) => ![
+      "production-pilot",
+      "production-batch-1",
+      "production-batch-2",
+    ].includes(row.implementation_status))
     .map((row) => row.recommended_batch));
   assert(pendingBatches.size <= 1, `official inventory: ${family} is assigned to multiple pending batches`);
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 15,
-  "Batch 2 - structured": 32,
+  "already implemented": 31,
+  "Batch 2 - structured": 16,
   "Batch 3 - complex / review": 44,
 };
 for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
@@ -217,5 +305,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log("Official inventory: 142 rows, 91 families, 22 pilot and 5 Batch 1 production source entries.");
+console.log("Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, and 18 Batch 2 production source entries.");
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");
