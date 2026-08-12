@@ -1,10 +1,13 @@
 import type {
+  AnySkillSelector,
+  ComposableSkillSelector,
   ExactSkillSelector,
   NamedCustomSpecializationSelector,
   OccupationDefinition,
   OccupationPointFormula,
   OccupationRequirement,
   OneBranchSkillSelector,
+  OneOfSkillSelector,
   SpecializationOfSkillSelector,
   SkillSelector,
 } from "../../../coc7/types/occupation";
@@ -82,7 +85,7 @@ export const namedCustomSpecialization = (
   name: { zh, en },
 });
 
-export const oneOf = (...selectors: SkillSelector[]): SkillSelector => ({
+export const oneOf = (...selectors: ComposableSkillSelector[]): OneOfSkillSelector => ({
   type: "one-of",
   selectors,
 });
@@ -94,7 +97,7 @@ export const oneBranch = (
   branches,
 });
 
-export const anySkill = (...exclude: SkillSelector[]): SkillSelector => ({
+export const anySkill = (...exclude: ComposableSkillSelector[]): AnySkillSelector => ({
   type: "any-skill",
   ...(exclude.length > 0 ? { exclude } : {}),
 });

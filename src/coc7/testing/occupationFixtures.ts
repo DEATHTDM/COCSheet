@@ -1,7 +1,12 @@
 import type {
+  AnySkillSelector,
+  ComposableSkillSelector,
+  ExactSkillSelector,
   OccupationDefinition,
   OccupationPointFormula,
   OccupationRequirement,
+  OneOfSkillSelector,
+  SpecializationOfSkillSelector,
   SkillSelector,
 } from "../types/occupation";
 import type { SourceReference } from "../types/source";
@@ -41,11 +46,14 @@ const predefined = (definitionId: string, specializationId: string): SkillRef =>
   definitionId,
   specializationId,
 });
-const exact = (ref: SkillRef): SkillSelector => {
+const exact = (ref: SkillRef): ExactSkillSelector => {
   if (ref.type === "custom") throw new Error("fixture 静态 selector 不接受 custom UUID");
   return { type: "exact", ref };
 };
-const specializationOf = (definitionId: string, exclude?: readonly SkillRef[]): SkillSelector => ({
+const specializationOf = (
+  definitionId: string,
+  exclude?: readonly SkillRef[],
+): SpecializationOfSkillSelector => ({
   type: "specialization-of",
   definitionId,
   ...(exclude ? {
@@ -55,8 +63,11 @@ const specializationOf = (definitionId: string, exclude?: readonly SkillRef[]): 
     }),
   } : {}),
 });
-const oneOf = (...selectors: SkillSelector[]): SkillSelector => ({ type: "one-of", selectors });
-const anySkill = (...exclude: SkillSelector[]): SkillSelector => ({
+const oneOf = (...selectors: ComposableSkillSelector[]): OneOfSkillSelector => ({
+  type: "one-of",
+  selectors,
+});
+const anySkill = (...exclude: ComposableSkillSelector[]): AnySkillSelector => ({
   type: "any-skill",
   ...(exclude.length > 0 ? { exclude } : {}),
 });

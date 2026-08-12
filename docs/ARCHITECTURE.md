@@ -137,7 +137,7 @@ Phase 5A 已建立 Occupation Engine Foundation：
 - 结构化 final skill 值始终为当前 Characteristic 解析出的 base 加职业点与兴趣点，不在已有 `CharacterSkill.currentValue` 上叠加。
 - 已有 Phase 4 final skills 由纯检测器暴露 `needsExplicitAdoptionOrReset`；不得静默采用、反推或覆盖。
 - `one-of` 将多个 child selector 视为不同选择槽位：每个 child 在单项需求中最多承接一个已选 SkillRef，并以回溯匹配处理重叠；同一专业化父类需要多项时使用 `specialization-of` 与 requirement cardinality 表达。
-- `one-branch` 表达多个互斥 branch 中只选择一个，并由该 branch 自己的 cardinality 接受整组 SkillRef；整组选择必须由同一个 branch 完整解释，不能跨 branch 混合。当前 branch child 仅允许可对单个 SkillRef 明确匹配的 `exact`、`specialization-of` 与 `named-custom-specialization`，不与 `one-of` 合并语义，也不持久化可从整组 SkillRef 推导出的 branch identity。
+- `one-branch` 表达多个互斥 branch 中只选择一个，并由该 branch 自己的 cardinality 接受整组 SkillRef；整组选择必须由同一个 branch 完整解释，不能跨 branch 混合。当前 branch child 仅允许可对单个 SkillRef 明确匹配的 `exact`、`specialization-of` 与 `named-custom-specialization`，不与 `one-of` 合并语义，也不持久化可从整组 SkillRef 推导出的 branch identity。`one-branch` 当前只允许作为 `OccupationRequirement.selector` 的顶层 selector，不得嵌套进 `one-of`、`all-of` 或 `any-skill.exclude`；未来只有在真实官方数据形成新的来源压力时才单独扩展组合语义。
 - Credit Rating 继续使用 `credit-rating` SkillDefinition；最终值越过职业范围需要显式且绑定当前职业身份的 override。Cthulhu Mythos 创建点继续需要分理由 Keeper approval。
 - 未用职业点与兴趣点是 warning，不在规则层自动分配或作为 hard invalid。
 - 自定义职业复用同一核心定义并限制最多八项职业技能：有限 requirement 按外层 `cardinality.max` 计数；无法证明上限的需求被拒绝，只有通用 Fighting / Firearms 专业化需求按一项计数。
