@@ -310,6 +310,7 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
   visit(selector);
   switch (selector.type) {
     case "one-branch":
+    case "choice-pool":
       selector.branches.forEach((branch) => visitSelector(branch.selector, visit));
       return;
     case "one-of":
@@ -329,9 +330,9 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 90 个 canonical family identity 的 116 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 90 个 canonical family identity 的 117 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(116);
+    expect(standardSettingPack.occupations).toHaveLength(117);
     const families = new Set(standardSettingPack.occupations.map((occupation) =>
       occupation.variantOf ?? occupation.id,
     ));
@@ -342,7 +343,7 @@ describe("Standard production occupation catalog", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(116);
+    expect(registry.definitions).toHaveLength(117);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -374,7 +375,7 @@ describe("Standard production occupation catalog", () => {
       ["pilot", 2],
       ["sailor", 2],
       ["white-collar-worker", 1],
-      ["criminal", 11],
+      ["criminal", 12],
     ]);
     for (const [family, count] of productionVariantFamilies) {
       expect(registry.get(family)).toBeUndefined();
@@ -446,8 +447,8 @@ describe("Standard production occupation catalog", () => {
     ]);
     expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
     expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
-    expect(registry.list({ era: "classic-1920s" })).toHaveLength(114);
-    expect(registry.list({ era: "modern" })).toHaveLength(112);
+    expect(registry.list({ era: "classic-1920s" })).toHaveLength(115);
+    expect(registry.list({ era: "modern" })).toHaveLength(113);
   });
 
   it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {

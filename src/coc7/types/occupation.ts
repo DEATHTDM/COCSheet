@@ -125,6 +125,17 @@ export interface OneBranchSkillSelector {
   }[];
 }
 
+export type ChoicePoolChildSkillSelector = AtomicSkillSelector;
+
+export interface ChoicePoolSkillSelector {
+  readonly type: "choice-pool";
+  readonly branches: readonly {
+    readonly selector: ChoicePoolChildSkillSelector;
+    readonly cardinality: SelectorCardinality;
+  }[];
+  readonly selectedBranches: SelectorCardinality;
+}
+
 export interface OneOfSkillSelector {
   readonly type: "one-of";
   readonly selectors: readonly ComposableSkillSelector[];
@@ -149,7 +160,10 @@ export type ComposableSkillSelector =
   | AnySkillSelector
   | AllOfSkillSelector;
 
-export type SkillSelector = ComposableSkillSelector | OneBranchSkillSelector;
+export type SkillSelector =
+  | ComposableSkillSelector
+  | OneBranchSkillSelector
+  | ChoicePoolSkillSelector;
 
 const selectorCardinalitySchema = z
   .object({
@@ -194,6 +208,34 @@ const oneBranchSkillSelectorSchema: z.ZodType<OneBranchSkillSelector> = z.object
   }).strict()).min(2),
 }).strict();
 
+export const choicePoolSkillSelectorSchema: z.ZodType<ChoicePoolSkillSelector> = z
+  .object({
+    type: z.literal("choice-pool"),
+    branches: z.array(z.object({
+      selector: atomicSkillSelectorSchema,
+      cardinality: selectorCardinalitySchema,
+    }).strict()).min(2),
+    selectedBranches: selectorCardinalitySchema,
+  })
+  .strict()
+  .superRefine((selector, context) => {
+    if (selector.selectedBranches.min > selector.branches.length) {
+      context.addIssue({
+        code: "custom",
+        message: "choice-pool selectedBranches.min 不能超过 branch 数量",
+        path: ["selectedBranches", "min"],
+      });
+    }
+    if (selector.selectedBranches.max !== undefined &&
+      selector.selectedBranches.max > selector.branches.length) {
+      context.addIssue({
+        code: "custom",
+        message: "choice-pool selectedBranches.max 不能超过 branch 数量",
+        path: ["selectedBranches", "max"],
+      });
+    }
+  });
+
 export const composableSkillSelectorSchema: z.ZodType<ComposableSkillSelector> = z.lazy(() =>
   z.discriminatedUnion("type", [
     z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
@@ -228,6 +270,7 @@ export const composableSkillSelectorSchema: z.ZodType<ComposableSkillSelector> =
 export const skillSelectorSchema: z.ZodType<SkillSelector> = z.union([
   composableSkillSelectorSchema,
   oneBranchSkillSelectorSchema,
+  choicePoolSkillSelectorSchema,
 ]);
 
 export const occupationRequirementSchema = z

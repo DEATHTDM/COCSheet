@@ -135,25 +135,26 @@ assert(inventory.filter((row) => row.implementation_status === "production-pilot
   "official inventory: pilot must map 22 source entries");
 const needsReviewRows = inventory.filter((row) => row.implementation_status === "needs-review");
 const needsReviewFamilies = new Set(needsReviewRows.map((row) => row.normalized_family_key));
-assert(needsReviewRows.length === 3
-    && needsReviewFamilies.size === 3
+assert(needsReviewRows.length === 2
+    && needsReviewFamilies.size === 2
     && needsReviewFamilies.has("deprogrammer")
-    && needsReviewFamilies.has("white-collar-worker")
-    && needsReviewFamilies.has("criminal"),
-  "official inventory: needs-review must contain the two Engine pressures and Clerk / Executive source ambiguity");
+    && needsReviewFamilies.has("white-collar-worker"),
+  "official inventory: needs-review must contain Deprogrammer Engine pressure and Clerk / Executive source ambiguity");
 const deprogrammerRows = needsReviewRows.filter((row) => row.normalized_family_key === "deprogrammer");
 assert(deprogrammerRows.length === 1
     && deprogrammerRows[0].recommended_batch === "Batch 3 - complex / review"
     && deprogrammerRows[0].keeper_approval === "KP may allow Hypnosis to replace one occupation skill"
     && !deprogrammerRows[0].notes.includes("production_id="),
   "official inventory: Deprogrammer must retain its verified replacement pressure without a production mapping");
-const keeperCriminal = needsReviewRows.find((row) => row.source_entry_id === "keeper-p40-criminal");
+const keeperCriminal = inventory.find((row) => row.source_entry_id === "keeper-p40-criminal");
 assert(keeperCriminal?.normalized_family_key === "criminal"
+    && keeperCriminal.implementation_status === "production-batch-3"
     && keeperCriminal.recommended_batch === "Batch 3 - complex / review"
-    && keeperCriminal.notes ===
-      "engine_pressure=choice-pool-with-repeatable-specialization-branch"
-    && !actualProductionIds.has("criminal-keeper-rulebook"),
-  "official inventory: Keeper Criminal must retain its repeatable specialization choice-pool pressure without a production definition");
+    && keeperCriminal.mechanical_comparison === "mechanical-variant-candidate"
+    && keeperCriminal.variant_candidate === "yes"
+    && keeperCriminal.notes === "production_id=criminal-keeper-rulebook"
+    && actualProductionIds.has("criminal-keeper-rulebook"),
+  "official inventory: Keeper Criminal must map its resolved choice-pool pressure to production");
 const batch1Families = new Set(["clergy", "elected-official", "judge", "museum-curator"]);
 const batch1Entries = inventory.filter((row) => batch1Families.has(row.normalized_family_key));
 assert(batch1Entries.length === 5
@@ -472,6 +473,7 @@ for (const [productionId, family] of batch3dVariantFamilyByProductionId) {
     `production Batch 3D: ${productionId} must retain variantOf=${family}`);
 }
 const batch3eProductionIdBySourceEntry = new Map([
+  ["keeper-p40-criminal", "criminal-keeper-rulebook"],
   ["handbook-75-assassin", "criminal-assassin"],
   ["handbook-75-bank-robber", "criminal-bank-robber"],
   ["handbook-75-bootlegger-thug", "criminal-bootlegger-thug"],
@@ -486,7 +488,7 @@ const batch3eProductionIdBySourceEntry = new Map([
 ]);
 const batch3eSourceEntryIds = new Set(batch3eProductionIdBySourceEntry.keys());
 const batch3eEntries = inventory.filter((row) => batch3eSourceEntryIds.has(row.source_entry_id));
-assert(batch3eEntries.length === 11
+assert(batch3eEntries.length === 12
     && batch3eEntries.every((row) => row.implementation_status === "production-batch-3")
     && batch3eEntries.every((row) => row.recommended_batch === "Batch 3 - complex / review")
     && batch3eEntries.every((row) =>
@@ -494,8 +496,8 @@ assert(batch3eEntries.length === 11
     && batch3eEntries.every((row) => row.mechanical_comparison === "mechanical-variant-candidate")
     && batch3eEntries.every((row) => row.variant_candidate === "yes")
     && new Set(batch3eEntries.map((row) => row.normalized_family_key)).size === 1
-    && new Set(batch3eProductionIdBySourceEntry.values()).size === 11,
-  "official inventory: all 11 Handbook Criminal source rows must map to independent production variants");
+    && new Set(batch3eProductionIdBySourceEntry.values()).size === 12,
+  "official inventory: Keeper and all 11 Handbook Criminal source rows must map to independent production variants");
 for (const productionId of batch3eProductionIdBySourceEntry.values()) {
   const startPattern = new RegExp(`defineOccupation\\(\\s*"${productionId}"`);
   const startMatch = startPattern.exec(batch3eModuleText);
@@ -517,7 +519,7 @@ assert(ambiguousClerk?.implementation_status === "needs-review"
 assert(inventory.filter((row) => row.implementation_status === "production-batch-3").length ===
     batch3aSourceEntryIds.size + batch3bSourceEntryIds.size + batch3cSourceEntryIds.size +
       batch3dSourceEntryIds.size + batch3eSourceEntryIds.size,
-  "official inventory: production-batch-3 must contain exactly successful Batch 3A through Batch 3E source entries");
+  "official inventory: production-batch-3 must contain exactly successful Batch 3A through Batch 3E plus Keeper Criminal source entries");
 const policeDetectiveEntries = inventory.filter((row) => [
   "keeper-p41-police-detective",
   "handbook-87-police-detective",
@@ -643,6 +645,7 @@ const expectedProductionIds = new Set([
   "sailor-naval",
   "sailor-commercial",
   "white-collar-worker-middle-senior-manager",
+  "criminal-keeper-rulebook",
   "criminal-assassin",
   "criminal-bank-robber",
   "criminal-bootlegger-thug",
@@ -659,8 +662,8 @@ assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
-assert(actualProductionIds.size === 116,
-  `production modules: expected 116 definitions, found ${actualProductionIds.size}`);
+assert(actualProductionIds.size === 117,
+  `production modules: expected 117 definitions, found ${actualProductionIds.size}`);
 assert(actualProductionIds.size === productionIds.size
     && [...actualProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match actual production modules");
@@ -684,9 +687,9 @@ for (const [family, rows] of familyRows) {
   familyPlan.set(family, pendingBatches.values().next().value ?? "already implemented");
 }
 const expectedFamilyPlanCounts = {
-  "already implemented": 88,
+  "already implemented": 89,
   "Batch 2 - structured": 0,
-  "Batch 3 - complex / review": 3,
+  "Batch 3 - complex / review": 2,
 };
 for (const [batch, expected] of Object.entries(expectedFamilyPlanCounts)) {
   const actual = [...familyPlan.values()].filter((value) => value === batch).length;

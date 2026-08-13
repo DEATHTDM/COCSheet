@@ -66,6 +66,16 @@ describe("OccupationDefinition schema", () => {
           cardinality: { min: 1, max: 1 },
         },
       ] },
+      { type: "choice-pool", branches: [
+        {
+          selector: { type: "specialization-of", definitionId: "fighting" },
+          cardinality: { min: 1 },
+        },
+        {
+          selector: { type: "exact", ref: { type: "standard", definitionId: "throw" } },
+          cardinality: { min: 1, max: 1 },
+        },
+      ], selectedBranches: { min: 2, max: 2 } },
       { type: "one-of", selectors: [
         { type: "exact", ref: { type: "standard", definitionId: "charm" } },
         { type: "exact", ref: { type: "standard", definitionId: "persuade" } },
@@ -105,6 +115,92 @@ describe("OccupationDefinition schema", () => {
             ],
           },
           cardinality: { min: 1 },
+        },
+      ],
+    }).success).toBe(false);
+  });
+
+  it("choice-pool 至少包含两个 atomic branch，且 selectedBranches 不超过 branch 数量", () => {
+    const exactBranch = (definitionId: string) => ({
+      selector: { type: "exact" as const, ref: { type: "standard" as const, definitionId } },
+      cardinality: { min: 1, max: 1 },
+    });
+    const valid = {
+      type: "choice-pool",
+      branches: [
+        exactBranch("appraise"),
+        exactBranch("disguise"),
+        exactBranch("locksmith"),
+        exactBranch("mechanical-repair"),
+      ],
+      selectedBranches: { min: 4, max: 4 },
+    } as const;
+    expect(skillSelectorSchema.safeParse(valid).success).toBe(true);
+    expect(skillSelectorSchema.safeParse({
+      ...valid,
+      selectedBranches: { min: 5, max: 5 },
+    }).success).toBe(false);
+    expect(skillSelectorSchema.safeParse({
+      type: "choice-pool",
+      branches: [exactBranch("appraise")],
+      selectedBranches: { min: 1, max: 1 },
+    }).success).toBe(false);
+    expect(skillSelectorSchema.safeParse({
+      type: "choice-pool",
+      branches: [
+        exactBranch("appraise"),
+        {
+          selector: {
+            type: "one-of",
+            selectors: [
+              { type: "exact", ref: { type: "standard", definitionId: "charm" } },
+              { type: "exact", ref: { type: "standard", definitionId: "persuade" } },
+            ],
+          },
+          cardinality: { min: 1, max: 1 },
+        },
+      ],
+      selectedBranches: { min: 1, max: 1 },
+    }).success).toBe(false);
+  });
+
+  it("choice-pool 只允许顶层使用，不能嵌入 composable 或 one-branch", () => {
+    const choicePool = {
+      type: "choice-pool",
+      branches: [
+        {
+          selector: { type: "exact", ref: { type: "standard", definitionId: "appraise" } },
+          cardinality: { min: 1, max: 1 },
+        },
+        {
+          selector: { type: "exact", ref: { type: "standard", definitionId: "disguise" } },
+          cardinality: { min: 1, max: 1 },
+        },
+      ],
+      selectedBranches: { min: 1, max: 1 },
+    } as const;
+    expect(skillSelectorSchema.safeParse({
+      type: "one-of",
+      selectors: [choicePool, { type: "exact", ref: { type: "standard", definitionId: "throw" } }],
+    }).success).toBe(false);
+    expect(skillSelectorSchema.safeParse({
+      type: "all-of",
+      groups: [
+        { selector: choicePool, cardinality: { min: 1, max: 1 } },
+        {
+          selector: { type: "exact", ref: { type: "standard", definitionId: "throw" } },
+          cardinality: { min: 1, max: 1 },
+        },
+      ],
+    }).success).toBe(false);
+    expect(skillSelectorSchema.safeParse({ type: "any-skill", exclude: [choicePool] }).success).toBe(false);
+    expect(skillSelectorSchema.safeParse({
+      type: "one-branch",
+      branches: [
+        { selector: choicePool, cardinality: { min: 1, max: 1 } },
+        {
+          selector: { type: "exact", ref: { type: "standard", definitionId: "throw" } },
+          cardinality: { min: 1, max: 1 },
         },
       ],
     }).success).toBe(false);

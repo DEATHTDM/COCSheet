@@ -130,7 +130,7 @@ Phase 5A 已建立 Occupation Engine Foundation：
 
 - `OccupationPointFormula` 保持 `attribute / best-of / sum` 闭合联合，`best-of` 禁止重复属性。
 - `OccupationRequirement` 使用职业内稳定 kebab-case ID、闭合 `SkillSelector`、`min/max` cardinality、guidance 与 Keeper review；模糊需求批准同时绑定职业身份与 requirement ID，切换职业后旧批准可保留但不再生效。
-- Selector 可表达普通技能、canonical predefined specialization、开放专业化、固定名称 custom specialization、有限候选、带排除的任意技能和组合组，不接受字符串公式或可执行 predicate。
+- Selector 可表达普通技能、canonical predefined specialization、开放专业化、固定名称 custom specialization、有限候选、带排除的任意技能和组合组，不接受字符串公式或可执行 predicate。Composable selectors 是 `exact`、`specialization-of`、`named-custom-specialization`、`one-of`、`any-skill` 与 `all-of`；top-level-only selectors 是 `one-branch` 与 `choice-pool`。
 - 固定名称开放专业化只在玩家确认时产生带 UUID 与 display name 的 custom `SkillRef`；不会为 Latin、Technical Drawing 等职业措辞扩张完整技能目录。
 - `OccupationRegistry` 只从 `SettingPack.occupations` 构建，负责 ID/requirement/selector/era 验证，以及按本地化名称、alias、category、tag、era 查询。
 - Source mechanics 真正不同时以 `variantOf` 建立显式变体；仅 guidance wording 不同时保留同一 mechanics 与多个 sourceRefs。
@@ -138,15 +138,16 @@ Phase 5A 已建立 Occupation Engine Foundation：
 - 已有 Phase 4 final skills 由纯检测器暴露 `needsExplicitAdoptionOrReset`；不得静默采用、反推或覆盖。
 - `one-of` 将多个 child selector 视为不同选择槽位：每个 child 在单项需求中最多承接一个已选 SkillRef，并以回溯匹配处理重叠；同一专业化父类需要多项时使用 `specialization-of` 与 requirement cardinality 表达。
 - `one-branch` 表达多个互斥 branch 中只选择一个，并由该 branch 自己的 cardinality 接受整组 SkillRef；整组选择必须由同一个 branch 完整解释，不能跨 branch 混合。当前 branch child 仅允许可对单个 SkillRef 明确匹配的 `exact`、`specialization-of` 与 `named-custom-specialization`，不与 `one-of` 合并语义，也不持久化可从整组 SkillRef 推导出的 branch identity。`one-branch` 当前只允许作为 `OccupationRequirement.selector` 的顶层 selector，不得嵌套进 `one-of`、`all-of` 或 `any-skill.exclude`；未来只有在真实官方数据形成新的来源压力时才单独扩展组合语义。
+- `choice-pool` 表达从多个 atomic branches 中选择 N 个 active branch；每个 SkillRef 通过 deterministic backtracking 恰好分配给一个 branch，active branch 按自身 cardinality 接受 refs，而 inactive branch 不要求满足 minimum。同一 repeatable branch 内多个 refs 仍只计一个 selected branch，因此 selected branch count 与外层 SkillRef count 分离。它与 `one-branch` 同为 top-level-only，不允许嵌入 composable selector，也不持久化 branch identity。
 - Credit Rating 继续使用 `credit-rating` SkillDefinition；最终值越过职业范围需要显式且绑定当前职业身份的 override。Cthulhu Mythos 创建点继续需要分理由 Keeper approval。
 - 未用职业点与兴趣点是 warning，不在规则层自动分配或作为 hard invalid。
-- 自定义职业复用同一核心定义并限制最多八项职业技能：有限 requirement 按外层 `cardinality.max` 计数；无法证明上限的需求被拒绝，只有通用 Fighting / Firearms 专业化需求按一项计数。
+- 自定义职业复用同一核心定义并限制最多八项职业技能 category：有限 requirement 按可证明的最大容量计数；`one-branch` 只取一个 branch，`choice-pool` 只取允许激活数量内的最大 branch capacities；无法证明上限的需求被拒绝，通用 Fighting / Firearms 专业化 branch 各按一项计数。
 - finalize 生成完整 `Character.skills` 后复用 Phase 4 领域校验，继续执行稳定 identity、重复实例与单实例专业化约束。
 - 完成 skills 时，最终 Mythos 与必要的 current SAN 收紧、职业快照、最终技能和 review 会话推进在同一个 Creation Workflow Repository 事务中写入；降低 Mythos 不自动恢复 SAN，HP/MP 不受影响。
 
 当前 Standard SettingPack 已从 `src/content/standard/occupations.ts` 接入 47 个完整 canonical family、51 个 production definition，包含 Journalist、Missionary 与 Police 的 source mechanics variants。Batch 2 的 `bounty-hunter`、`cowboy` 与 `tribe-member` 通过 `one-branch` 无损进入 production；`src/coc7/testing/occupationFixtures.ts` 继续只用于 Engine 压力测试，生产内容不依赖 testing 目录。完整 Standard 职业目录仍属于 Phase 5B-2；最终职业浏览与技能分配 UI 尚未实现，属于 Phase 5C。职业数据不得硬编码进 Vue 页面。
 
-Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还拒绝确定不可满足的 selector cardinality：`one-of` 的 min/max 不得超过 child 数量，`all-of` 的外层范围不得与内部 group minimum/maximum 矛盾，`one-branch` 的 branch cardinality 必须与外层 requirement 区间相容，且 exact branch 不可能消费多项。该检查只处理可确定的低风险结构，不尝试通用约束求解。
+Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还拒绝确定不可满足的 selector cardinality：`one-of` 的 min/max 不得超过 child 数量，`all-of` 的外层范围不得与内部 group minimum/maximum 矛盾，`one-branch` 的 branch cardinality 必须与外层 requirement 区间相容，且 exact branch 不可能消费多项；`choice-pool.selectedBranches` 不得超过 branch 数量，并以最小 branch minima 和可证明的有限 branch maxima 检查外层 SkillRef cardinality。该检查只处理可确定的低风险结构，不尝试通用约束求解。
 
 ## Schema evolution
 

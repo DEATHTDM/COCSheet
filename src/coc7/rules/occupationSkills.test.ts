@@ -282,6 +282,86 @@ describe("SkillSelector 与 requirement selection", () => {
     expect(validateOccupationRequirementSelection(requirement, [throwRef, throwRef]).map((issue) => issue.code))
       .toEqual(expect.arrayContaining(["duplicate-skill-selection", "selector-mismatch"]));
   });
+
+  it("choice-pool 按 active branch 而不是 SkillRef 数量验证 exact choose-two", () => {
+    const ref = (definitionId: string): Extract<SkillRef, { type: "standard" }> => ({
+      type: "standard",
+      definitionId,
+    });
+    const requirement: OccupationRequirement = {
+      id: "exact-choice-pool",
+      selector: {
+        type: "choice-pool",
+        branches: ["appraise", "disguise", "locksmith"].map((definitionId) => ({
+          selector: { type: "exact", ref: ref(definitionId) },
+          cardinality: { min: 1, max: 1 },
+        })),
+        selectedBranches: { min: 2, max: 2 },
+      },
+      cardinality: { min: 2, max: 3 },
+    };
+    expect(validateOccupationRequirementSelection(requirement, [ref("appraise"), ref("disguise")])).toEqual([]);
+    expect(validateOccupationRequirementSelection(requirement, [ref("appraise")]).map((issue) => issue.code))
+      .toEqual(expect.arrayContaining(["requirement-cardinality", "selector-mismatch"]));
+    expect(validateOccupationRequirementSelection(
+      requirement,
+      [ref("appraise"), ref("disguise"), ref("locksmith")],
+    ).map((issue) => issue.code)).toContain("selector-mismatch");
+  });
+
+  it("choice-pool 允许 repeatable specialization branch 内多项只计一个 active branch", () => {
+    const requirement: OccupationRequirement = {
+      id: "repeatable-choice-pool",
+      selector: {
+        type: "choice-pool",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "fighting" },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "exact", ref: { type: "standard", definitionId: "appraise" } },
+            cardinality: { min: 1, max: 1 },
+          },
+          {
+            selector: { type: "exact", ref: { type: "standard", definitionId: "locksmith" } },
+            cardinality: { min: 1, max: 1 },
+          },
+        ],
+        selectedBranches: { min: 2, max: 2 },
+      },
+      cardinality: { min: 2 },
+    };
+    const brawl: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "brawl" };
+    const sword: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "sword" };
+    const appraise: SkillRef = { type: "standard", definitionId: "appraise" };
+    expect(validateOccupationRequirementSelection(requirement, [brawl, sword, appraise])).toEqual([]);
+    expect(validateOccupationRequirementSelection(requirement, [brawl, sword]).map((issue) => issue.code))
+      .toContain("selector-mismatch");
+    expect(validateOccupationRequirementSelection(requirement, [brawl, brawl, appraise]).map((issue) => issue.code))
+      .toContain("duplicate-skill-selection");
+  });
+
+  it("choice-pool 通过 backtracking 重新分配重叠 atomic branches", () => {
+    const brawl: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "brawl" };
+    const sword: SkillRef = { type: "predefined", definitionId: "fighting", specializationId: "sword" };
+    const requirement: OccupationRequirement = {
+      id: "overlap-choice-pool",
+      selector: {
+        type: "choice-pool",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "fighting" },
+            cardinality: { min: 1, max: 1 },
+          },
+          { selector: { type: "exact", ref: brawl }, cardinality: { min: 1, max: 1 } },
+        ],
+        selectedBranches: { min: 2, max: 2 },
+      },
+      cardinality: { min: 2, max: 2 },
+    };
+    expect(validateOccupationRequirementSelection(requirement, [brawl, sword])).toEqual([]);
+  });
 });
 
 describe("技能预算与 finalize plan", () => {
@@ -745,5 +825,82 @@ describe("Custom occupation foundation", () => {
     expect(calculateCustomOccupationSkillCapacity(unboundedNamedBranch).valid).toBe(false);
     expect(calculateCustomOccupationSkillCapacity(unboundedNamedBranch).errors.join("；"))
       .toContain("one-branch 无法证明有限容量");
+
+    const keeperChoicePool = {
+      type: "choice-pool" as const,
+      branches: [
+        {
+          selector: { type: "specialization-of" as const, definitionId: "fighting" },
+          cardinality: { min: 1 },
+        },
+        {
+          selector: { type: "specialization-of" as const, definitionId: "firearms" },
+          cardinality: { min: 1 },
+        },
+        ...["appraise", "mechanical-repair", "sleight-of-hand", "disguise", "locksmith"].map(
+          (definitionId) => ({
+            selector: {
+              type: "exact" as const,
+              ref: { type: "standard" as const, definitionId },
+            },
+            cardinality: { min: 1, max: 1 },
+          }),
+        ),
+      ],
+      selectedBranches: { min: 4, max: 4 },
+    };
+    const choiceRequirement: OccupationRequirement = {
+      id: "criminal-specialties",
+      selector: keeperChoicePool,
+      cardinality: { min: 4 },
+    };
+    const fixed = ["stealth", "psychology", "spot-hidden", "charm"].map((definitionId, index) => ({
+      id: `fixed-${index + 1}`,
+      selector: { type: "exact" as const, ref: { type: "standard" as const, definitionId } },
+      cardinality: { min: 1, max: 1 },
+    }));
+    const choicePoolEight = customWith([...fixed, choiceRequirement]);
+    expect(calculateCustomOccupationSkillCapacity(choicePoolEight)).toMatchObject({
+      valid: true,
+      maximumSkills: 8,
+    });
+
+    const choicePoolNine = customWith([
+      ...fixed,
+      {
+        id: "fixed-five",
+        selector: { type: "exact", ref: { type: "standard", definitionId: "listen" } },
+        cardinality: { min: 1, max: 1 },
+      },
+      choiceRequirement,
+    ]);
+    expect(calculateCustomOccupationSkillCapacity(choicePoolNine)).toMatchObject({
+      valid: false,
+      maximumSkills: 9,
+    });
+    expect(calculateCustomOccupationSkillCapacity(choicePoolNine).errors.join("；"))
+      .toContain("最多可产生 9 项");
+
+    const unboundedChoicePool = customWith([{
+      id: "unbounded-choice-pool",
+      selector: {
+        type: "choice-pool",
+        branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "art-craft" },
+            cardinality: { min: 1 },
+          },
+          {
+            selector: { type: "exact", ref: medicine },
+            cardinality: { min: 1, max: 1 },
+          },
+        ],
+        selectedBranches: { min: 1, max: 2 },
+      },
+      cardinality: { min: 1 },
+    }]);
+    expect(calculateCustomOccupationSkillCapacity(unboundedChoicePool).valid).toBe(false);
+    expect(calculateCustomOccupationSkillCapacity(unboundedChoicePool).errors.join("；"))
+      .toContain("choice-pool 无法证明有限容量");
   });
 });

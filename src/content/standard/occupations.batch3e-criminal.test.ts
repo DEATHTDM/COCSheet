@@ -30,6 +30,24 @@ const edu2Plus = (...attributes: ("STR" | "DEX" | "APP")[]): OccupationPointForm
 
 const expectedDefinitions = [
   {
+    id: "criminal-keeper-rulebook",
+    name: { zh: "罪犯", en: "Criminal" },
+    aliases: undefined,
+    era: { type: "all" },
+    creditRating: { min: 5, max: 65 },
+    pointFormula: edu2Plus("DEX", "STR"),
+    requirements: [
+      ["social", "one-of", 1, 1],
+      ["stealth", "exact", 1, 1],
+      ["psychology", "exact", 1, 1],
+      ["spot-hidden", "exact", 1, 1],
+      ["criminal-specialties", "choice-pool", 4, null],
+    ],
+    keeperReviewIds: [],
+    sourceId: "coc7-keeper-rulebook-40th-zh",
+    sourcePage: 40,
+  },
+  {
     id: "criminal-assassin",
     name: { zh: "刺客", en: "Assassin" },
     aliases: undefined,
@@ -47,6 +65,7 @@ const expectedDefinitions = [
       ["psychology", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 75,
   },
   {
@@ -67,6 +86,7 @@ const expectedDefinitions = [
       ["personal-or-era-specialty", "any-skill", 1, 1],
     ],
     keeperReviewIds: ["personal-or-era-specialty"],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 75,
   },
   {
@@ -86,6 +106,7 @@ const expectedDefinitions = [
       ["spot-hidden", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 75,
   },
   {
@@ -106,6 +127,7 @@ const expectedDefinitions = [
       ["spot-hidden", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 75,
   },
   {
@@ -125,6 +147,7 @@ const expectedDefinitions = [
       ["sleight-of-hand", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 75,
   },
   {
@@ -145,6 +168,7 @@ const expectedDefinitions = [
       ["spot-hidden", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 75,
   },
   {
@@ -164,6 +188,7 @@ const expectedDefinitions = [
       ["personal-or-era-specialty", "any-skill", 1, 1],
     ],
     keeperReviewIds: ["personal-or-era-specialty"],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 76,
   },
   {
@@ -184,6 +209,7 @@ const expectedDefinitions = [
       ["other-skill", "any-skill", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 76,
   },
   {
@@ -204,6 +230,7 @@ const expectedDefinitions = [
       ["personal-or-era-specialty", "any-skill", 1, 1],
     ],
     keeperReviewIds: ["personal-or-era-specialty"],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 76,
   },
   {
@@ -224,6 +251,7 @@ const expectedDefinitions = [
       ["spot-hidden", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 76,
   },
   {
@@ -244,6 +272,7 @@ const expectedDefinitions = [
       ["throw", "exact", 1, 1],
     ],
     keeperReviewIds: [],
+    sourceId: "coc7-investigator-handbook-zh-1-21",
     sourcePage: 76,
   },
 ] as const;
@@ -294,15 +323,69 @@ describe("Phase 5B-2 Batch 3E Criminal occupations", () => {
       (candidate) => candidate.id,
     )).toEqual(expected.keeperReviewIds);
     expect(occupation?.sourceRefs.map((source) => `${source.sourceId}:${source.page}`))
-      .toEqual([`coc7-investigator-handbook-zh-1-21:${expected.sourcePage}`]);
+      .toEqual([`${expected.sourceId}:${expected.sourcePage}`]);
   });
 
-  it("只导入 11 个 Handbook variants，不建立 Keeper Criminal 或 family 空壳", () => {
-    expect(batch3eCriminalOccupationDefinitions).toHaveLength(11);
+  it("导入 Keeper + 11 个 Handbook variants，不建立 family 空壳", () => {
+    expect(batch3eCriminalOccupationDefinitions).toHaveLength(12);
     expect(registry.get("criminal")).toBeUndefined();
-    expect(registry.get("criminal-keeper-rulebook")).toBeUndefined();
+    expect(registry.get("criminal-keeper-rulebook")).toBeDefined();
     expect(registry.definitions.filter((occupation) => occupation.variantOf === "criminal"))
-      .toHaveLength(11);
+      .toHaveLength(12);
+  });
+
+  it("Keeper Criminal choice-pool 锁定 branch 顺序、cardinality 与行为矩阵", () => {
+    const requirement = selectedRequirement("criminal-keeper-rulebook", "criminal-specialties");
+    if (requirement.selector.type !== "choice-pool") throw new Error("缺少 Keeper Criminal choice-pool");
+    expect(requirement.cardinality).toEqual({ min: 4 });
+    expect(requirement.selector.selectedBranches).toEqual({ min: 4, max: 4 });
+    expect(requirement.selector.branches.map((branch) => ({
+      type: branch.selector.type,
+      identity: branch.selector.type === "exact"
+        ? branch.selector.ref.definitionId
+        : branch.selector.definitionId,
+      cardinality: branch.cardinality,
+    }))).toEqual([
+      { type: "specialization-of", identity: "fighting", cardinality: { min: 1 } },
+      { type: "exact", identity: "appraise", cardinality: { min: 1, max: 1 } },
+      { type: "exact", identity: "mechanical-repair", cardinality: { min: 1, max: 1 } },
+      { type: "exact", identity: "sleight-of-hand", cardinality: { min: 1, max: 1 } },
+      { type: "exact", identity: "disguise", cardinality: { min: 1, max: 1 } },
+      { type: "specialization-of", identity: "firearms", cardinality: { min: 1 } },
+      { type: "exact", identity: "locksmith", cardinality: { min: 1, max: 1 } },
+    ]);
+
+    const brawl = predefined("fighting", "brawl");
+    const sword = predefined("fighting", "sword");
+    const handgun = predefined("firearms", "handgun");
+    const rifle = predefined("firearms", "rifle-shotgun");
+    const appraise = standard("appraise");
+    const mechanicalRepair = standard("mechanical-repair");
+    const sleightOfHand = standard("sleight-of-hand");
+    const disguise = standard("disguise");
+    const locksmith = standard("locksmith");
+
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      brawl, appraise, mechanicalRepair, locksmith,
+    ])).toEqual([]);
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      brawl, sword, appraise, disguise, locksmith,
+    ])).toEqual([]);
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      brawl, sword, handgun, rifle, appraise, disguise,
+    ])).toEqual([]);
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      brawl, sword, appraise, disguise,
+    ])).toContain("selector-mismatch");
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      appraise, mechanicalRepair, sleightOfHand, disguise, locksmith,
+    ])).toContain("selector-mismatch");
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      brawl, brawl, appraise, disguise, locksmith,
+    ])).toContain("duplicate-skill-selection");
+    expect(issueCodes("criminal-keeper-rulebook", "criminal-specialties", [
+      standard("listen"), appraise, disguise, locksmith,
+    ])).toContain("selector-mismatch");
   });
 
   it("Assassin、Bank Robber、Bootlegger / Thug 与 Street Punk 的 generic combat requirements 独立支持 1+", () => {

@@ -6,11 +6,11 @@ Last updated: 2026-08-13
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and the Batch 3A through Batch 3E engineering sub-batches are completed. Formal Batch 2 is completed; Batch 3 remains in progress for Keeper Criminal, the withheld Clerk / Executive variant, and `deprogrammer`. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, Batch 3A through Batch 3E, and the Keeper Criminal Engine-pressure cleanup are completed. Formal Batch 2 is completed; Batch 3 remains in progress for the withheld Clerk / Executive variant and `deprogrammer`. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2 Batch 3E branch was created from `main` at `84ed22fb4779cd6f551e18e1e1ffdebe7885d524`.
+Phase 5B-2 Keeper Criminal cleanup branch was created from `main` at `cf98bd3119d00b4a46c2054421e9e7ccb84b4c6b`.
 
 ## Implemented
 
@@ -21,16 +21,16 @@ Phase 5B-2 Batch 3E branch was created from `main` at `84ed22fb4779cd6f551e18e1e
 - internal Extension Registry and allow-listed extension IDs
 - minimal `Character`, `CreationSession`, and `CreationPreset` schemas
 - Occupation schema, occupation point formula calculation, and attribute prerequisite validation foundations
-- closed OccupationRequirement + SkillSelector model with stable requirement IDs, cardinality, fixed-name custom specialization, finite candidates, exclusions, declarative composition, and exclusive `one-branch` selection with branch-local cardinality
+- closed OccupationRequirement + SkillSelector model with stable requirement IDs, cardinality, fixed-name custom specialization, finite candidates, exclusions, declarative composition, exclusive `one-branch`, and N-branch `choice-pool` selection with branch-local cardinality
 - hardened OccupationPointFormula schema with duplicate-free best-of attributes and all verified Standard formula shapes
 - OccupationRegistry sourced only from SettingPack.occupations, with localized search and category/tag/era filters plus registration validation
 - explicit source mechanics variants through variantOf, while guidance-only source wording shares canonical mechanics and multiple sourceRefs
 - strongly typed CreationSession occupation mechanics snapshot and skill creation state containing requirement selections, SkillRef allocation rows, Credit Rating override and reasoned Keeper approvals
-- pure occupation/interest budget, selection uniqueness, one-of child-selector one-to-one assignment, one-branch whole-selection exclusivity, creation-point policy, occupation-scoped Credit Rating range override, skill final-limit and unused-point warning rules
+- pure occupation/interest budget, selection uniqueness, one-of child-selector one-to-one assignment, one-branch whole-selection exclusivity, choice-pool active-branch backtracking assignment, creation-point policy, occupation-scoped Credit Rating range override, skill final-limit and unused-point warning rules
 - pure structured-allocation conflict detection for existing Phase 4 Character.skills, with no silent adoption, reverse engineering or overwrite
 - pure finalize plan rebuilding CharacterSkill values from current resolved base + occupation allocation + interest allocation, followed by Phase 4 Character.skills domain validation
 - optional lightweight Character occupation identity snapshot without copied occupation mechanics
-- explicit custom occupation foundation with UUID identity and an eight-occupational-skill capacity proof based on requirement cardinality; one-branch counts the maximum capacity of one branch rather than summing mutually exclusive branches
+- explicit custom occupation foundation with UUID identity and an eight-occupational-skill category capacity proof based on requirement cardinality; one-branch counts one branch and choice-pool counts only the maximum selectable branch capacities, with generic Fighting / Firearms remaining one category each
 - skills CreationStep and pure occupation-switch/reset draft actions that preserve allocations until explicit reset
 - atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to review in one Dexie transaction without changing HP/MP or restoring SAN
 - legacy CreationPreset.skillCaps read compatibility without inferred mapping or validator effect, alongside explicit final-value skillLimits
@@ -48,7 +48,8 @@ Phase 5B-2 Batch 3E branch was created from `main` at `84ed22fb4779cd6f551e18e1e
 - Phase 5B-2 Batch 3C source-variant import for `actor`, `computer-professional`, `driver`, `gangster`, and `military-officer`, bringing coverage to 84 fully implemented families / 95 definitions and 117 mapped official source entries; 12 source rows map to 11 production variants because the two mechanically identical Hacker entries share one modern-only definition, 54 source rows are now `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
 - Phase 5B-2 Batch 3D source-variant import adding 10 definitions across `laborer`, `photographer`, `pilot`, `sailor`, and `white-collar-worker`, bringing coverage to 89 touched family identities / 88 fully implemented families / 105 definitions and 128 mapped official source entries; 11 source rows enter production because the two mechanically identical general Pilot entries share one definition, while Clerk / Executive is withheld after printed pages 91-92 leave `Language` ambiguous between Own and Other; 65 source rows are now `production-batch-3`, no Engine change was made, and formal Batch 3 remains in progress
 - Phase 5B-2 Batch 3E Criminal source-variant import adding all 11 Investigator Handbook subtypes, bringing coverage to 90 touched family identities / 88 fully implemented families / 116 definitions and 139 mapped official source entries; 76 source rows are now `production-batch-3`; Keeper Rulebook Criminal remains withheld under `choice-pool-with-repeatable-specialization-branch` because its choose-four category pool contains repeatable generic Fighting and Firearms children that current selector composition cannot count losslessly, no Engine change was made, and the Criminal family remains partial
-- deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
+- Phase 5B-2 Keeper Criminal Engine-pressure cleanup adding top-level-only `choice-pool` and `criminal-keeper-rulebook`, bringing coverage to 90 touched family identities / 89 fully implemented families / 117 definitions and 140 mapped official source entries; 77 source rows are now `production-batch-3`; `choice-pool-with-repeatable-specialization-branch` is resolved while Clerk / Executive remains a source ambiguity and Deprogrammer remains a separate Engine pressure
+- deterministic OccupationRegistry cardinality hardening for impossible exact, one-of, all-of, one-branch, and choice-pool requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
 - basic Home, character creation/editor, and KP preset pages
@@ -114,7 +115,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond completed Phase 5B-2 Batch 3E
+- verified Standard occupation production data beyond the completed Keeper Criminal cleanup
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -127,7 +128,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 Batch 3 is in progress after Batch 3E. Remaining work is Keeper Criminal's choice-pool Engine pressure, the source-ambiguous Clerk / Executive variant under `white-collar-worker`, and the separately reviewed `deprogrammer` replacement pressure, but this document does not authorize later Engine work or either withheld import.
+Phase 5B-2 Batch 3 is in progress after resolving Keeper Criminal. Remaining work is the source-ambiguous Clerk / Executive variant under `white-collar-worker` and the separately reviewed `deprogrammer` replacement pressure, but this document does not authorize either withheld import.
 
 ## Known technical risks
 
@@ -135,6 +136,6 @@ Phase 5B-2 Batch 3 is in progress after Batch 3E. Remaining work is Keeper Crimi
 - future import/export compatibility
 - Setting-specific extension evolution
 - `deprogrammer` remains an unresolved Engine pressure because its Keeper-approved Hypnosis replacement of one existing occupation skill is not yet expressible
-- Keeper Criminal adds a separate unresolved Engine pressure: its seven-category choose-four pool includes generic Fighting and Firearms branches that may each produce multiple specialization refs while counting as one category
+- Keeper Criminal's former `choice-pool-with-repeatable-specialization-branch` pressure is resolved by the top-level-only `choice-pool` selector, which separates selected category count from selected SkillRef count
 - Clerk / Executive remains withheld because the authoritative Chinese source says only `Language`, without resolving Own versus Other; it remains a source semantic ambiguity rather than Engine pressure
 - browser storage can be cleared, and long-term file backup is not implemented
