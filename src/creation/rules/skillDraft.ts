@@ -20,6 +20,7 @@ export function resetOccupationAllocation(state: SkillCreationState): SkillCreat
     allocations: state.allocations
       .map((allocation) => ({ ...allocation, occupationPoints: 0 }))
       .filter((allocation) => allocation.interestPoints > 0),
+    occupationSkillReplacement: undefined,
     creditRatingOverride: undefined,
     keeperApprovals: state.keeperApprovals.filter(
       (approval) => approval.reason === "cthulhu-mythos-allocation" ||

@@ -36,6 +36,7 @@ export type SkillAllocationErrorCode =
   | "custom-occupation-skill-capacity"
   | "occupation-prerequisite"
   | "preset-occupation-banned"
+  | "invalid-occupation-skill-replacement"
   | "missing-requirement-selection"
   | "stale-requirement-selection"
   | "requirement-cardinality"
@@ -407,6 +408,14 @@ export function occupationRequirementApprovalSubject(
   return `occupation:${occupationId}:requirement:${requirementId}`;
 }
 
+export function occupationSkillReplacementApprovalSubject(
+  occupationId: string,
+  policyId: string,
+  targetRequirementId: string,
+): string {
+  return `occupation:${occupationId}:replacement:${policyId}:target:${targetRequirementId}`;
+}
+
 function hasApproval(
   grants: readonly KeeperApprovalGrant[],
   reason: ApprovalReasonId,
@@ -514,6 +523,50 @@ export function finalizeSkillAllocation(
   const occupationEligible = new Set<string>();
   const selectedSkillRefs = new Map<string, SkillRef>();
   const usedAcrossRequirements = new Map<string, string>();
+  let replacementTargetRequirementId: string | undefined;
+
+  if (state.occupationSkillReplacement) {
+    const replacementState = state.occupationSkillReplacement;
+    const policy = definition.skillReplacement;
+    const targetRequirement = requirements.get(replacementState.targetRequirementId);
+    if (!policy ||
+      policy.id !== replacementState.policyId ||
+      !policy.targetRequirementIds.includes(replacementState.targetRequirementId) ||
+      !targetRequirement) {
+      errors.push({
+        code: "invalid-occupation-skill-replacement",
+        requirementId: replacementState.targetRequirementId,
+        message: `职业技能 replacement 草稿与当前职业定义不匹配：${replacementState.policyId}/${replacementState.targetRequirementId}`,
+      });
+    } else {
+      replacementTargetRequirementId = replacementState.targetRequirementId;
+      if (selections.has(replacementTargetRequirementId)) {
+        errors.push({
+          code: "invalid-occupation-skill-replacement",
+          requirementId: replacementTargetRequirementId,
+          message: `被 replacement 替换的职业需求仍存在普通 selection：${replacementTargetRequirementId}`,
+        });
+      }
+      const replacementRef = policy.replacement.ref;
+      const replacementKey = getSkillRefKey(replacementRef);
+      occupationEligible.add(replacementKey);
+      addSkillRef(selectedSkillRefs, replacementRef);
+      usedAcrossRequirements.set(replacementKey, replacementTargetRequirementId);
+
+      const approvalSubject = occupationSkillReplacementApprovalSubject(
+        occupation.selectedOccupationId,
+        policy.id,
+        replacementTargetRequirementId,
+      );
+      if (!hasApproval(state.keeperApprovals, "occupation-skill-replacement", approvalSubject)) {
+        addApproval(approvals, {
+          reason: "occupation-skill-replacement",
+          subjectId: approvalSubject,
+          message: `职业技能 replacement ${policy.id} 需要 Keeper 批准目标 ${replacementTargetRequirementId}`,
+        });
+      }
+    }
+  }
 
   for (const selection of state.requirementSelections) {
     if (!requirements.has(selection.requirementId)) {
@@ -526,6 +579,7 @@ export function finalizeSkillAllocation(
   }
 
   for (const requirement of definition.skillRequirements) {
+    if (requirement.id === replacementTargetRequirementId) continue;
     const selection = selections.get(requirement.id);
     if (!selection) {
       errors.push({

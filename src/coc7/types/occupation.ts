@@ -283,6 +283,52 @@ export const occupationRequirementSchema = z
   })
   .strict();
 
+export interface OccupationSkillReplacementPolicy {
+  readonly id: string;
+  readonly replacement: ExactSkillSelector;
+  readonly targetRequirementIds: readonly string[];
+  readonly approval: "keeper-required";
+}
+
+export function isSingleOccupationSkillSlotRequirement(
+  requirement: { readonly selector: SkillSelector; readonly cardinality: SelectorCardinality },
+): boolean {
+  if (requirement.selector.type === "one-branch") {
+    return requirement.selector.branches.every((branch) =>
+      branch.cardinality.min === 1 &&
+      (branch.cardinality.max === 1 ||
+        (branch.cardinality.max === undefined &&
+          branch.selector.type === "specialization-of" &&
+          (branch.selector.definitionId === "fighting" ||
+            branch.selector.definitionId === "firearms"))),
+    );
+  }
+  if (requirement.cardinality.min !== 1 || requirement.cardinality.max !== 1) return false;
+  return requirement.selector.type === "exact" || requirement.selector.type === "one-of";
+}
+
+export const occupationSkillReplacementPolicySchema: z.ZodType<OccupationSkillReplacementPolicy> = z
+  .object({
+    id: stableMachineIdSchema,
+    replacement: z.object({ type: z.literal("exact"), ref: exactSkillRefSchema }).strict(),
+    targetRequirementIds: z.array(stableMachineIdSchema).min(1),
+    approval: z.literal("keeper-required"),
+  })
+  .strict()
+  .superRefine((policy, context) => {
+    const targets = new Set<string>();
+    policy.targetRequirementIds.forEach((targetId, index) => {
+      if (targets.has(targetId)) {
+        context.addIssue({
+          code: "custom",
+          message: `重复的 replacement target requirement ID：${targetId}`,
+          path: ["targetRequirementIds", index],
+        });
+      }
+      targets.add(targetId);
+    });
+  });
+
 export const attributePrerequisiteSchema = z
   .object({
     type: z.literal("attribute"),
@@ -324,6 +370,7 @@ export const occupationDefinitionSchema = z
       }),
     pointFormula: occupationPointFormulaSchema,
     skillRequirements: z.array(occupationRequirementSchema),
+    skillReplacement: occupationSkillReplacementPolicySchema.optional(),
     prerequisites: z.array(occupationPrerequisiteSchema).optional(),
     approval: z.object({
       reason: z.literal("occupation-definition"),
@@ -342,6 +389,7 @@ export const occupationDefinitionSchema = z
       });
     }
     const requirementIds = new Set<string>();
+    const requirements = new Map<string, z.infer<typeof occupationRequirementSchema>>();
     occupation.skillRequirements.forEach((requirement, index) => {
       if (requirementIds.has(requirement.id)) {
         context.addIssue({
@@ -351,6 +399,23 @@ export const occupationDefinitionSchema = z
         });
       }
       requirementIds.add(requirement.id);
+      requirements.set(requirement.id, requirement);
+    });
+    occupation.skillReplacement?.targetRequirementIds.forEach((targetId, index) => {
+      const requirement = requirements.get(targetId);
+      if (!requirement) {
+        context.addIssue({
+          code: "custom",
+          message: `replacement target 不存在：${targetId}`,
+          path: ["skillReplacement", "targetRequirementIds", index],
+        });
+      } else if (!isSingleOccupationSkillSlotRequirement(requirement)) {
+        context.addIssue({
+          code: "custom",
+          message: `replacement target 不能证明为单一职业技能 category：${targetId}`,
+          path: ["skillReplacement", "targetRequirementIds", index],
+        });
+      }
     });
   });
 

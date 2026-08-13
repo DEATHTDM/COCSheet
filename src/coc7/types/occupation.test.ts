@@ -50,6 +50,81 @@ describe("OccupationDefinition schema", () => {
     expect(occupationRequirementSchema.safeParse({ ...requirement, id: "Not Kebab" }).success).toBe(false);
   });
 
+  it("只接受 exact、非空唯一 targets 且目标为单一 category 的 replacement policy", () => {
+    const exactRequirement = {
+      id: "history",
+      selector: { type: "exact", ref: { type: "standard", definitionId: "history" } },
+      cardinality: { min: 1, max: 1 },
+    } as const;
+    const base = {
+      version: 1,
+      id: "deprogrammer",
+      name: { zh: "除魅师", en: "Deprogrammer" },
+      category: "religion-occult",
+      sourceRefs: [sourceRef],
+      era: { type: "specific", eraIds: ["modern"] },
+      creditRating: { min: 20, max: 50 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [exactRequirement],
+      skillReplacement: {
+        id: "keeper-approved-hypnosis",
+        replacement: { type: "exact", ref: { type: "standard", definitionId: "hypnosis" } },
+        targetRequirementIds: ["history"],
+        approval: "keeper-required",
+      },
+    } as const;
+    expect(occupationDefinitionSchema.safeParse(base).success).toBe(true);
+    expect(occupationDefinitionSchema.safeParse({
+      ...base,
+      skillReplacement: { ...base.skillReplacement, targetRequirementIds: [] },
+    }).success).toBe(false);
+    expect(occupationDefinitionSchema.safeParse({
+      ...base,
+      skillReplacement: { ...base.skillReplacement, targetRequirementIds: ["history", "history"] },
+    }).success).toBe(false);
+    expect(occupationDefinitionSchema.safeParse({
+      ...base,
+      skillReplacement: { ...base.skillReplacement, targetRequirementIds: ["missing"] },
+    }).success).toBe(false);
+    expect(occupationDefinitionSchema.safeParse({
+      ...base,
+      skillReplacement: {
+        ...base.skillReplacement,
+        replacement: { type: "specialization-of", definitionId: "science" },
+      },
+    }).success).toBe(false);
+    expect(occupationDefinitionSchema.safeParse({
+      ...base,
+      skillRequirements: [{
+        id: "multi-slot",
+        selector: { type: "one-of", selectors: [
+          { type: "exact", ref: { type: "standard", definitionId: "history" } },
+          { type: "exact", ref: { type: "standard", definitionId: "occult" } },
+        ] },
+        cardinality: { min: 2, max: 2 },
+      }],
+      skillReplacement: { ...base.skillReplacement, targetRequirementIds: ["multi-slot"] },
+    }).success).toBe(false);
+    expect(occupationDefinitionSchema.safeParse({
+      ...base,
+      skillRequirements: [{
+        id: "multi-branch-slot",
+        selector: { type: "one-branch", branches: [
+          {
+            selector: { type: "specialization-of", definitionId: "science" },
+            cardinality: { min: 2, max: 2 },
+          },
+          {
+            selector: { type: "exact", ref: { type: "standard", definitionId: "history" } },
+            cardinality: { min: 1, max: 1 },
+          },
+        ] },
+        cardinality: { min: 1, max: 2 },
+      }],
+      skillReplacement: { ...base.skillReplacement, targetRequirementIds: ["multi-branch-slot"] },
+    }).success).toBe(false);
+  });
+
   it("SkillSelector 闭合表达 exact、开放专业、固定名称 custom、候选、any 与组合", () => {
     const selectors = [
       { type: "exact", ref: { type: "standard", definitionId: "medicine" } },
