@@ -150,6 +150,133 @@ describe("requirement selection store API", () => {
     expect(store.current?.data.skills?.requirementSelections).toEqual(first);
   });
 
+  it("Deprogrammer 的有效 History replacement target 不自动补齐且 finalizer 不报 selection 共存", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("deprogrammer");
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [],
+      keeperApprovals: [],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "history",
+      },
+    });
+
+    await store.ensureDeterministicRequirementSelections();
+    const first = store.current?.data.skills;
+    const selectedRequirementIds = first?.requirementSelections.map(({ requirementId }) => requirementId);
+    expect(selectedRequirementIds).not.toContain("history");
+    expect(selectedRequirementIds).toEqual(expect.arrayContaining([
+      "drive-auto",
+      "occult",
+      "psychology",
+      "stealth",
+    ]));
+    expect(first?.occupationSkillReplacement).toEqual({
+      policyId: "keeper-approved-hypnosis",
+      targetRequirementId: "history",
+    });
+
+    const character = await characterRepository.getById(characterId);
+    if (!character) throw new Error("调查员不存在");
+    const plan = store.getSkillFinalizePlan({
+      ...character.data,
+      characteristics: initialValues,
+    });
+    expect(plan.errors.map(({ code }) => code)).not.toContain("invalid-occupation-skill-replacement");
+    expect(plan.approvals.map(({ reason }) => reason)).toContain("occupation-skill-replacement");
+
+    await store.ensureDeterministicRequirementSelections();
+    expect(store.current?.data.skills).toEqual(first);
+  });
+
+  it("Deprogrammer 的有效 Drive Auto replacement target 只跳过该 exact requirement", async () => {
+    const store = useCreationStore();
+    await store.start("standard");
+    await store.selectCatalogOccupation("deprogrammer");
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [],
+      keeperApprovals: [],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "drive-auto",
+      },
+    });
+
+    await store.ensureDeterministicRequirementSelections();
+
+    const selectedRequirementIds = store.current?.data.skills?.requirementSelections
+      .map(({ requirementId }) => requirementId);
+    expect(selectedRequirementIds).not.toContain("drive-auto");
+    expect(selectedRequirementIds).toEqual(expect.arrayContaining([
+      "history",
+      "occult",
+      "psychology",
+      "stealth",
+    ]));
+    expect(store.current?.data.skills?.occupationSkillReplacement).toEqual({
+      policyId: "keeper-approved-hypnosis",
+      targetRequirementId: "drive-auto",
+    });
+  });
+
+  it("错误 replacement policy 不抑制 Deprogrammer 的 deterministic exact auto-fill", async () => {
+    const store = useCreationStore();
+    await store.start("standard");
+    await store.selectCatalogOccupation("deprogrammer");
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [],
+      keeperApprovals: [],
+      occupationSkillReplacement: {
+        policyId: "old-invalid-policy",
+        targetRequirementId: "history",
+      },
+    });
+
+    await store.ensureDeterministicRequirementSelections();
+
+    expect(store.current?.data.skills?.requirementSelections).toContainEqual({
+      requirementId: "history",
+      refs: [{ type: "standard", definitionId: "history" }],
+    });
+    expect(store.current?.data.skills?.occupationSkillReplacement).toEqual({
+      policyId: "old-invalid-policy",
+      targetRequirementId: "history",
+    });
+  });
+
+  it("职业切换遗留 replacement draft 不抑制当前职业的 deterministic exact auto-fill", async () => {
+    const store = useCreationStore();
+    await store.start("standard");
+    await store.selectCatalogOccupation("deprogrammer");
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [],
+      keeperApprovals: [],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "history",
+      },
+    });
+    await store.selectCatalogOccupation("author");
+
+    await store.ensureDeterministicRequirementSelections();
+
+    expect(store.current?.data.skills?.requirementSelections).toContainEqual({
+      requirementId: "history",
+      refs: [{ type: "standard", definitionId: "history" }],
+    });
+    expect(store.current?.data.skills?.occupationSkillReplacement).toEqual({
+      policyId: "keeper-approved-hypnosis",
+      targetRequirementId: "history",
+    });
+  });
+
   it("不覆盖已有同 requirement draft，也不删除旧职业留下的 stale selection", async () => {
     const store = useCreationStore();
     await store.start("standard");

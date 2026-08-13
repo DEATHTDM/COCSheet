@@ -173,11 +173,25 @@ export const useCreationStore = defineStore("creation", () => {
       throw new Error("职业或技能创建状态尚未初始化");
     }
 
+    const definition = session.occupation.definitionSnapshot;
+    const replacementDraft = session.skills.occupationSkillReplacement;
+    const replacementPolicy = definition.skillReplacement;
+    const currentRequirementIds = new Set(
+      definition.skillRequirements.map((requirement) => requirement.id),
+    );
+    const activeReplacementTargetRequirementId = replacementDraft &&
+      replacementPolicy &&
+      replacementDraft.policyId === replacementPolicy.id &&
+      replacementPolicy.targetRequirementIds.includes(replacementDraft.targetRequirementId) &&
+      currentRequirementIds.has(replacementDraft.targetRequirementId)
+      ? replacementDraft.targetRequirementId
+      : undefined;
     const existingRequirementIds = new Set(
       session.skills.requirementSelections.map((selection) => selection.requirementId),
     );
-    const additions = session.occupation.definitionSnapshot.skillRequirements.flatMap((requirement) => {
-      if (existingRequirementIds.has(requirement.id)) return [];
+    const additions = definition.skillRequirements.flatMap((requirement) => {
+      if (requirement.id === activeReplacementTargetRequirementId ||
+        existingRequirementIds.has(requirement.id)) return [];
       const ref = getDeterministicRequirementSelection(requirement);
       return ref ? [{ requirementId: requirement.id, refs: [ref] }] : [];
     });
