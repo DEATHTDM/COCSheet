@@ -36,11 +36,11 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`skills` 和轻量 `occupation` 身份快照。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`skills` 和轻量 `occupation` 身份快照。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
-`CreationSession` 负责建卡流程状态。当前 Schema 包含 `version`、`characterId`、`settingId`、`currentStep`、可选 `presetSnapshot`、草稿年龄及强类型属性阶段状态。属性状态以 discriminated union 区分六种生成方式，并保存原始骰值、分配、候选组、Base Characteristics、年龄减值、EDU 成长记录与 Luck 来源。职业阶段保存完整 `OccupationDefinition` mechanics snapshot；技能阶段保存 requirement selections、完整 `SkillRef` allocation rows、可选的 occupation skill replacement policy/target draft、Credit Rating override、分理由的 Keeper approvals 与手动技能冲突处理决定。replacement SkillRef 从 mechanics snapshot 实时推导，不重复持久化。预算、base/final/Half/Fifth、剩余点数和 validation issues 均实时推导，不持久化。
+`CreationSession` 负责建卡流程状态，但不重复保存时代；所有时代判断都读取 `Character.eraId`。当前 Schema 包含 `version`、`characterId`、`settingId`、`currentStep`、可选 `presetSnapshot`、草稿年龄及强类型属性阶段状态。属性状态以 discriminated union 区分六种生成方式，并保存原始骰值、分配、候选组、Base Characteristics、年龄减值、EDU 成长记录与 Luck 来源。职业阶段保存完整 `OccupationDefinition` mechanics snapshot；技能阶段保存 requirement selections、完整 `SkillRef` allocation rows、可选的 occupation skill replacement policy/target draft、Credit Rating override、分理由的 Keeper approvals 与手动技能冲突处理决定。replacement SkillRef 从 mechanics snapshot 实时推导，不重复持久化。预算、base/final/Half/Fifth、剩余点数和 validation issues 均实时推导，不持久化。
 
 Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Characteristic 校验前不生成 Base Characteristics。Point Buy 从当前预设的数学最低合法分配开始，并同样只在总点数和各项限制全部满足后生成 Base。`draftAge` 与年龄调整状态中的年龄必须一致。
 
@@ -118,6 +118,8 @@ Character.skills（实例化或变化的 CharacterSkill）
 
 Phase 4 在 `Character.version = 1` 中新增 optional `skills`，但不改变 CharacterRecord、CreationSessionRecord 或 IndexedDB version。静态目录、availability、aliases、基础值、名称、来源、点数分配和验证错误不持久化，旧 Character 读取也不会触发隐式写回。
 
+Phase 5C-1.5 在同一个 `Character.version = 1` 中新增 optional `eraId`。Character Store 验证该值属于人物当前 SettingPack 后经 CharacterRepository 保存；CharacterRecord、CreationSession、Dexie 表、索引和 IndexedDB version 均不改变。SettingPack 声明 eras 时，创建 UI 与 Creation Store 要求明确时代；纯 finalizer 对缺少时代的 legacy Character 保持兼容。
+
 ## Occupation architecture
 
 职业领域按三层理解：
@@ -134,6 +136,7 @@ Phase 5A 已建立 Occupation Engine Foundation：
 - Selector 可表达普通技能、canonical predefined specialization、开放专业化、固定名称 custom specialization、有限候选、带排除的任意技能和组合组，不接受字符串公式或可执行 predicate。Composable selectors 是 `exact`、`specialization-of`、`named-custom-specialization`、`one-of`、`any-skill` 与 `all-of`；top-level-only selectors 是 `one-branch` 与 `choice-pool`。
 - 固定名称开放专业化只在玩家确认时产生带 UUID 与 display name 的 custom `SkillRef`；不会为 Latin、Technical Drawing 等职业措辞扩张完整技能目录。
 - `OccupationRegistry` 只从 `SettingPack.occupations` 构建，负责 ID/requirement/selector/era 验证，以及按本地化名称、alias、category、tag、era 查询。
+- `src/coc7/rules/availability.ts` 是职业与技能时代适用性的共享纯规则边界，不读取 Store、Vue 或全局状态。职业浏览、选择资格与技能 finalizer 都以 `Character.eraId` 调用它；浏览器自己的 era filter 只影响本地列表查询，不改变人物时代。
 - Source mechanics 真正不同时以 `variantOf` 建立显式变体；仅 guidance wording 不同时保留同一 mechanics 与多个 sourceRefs。
 - 结构化 final skill 值始终为当前 Characteristic 解析出的 base 加职业点与兴趣点，不在已有 `CharacterSkill.currentValue` 上叠加。
 - 已有 Phase 4 final skills 由纯检测器暴露 `needsExplicitAdoptionOrReset`；不得静默采用、反推或覆盖。
@@ -144,13 +147,14 @@ Phase 5A 已建立 Occupation Engine Foundation：
 - 未用职业点与兴趣点是 warning，不在规则层自动分配或作为 hard invalid。
 - 自定义职业复用同一核心定义并限制最多八项职业技能 category：有限 requirement 按可证明的最大容量计数；`one-branch` 只取一个 branch，`choice-pool` 只取允许激活数量内的最大 branch capacities；无法证明上限的需求被拒绝，通用 Fighting / Firearms 专业化 branch 各按一项计数。
 - finalize 生成完整 `Character.skills` 后复用 Phase 4 领域校验，继续执行稳定 identity、重复实例与单实例专业化约束。
+- Character 存在 `eraId` 时，finalize 对职业 mechanics snapshot 以及 requirements、replacement、allocation 和最终选择中实际出现的去重 SkillRef 执行时代适用性校验；不兼容内容产生稳定错误码且不被静默丢弃。时代变化保留现有 catalog/custom 职业快照和技能草稿，由 UI 与 finalize 阻止继续。
 - finalize 在普通 requirement validation 前解析可选 replacement draft。合法 target 跳过 normal selection，且 normal target selection 若仍存在会 hard fail；replacement ref 进入同一 occupation eligibility、allocation、base、limit 与 CharacterSkill validation pipeline。批准 subject 绑定 occupation + policy + target，target 改变后旧批准自然失效。职业切换保留 draft 供 stale validation，显式 occupation allocation reset 才清除 replacement target。
 - 完成 skills 时，最终 Mythos 与必要的 current SAN 收紧、职业快照、最终技能和 review 会话推进在同一个 Creation Workflow Repository 事务中写入；降低 Mythos 不自动恢复 SAN，HP/MP 不受影响。
 
-当前 Standard SettingPack 已从 `src/content/standard/occupations.ts` 接入 91 个 canonical family identity 与 119 个 production definition，完整映射 142 条官方 Standard source entry，并保留真实 source mechanics variants。Batch 2 的 `bounty-hunter`、`cowboy` 与 `tribe-member` 通过 `one-branch` 无损进入 production，Keeper Criminal 使用 top-level-only `choice-pool`，Deprogrammer 使用 occupation-level replacement policy；Clerk / Executive 通过既有 `one-of` 表达 Own Language 或 Other Language exactly-one。`src/coc7/testing/occupationFixtures.ts` 继续只用于 Engine 压力测试，生产内容不依赖 testing 目录。Phase 5B Standard occupation production 已完成；Phase 5C-1 已接入 Registry-backed 职业浏览、预览与显式 catalog selection，requirement selection、allocation、approval、conflict 和 custom occupation UI 仍未实现。职业数据不得硬编码进 Vue 页面。
+当前 Standard SettingPack 已从 `src/content/standard/occupations.ts` 接入 91 个 canonical family identity 与 119 个 production definition，完整映射 142 条官方 Standard source entry，并保留真实 source mechanics variants。Batch 2 的 `bounty-hunter`、`cowboy` 与 `tribe-member` 通过 `one-branch` 无损进入 production，Keeper Criminal 使用 top-level-only `choice-pool`，Deprogrammer 使用 occupation-level replacement policy；Clerk / Executive 通过既有 `one-of` 表达 Own Language 或 Other Language exactly-one。`src/coc7/testing/occupationFixtures.ts` 继续只用于 Engine 压力测试，生产内容不依赖 testing 目录。Phase 5B Standard occupation production 已完成；Phase 5C-1.5 已加入持久化时代上下文、浏览/选择守卫与 finalize 守卫，Phase 5C-2 requirement selection 仍未开始。职业数据不得硬编码进 Vue 页面。
 
 Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还拒绝确定不可满足的 selector cardinality：`one-of` 的 min/max 不得超过 child 数量，`all-of` 的外层范围不得与内部 group minimum/maximum 矛盾，`one-branch` 的 branch cardinality 必须与外层 requirement 区间相容，且 exact branch 不可能消费多项；`choice-pool.selectedBranches` 不得超过 branch 数量，并以最小 branch minima 和可证明的有限 branch maxima 检查外层 SkillRef cardinality。该检查只处理可确定的低风险结构，不尝试通用约束求解。
 
 ## Schema evolution
 
-正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段。旧 version-1 session 没有这些字段时继续解析，不增加表、索引、主键或 migration；Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。
+正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`。旧 version-1 Character 缺少时代时继续解析且不自动补写，旧 session 也不增加时代字段；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。

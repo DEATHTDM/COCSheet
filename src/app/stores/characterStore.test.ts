@@ -97,6 +97,39 @@ describe("legacy Character resources 补齐", () => {
   });
 });
 
+describe("Character 建卡时代", () => {
+  it("显式设置时代后持久化，并保留人物与建卡结果字段", async () => {
+    const character = makeLegacyCharacter({
+      occupation: {
+        kind: "catalog",
+        id: "accountant",
+        displayNameSnapshot: { zh: "会计师", en: "Accountant" },
+      },
+      skills: [{
+        ref: { type: "standard", definitionId: "history" },
+        currentValue: 45,
+        improvementChecked: false,
+      }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    const updated = await store.setEra(character.id, "classic-1920s");
+    expect(updated.data).toEqual({ ...character, eraId: "classic-1920s" });
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data).toEqual(updated.data);
+  });
+
+  it("拒绝当前 SettingPack 未声明的时代", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    await expect(useCharacterStore().setEra(character.id, "future"))
+      .rejects.toThrow("当前设定不存在时代");
+    expect((await characterRepository.getById(character.id))?.data.eraId).toBeUndefined();
+  });
+});
+
 describe("游戏中资源更新", () => {
   it("HP、MP、SAN 更新后可刷新恢复，SAN 可以高于 POW", async () => {
     const character = makeLegacyCharacter();

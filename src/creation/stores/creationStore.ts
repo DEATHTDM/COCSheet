@@ -173,6 +173,9 @@ export const useCreationStore = defineStore("creation", () => {
 
   function getSkillFinalizePlan(character: Character): FinalizeSkillAllocationResult {
     const session = requireSession();
+    if ((getSettingPackOrThrow(character.settingId).eras?.length ?? 0) > 0 && !character.eraId) {
+      throw new Error("请先选择建卡时代");
+    }
     if (!session.occupation || !session.skills) throw new Error("职业或技能创建状态尚未初始化");
     return finalizeSkillAllocation({
       character,

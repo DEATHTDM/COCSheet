@@ -6,6 +6,7 @@ import type {
   OccupationCategoryId,
   OccupationDefinition,
 } from "../../coc7/types/occupation";
+import { isOccupationAvailableInEra } from "../../coc7/rules/availability";
 import { getOccupationRegistry } from "../../content/occupationRegistry";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
@@ -24,10 +25,11 @@ import {
 } from "../../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../../creation/stores/creationStore";
 
+const props = defineProps<{ readonly eraId: EraId | undefined }>();
 const creationStore = useCreationStore();
 const query = ref("");
 const category = ref<OccupationCategoryId | "">("");
-const era = ref<EraId | "">("");
+const era = ref<EraId | "">(props.eraId ?? "");
 const tag = ref("");
 const errorMessage = ref("");
 const selectionMessage = ref("");
@@ -52,6 +54,7 @@ const availableCategories = computed(() =>
 );
 const availableTags = computed(() => getAvailableOccupationTags(registry.value.definitions));
 const availableEras = computed(() => settingPack.value.eras ?? []);
+const eraContextMissing = computed(() => availableEras.value.length > 0 && !props.eraId);
 const results = computed(() => sortOccupationsForDisplay(registry.value.search(query.value.trim(), {
   ...(category.value ? { category: category.value } : {}),
   ...(era.value ? { era: era.value } : {}),
@@ -73,15 +76,41 @@ const selectedCatalogIsBanned = computed(() => {
     session.value?.presetSnapshot,
   ) === "banned";
 });
-const canContinue = computed(() => Boolean(currentSelection.value) && !selectedCatalogIsBanned.value);
+const currentSelectionEraCompatible = computed(() => {
+  const selection = currentSelection.value;
+  if (!selection) return true;
+  if (availableEras.value.length === 0) return true;
+  return props.eraId !== undefined && isOccupationAvailableInEra(selection.definitionSnapshot, props.eraId);
+});
+const canContinue = computed(() =>
+  Boolean(currentSelection.value) &&
+  !eraContextMissing.value &&
+  !selectedCatalogIsBanned.value &&
+  currentSelectionEraCompatible.value,
+);
 const continueReason = computed(() => {
+  if (eraContextMissing.value) return "请先返回基本信息选择建卡时代。";
   if (!currentSelection.value) return "请先选择一个职业。";
   if (selectedCatalogIsBanned.value) return "当前已选职业被此 KP 预设禁用，请先更换职业。";
+  if (!currentSelectionEraCompatible.value && props.eraId) {
+    return `当前职业不适用于${formatOccupationEraId(props.eraId)}`;
+  }
   return "";
 });
 
 function policyStatus(occupation: OccupationDefinition): OccupationPresetPolicyStatus {
   return getOccupationPresetPolicyStatus(occupation.id, session.value?.presetSnapshot);
+}
+
+function eraCompatible(occupation: OccupationDefinition): boolean {
+  return availableEras.value.length === 0 ||
+    (props.eraId !== undefined && isOccupationAvailableInEra(occupation, props.eraId));
+}
+
+function canSelectOccupation(occupation: OccupationDefinition): boolean {
+  return !eraContextMissing.value &&
+    eraCompatible(occupation) &&
+    policyStatus(occupation) !== "banned";
 }
 
 function preview(occupationId: string): void {
@@ -90,7 +119,7 @@ function preview(occupationId: string): void {
 }
 
 async function selectOccupation(occupation: OccupationDefinition): Promise<void> {
-  if (policyStatus(occupation) === "banned") return;
+  if (!canSelectOccupation(occupation)) return;
   const selection = currentSelection.value;
   if (selection?.kind === "catalog" && selection.selectedOccupationId === occupation.id) return;
   if (selection && !window.confirm(
@@ -125,11 +154,18 @@ async function goToSkills(): Promise<void> {
           <p class="eyebrow">职业目录</p>
           <h2>选择职业</h2>
         </div>
-        <button class="button" type="button" @click="creationStore.setCurrentStep('attributes')">
-          返回修改属性
+        <button
+          class="button"
+          type="button"
+          @click="creationStore.setCurrentStep(eraContextMissing ? 'basic-info' : 'attributes')"
+        >
+          {{ eraContextMissing ? "返回基本信息" : "返回修改属性" }}
         </button>
       </div>
       <p>可以按名称、分类和适用时代浏览职业；选择职业后下一步再完成具体技能选择与点数分配。</p>
+      <p v-if="eraContextMissing" class="warning-message" role="alert">
+        请先返回基本信息选择建卡时代。
+      </p>
       <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
       <p v-if="selectionMessage" class="success-message" role="status">{{ selectionMessage }}</p>
     </header>
@@ -150,6 +186,9 @@ async function goToSkills(): Promise<void> {
       >
         查看当前职业
       </button>
+      <p v-if="!currentSelectionEraCompatible && props.eraId" class="warning-message" role="alert">
+        当前职业不适用于{{ formatOccupationEraId(props.eraId) }}
+      </p>
     </aside>
 
     <section class="panel occupation-filter-bar" aria-label="职业浏览筛选">
@@ -207,6 +246,9 @@ async function goToSkills(): Promise<void> {
                   <span v-if="policyStatus(occupation) === 'banned'" class="occupation-badge banned">当前 KP 预设禁用</span>
                   <span v-else-if="policyStatus(occupation) === 'keeper-approval-required'" class="occupation-badge approval">需要 KP 批准</span>
                   <span v-if="occupation.approval" class="occupation-badge approval">职业需 KP 批准</span>
+                  <span v-if="props.eraId && !eraCompatible(occupation)" class="occupation-badge banned">
+                    不适用于当前建卡时代
+                  </span>
                 </span>
               </span>
               <span class="occupation-card-meta">
@@ -234,6 +276,9 @@ async function goToSkills(): Promise<void> {
             <span v-if="policyStatus(previewOccupation) === 'banned'" class="occupation-badge banned">当前 KP 预设禁用</span>
             <span v-else-if="policyStatus(previewOccupation) === 'keeper-approval-required'" class="occupation-badge approval">需要 KP 批准</span>
             <span v-if="previewOccupation.approval" class="occupation-badge approval">该职业需要 KP 批准</span>
+            <span v-if="props.eraId && !eraCompatible(previewOccupation)" class="occupation-badge banned">
+              不适用于当前建卡时代
+            </span>
           </div>
         </header>
 
@@ -291,10 +336,13 @@ async function goToSkills(): Promise<void> {
         <p v-if="policyStatus(previewOccupation) === 'banned'" class="warning-message">
           此职业仍可查看，但当前 KP 预设不允许选择。
         </p>
+        <p v-if="props.eraId && !eraCompatible(previewOccupation)" class="warning-message">
+          此职业仍可查看，但不适用于当前建卡时代。
+        </p>
         <button
           class="button primary"
           type="button"
-          :disabled="policyStatus(previewOccupation) === 'banned' || selectedCatalogId === previewOccupation.id"
+          :disabled="!canSelectOccupation(previewOccupation) || selectedCatalogId === previewOccupation.id"
           @click="selectOccupation(previewOccupation)"
         >
           {{ selectedCatalogId === previewOccupation.id ? "已选择此职业" : "选择此职业" }}
