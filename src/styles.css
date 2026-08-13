@@ -105,7 +105,7 @@ h2 {
 
 .stepper {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
   margin: 0;
   padding: 0;
@@ -263,6 +263,189 @@ h2 {
 .skill-name-input {
   width: 9rem;
   margin-right: 0.35rem;
+}
+
+.occupation-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.occupation-search-field {
+  grid-column: span 2;
+}
+
+.occupation-result-count {
+  margin: -1rem 0 0;
+  color: #695f52;
+}
+
+.occupation-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.occupation-list {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 70rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.occupation-card {
+  display: grid;
+  width: 100%;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid #cfc6b3;
+  border-radius: 4px;
+  color: inherit;
+  background: #fffdf8;
+  cursor: pointer;
+  text-align: left;
+}
+
+.occupation-card:hover,
+.occupation-card.previewed {
+  border-color: #315649;
+  background: #f0f5f1;
+}
+
+.occupation-card.previewed {
+  outline: 2px solid #315649;
+  outline-offset: -2px;
+}
+
+.occupation-card-heading,
+.occupation-card-meta,
+.occupation-badges,
+.current-occupation-panel,
+.occupation-actions,
+.occupation-detail-heading {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.occupation-card-heading,
+.current-occupation-panel,
+.occupation-actions,
+.occupation-detail-heading {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.occupation-card-heading small,
+.occupation-sources small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #695f52;
+}
+
+.occupation-card-meta,
+.occupation-badges {
+  flex-wrap: wrap;
+}
+
+.occupation-card-meta {
+  color: #695f52;
+  font-size: 0.82rem;
+}
+
+.occupation-badges {
+  justify-content: flex-end;
+}
+
+.occupation-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.48rem;
+  border: 1px solid #7b6a52;
+  border-radius: 999px;
+  color: #4e4335;
+  background: #fffdf8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.occupation-badge.selected {
+  border-color: #315649;
+  color: #315649;
+}
+
+.occupation-badge.approval {
+  border-color: #9c641c;
+  color: #75470b;
+  background: #fff6df;
+}
+
+.occupation-badge.banned {
+  border-color: #9b3a32;
+  color: #7c241e;
+  background: #fff0ed;
+}
+
+.occupation-detail {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.occupation-detail h2,
+.occupation-detail h3,
+.occupation-detail p,
+.occupation-actions p {
+  margin-bottom: 0;
+}
+
+.occupation-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.occupation-facts div {
+  padding: 0.75rem;
+  background: #faf7f0;
+}
+
+.occupation-facts dt {
+  color: #695f52;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.occupation-facts dd {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+}
+
+.occupation-requirements,
+.occupation-sources {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0;
+  padding-left: 1.4rem;
+}
+
+.occupation-special-rule {
+  padding: 0.9rem;
+  border-left: 4px solid #9c641c;
+  background: #fff6df;
+}
+
+.occupation-special-rule p {
+  margin-top: 0.4rem;
+}
+
+.occupation-actions {
+  align-items: center;
 }
 
 .compact-button {
@@ -433,5 +616,27 @@ h2 {
 
   .stepper {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .occupation-filter-bar,
+  .occupation-layout,
+  .occupation-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .occupation-search-field {
+    grid-column: auto;
+  }
+
+  .current-occupation-panel,
+  .occupation-actions,
+  .occupation-detail-heading,
+  .occupation-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .occupation-badges {
+    justify-content: flex-start;
   }
 }

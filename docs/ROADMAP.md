@@ -112,12 +112,42 @@ Status: Completed
 
 ### Phase 5C — Creation UI
 
+Status: In Progress
+
+#### Phase 5C-1 — Occupation Browser & Catalog Selection
+
+Status: Completed
+
+- search plus category, applicability-era, and dynamic tag filters
+- readable occupation detail and selector presentation
+- Preset occupation-policy presentation
+- explicit persisted catalog selection with local-only preview
+- five-step creation-flow scaffold
+
+#### Phase 5C-2 — Requirement Selection
+
 Status: Not Started
 
-- occupation search, categories, tags and era filters
-- requirement/custom specialization selection
-- occupation/interest point allocation, approvals and warnings
-- explicit handling of stale drafts and Phase 4 manual skill conflicts
+- exact, specialization, and custom-specialization selection
+- one-of, one-branch, choice-pool, and all-of interaction
+- replacement target draft
+
+#### Phase 5C-3 — Skill Point Allocation & Approvals
+
+Status: Not Started
+
+- occupation and interest allocations
+- Credit Rating allocation
+- Keeper approvals and warnings
+- skill finalize UI
+
+#### Phase 5C-4 — Conflict & Custom Occupation UX
+
+Status: Not Started
+
+- stale draft resolution
+- Phase 4 manual skill conflict handling
+- custom occupation flow
 
 ## Later
 

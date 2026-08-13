@@ -6,11 +6,11 @@ Last updated: 2026-08-13
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is completed: Phase 5B-1, Phase 5B-2-A, Batch 1, Batch 2, and Batch 3 are complete, including the Keeper Criminal and Deprogrammer Engine-pressure cleanups plus the final Clerk / Executive source-clarification closure. Phase 5B-2 is completed with all 91 families, 119 production definitions, and 142 official Standard source entries mapped. Phase 5C — Creation UI has not started, so Phase 5 overall remains in progress.
+Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection is implemented on its feature branch, while requirement selection, point allocation, approval interaction, finalize, conflict handling, and custom occupation UI have not started. Phase 5 overall remains in progress.
 
 ## Git baseline
 
-Phase 5B-2 Standard occupation closure branch was created from `main` at `e91154e036838dab06b800fad12b5578dd003722`.
+Phase 5C-1 Occupation Browser & Catalog Selection branch was created from `main` at `1fa2477c1ed3d7f1a9b0f5c1be9652cb19a576a0`.
 
 ## Implemented
 
@@ -56,6 +56,12 @@ Phase 5B-2 Standard occupation closure branch was created from `main` at `e91154
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
 - basic Home, character creation/editor, and KP preset pages
+- Phase 5C-1 catalog occupation browser with Registry-backed localized search, category and applicability-era filters, dynamic tag-filter infrastructure, deterministic display sorting, and result counts
+- readable occupation previews covering formulas, Credit Rating, eras, sources, all selector structures, Keeper-review markers, variants, definition approval, and skill replacement policy without exposing machine JSON
+- Preset occupation-policy presentation that keeps banned occupations visible but unselectable, allows approval-required occupations without creating approval grants, and derives banned status ahead of approval-required status
+- explicit catalog occupation selection through the existing Creation Store action, with browse preview kept local, replacement confirmation, preserved skill drafts, catalog snapshot persistence, and custom-selection fallback
+- five-step creation stepper with an explicit skills placeholder and explicit review branch; the Phase 4 manual SkillEditor is no longer embedded in the structured occupation creation step
+- applicability-era filtering remains browser-only local state; no selected-era domain or persistence field was added
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -118,7 +124,9 @@ Merged in the current enum:
 
 ## Not implemented
 
-- occupation browsing, requirement selection and skill allocation UI (Phase 5C)
+- occupation requirement selection and custom specialization creation (Phase 5C-2)
+- occupation/interest point allocation, Credit Rating allocation, Keeper approval interaction, warnings, and skill finalize UI (Phase 5C-3)
+- stale-draft/manual-skill conflict handling and custom occupation UI (later Phase 5C work)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
 - guide overlay
@@ -130,7 +138,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B and Phase 5B-2 Standard occupation production are complete. The next intended work is Phase 5C — Creation UI, which has not started and requires separate authorization.
+Phase 5C-1 is implemented on its feature branch. The next intended work is Phase 5C-2 — Requirement Selection, which has not started and requires separate authorization.
 
 ## Known technical risks
 
