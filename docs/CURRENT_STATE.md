@@ -6,11 +6,11 @@ Last updated: 2026-08-13
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection is implemented on its feature branch, while requirement selection, point allocation, approval interaction, finalize, conflict handling, and custom occupation UI have not started. Phase 5 overall remains in progress.
+Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection and Phase 5C-1.5 — Persistent Era Context & Availability Guard are implemented, while requirement selection, point allocation, approval interaction, finalize UI, conflict handling, and custom occupation UI have not started. Phase 5 overall remains in progress.
 
 ## Git baseline
 
-Phase 5C-1 Occupation Browser & Catalog Selection branch was created from `main` at `1fa2477c1ed3d7f1a9b0f5c1be9652cb19a576a0`.
+Phase 5C-1.5 Persistent Era Context & Availability Guard branch was created from `main` at `12407fe1c9cff6c7771e95f37835428ea3d6b0f9`.
 
 ## Implemented
 
@@ -61,7 +61,11 @@ Phase 5C-1 Occupation Browser & Catalog Selection branch was created from `main`
 - Preset occupation-policy presentation that keeps banned occupations visible but unselectable, allows approval-required occupations without creating approval grants, and derives banned status ahead of approval-required status
 - explicit catalog occupation selection through the existing Creation Store action, with browse preview kept local, replacement confirmation, preserved skill drafts, catalog snapshot persistence, and custom-selection fallback
 - five-step creation stepper with an explicit skills placeholder and explicit review branch; the Phase 4 manual SkillEditor is no longer embedded in the structured occupation creation step
-- applicability-era filtering remains browser-only local state; no selected-era domain or persistence field was added
+- optional authoritative `Character.eraId` with explicit Standard basic-info selection, refresh persistence, SettingPack membership validation, legacy missing-field compatibility, and no Character/Record/Dexie version change
+- era-change confirmation when occupation or skill draft state exists; acceptance preserves catalog/custom occupation, attributes, resources and every structured skill draft field, while cancellation restores the persisted selector value
+- shared pure occupation/skill era-availability rules used by the browser and finalizer; browser applicability filtering initializes from Character era but remains local and independently changeable
+- occupation browser missing-era, catalog/custom current-selection and per-result compatibility guards that preserve readable incompatible details while disabling selection/continue; Preset approval-required policy remains selectable when era-compatible
+- finalize errors `occupation-era-incompatible` and `skill-era-incompatible`, with deduplicated structured SkillRef checks across requirements, replacement, allocations and selected refs; Creation Store blocks missing era for era-bearing settings while the pure finalizer remains legacy-compatible
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -138,7 +142,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5C-1 is implemented on its feature branch. The next intended work is Phase 5C-2 — Requirement Selection, which has not started and requires separate authorization.
+Phase 5C-1.5 is implemented on its feature branch. The next intended work is Phase 5C-2 — Requirement Selection, which remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

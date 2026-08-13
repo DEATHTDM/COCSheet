@@ -28,6 +28,7 @@ const initialValues = {
 
 async function prepareCompletableManual(store: ReturnType<typeof useCreationStore>): Promise<string> {
   const characterId = await store.start("standard");
+  await useCharacterStore().setEra(characterId, "classic-1920s");
   await store.setAge(15);
   await store.chooseGenerationMethod("manual");
   for (const id of characteristicIds) await store.setEnteredValue(id, initialValues[id]);
@@ -274,6 +275,18 @@ describe("完成属性与 Character resources", () => {
 });
 
 describe("Phase 5A skills finalize foundation", () => {
+  it("SettingPack 声明时代时，store 拒绝为缺少 Character.eraId 的人物生成结算计划", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await store.selectCatalogOccupation("accountant");
+    const character = await characterRepository.getById(characterId);
+    if (!character) throw new Error("调查员不存在");
+
+    expect(character.data.eraId).toBeUndefined();
+    expect(() => store.getSkillFinalizePlan(character.data)).toThrow("请先选择建卡时代");
+    await expect(store.completeSkills(character.data)).rejects.toThrow("请先选择建卡时代");
+  });
+
   it("保留属性回退期间的职业/分配草稿，并原子写入 Character.skills + review", async () => {
     const store = useCreationStore();
     const characterId = await prepareCompletableManual(store);

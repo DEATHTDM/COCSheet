@@ -11,8 +11,10 @@ import {
   formatDamageBonus,
 } from "../coc7/rules/derived";
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
+import type { EraId } from "../coc7/types/occupation";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
 import { getSettingPackOrThrow } from "../content/registry";
+import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { AttributeGenerationMethod } from "../creation/types/creationPreset";
 
@@ -21,6 +23,7 @@ const characterStore = useCharacterStore();
 const creationStore = useCreationStore();
 const name = ref("");
 const age = ref<number>(20);
+const eraId = ref<EraId | "">("");
 const ready = ref(false);
 const errorMessage = ref("");
 const saveStatus = ref<"idle" | "saving" | "saved">("idle");
@@ -47,6 +50,11 @@ const ageAdjustment = computed(() => attributes.value?.ageAdjustment);
 const completionErrors = computed(() => creationStore.getCompletionErrors());
 const settingName = computed(() =>
   characterStore.current ? getSettingPackOrThrow(characterStore.current.settingId).name : "",
+);
+const availableEras = computed<readonly EraId[]>(() =>
+  characterStore.current
+    ? getSettingPackOrThrow(characterStore.current.settingId).eras ?? []
+    : [],
 );
 const reductionAllocated = computed(() =>
   characteristicIds.reduce((total, id) => total + (ageAdjustment.value?.reductionAllocation[id] ?? 0), 0),
@@ -124,6 +132,7 @@ onMounted(async () => {
     name.value = record.name;
     lastSavedName = record.name;
     age.value = sessionRecord.data.draftAge ?? record.data.age ?? 20;
+    eraId.value = record.data.eraId ?? "";
     ready.value = true;
   } catch (error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : "读取调查员失败。";
@@ -156,11 +165,54 @@ async function persistName(): Promise<void> {
 
 async function goToAttributes(): Promise<void> {
   try {
+    if (availableEras.value.length > 0 && !characterStore.current?.data.eraId) {
+      errorMessage.value = "请选择建卡时代。";
+      return;
+    }
     await persistName();
     await creationStore.setAge(age.value);
     await creationStore.setCurrentStep("attributes");
   } catch (error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : "保存基本信息失败。";
+  }
+}
+
+function hasEraSensitiveDraft(): boolean {
+  if (session.value?.occupation) return true;
+  const skills = session.value?.skills;
+  return Boolean(skills && (
+    skills.requirementSelections.length > 0 ||
+    skills.allocations.length > 0 ||
+    skills.keeperApprovals.length > 0 ||
+    skills.occupationSkillReplacement !== undefined ||
+    skills.existingSkillResolution !== undefined
+  ));
+}
+
+async function changeEra(event: Event): Promise<void> {
+  const select = event.target as HTMLSelectElement;
+  const selectedEraId = select.value as EraId | "";
+  const previousEraId = characterStore.current?.data.eraId;
+  if (!selectedEraId || selectedEraId === previousEraId) {
+    eraId.value = previousEraId ?? "";
+    select.value = previousEraId ?? "";
+    return;
+  }
+  if (previousEraId && hasEraSensitiveDraft() && !window.confirm(
+    "更换建卡时代会保留当前职业与技能草稿；不兼容内容将被标记并阻止继续。是否继续？",
+  )) {
+    eraId.value = previousEraId;
+    select.value = previousEraId;
+    return;
+  }
+  try {
+    await characterStore.setEra(characterId.value, selectedEraId);
+    eraId.value = selectedEraId;
+    errorMessage.value = "";
+  } catch (error: unknown) {
+    eraId.value = previousEraId ?? "";
+    select.value = previousEraId ?? "";
+    errorMessage.value = error instanceof Error ? error.message : "保存建卡时代失败。";
   }
 }
 
@@ -293,6 +345,15 @@ async function reconcileSanity(): Promise<void> {
             required
             @change="changeAge"
           />
+        </label>
+        <label v-if="availableEras.length > 0" class="field">
+          <span>建卡时代</span>
+          <select :value="eraId" required @change="changeEra">
+            <option value="" disabled>请选择</option>
+            <option v-for="availableEra in availableEras" :key="availableEra" :value="availableEra">
+              {{ formatOccupationEraId(availableEra) }}
+            </option>
+          </select>
         </label>
         <button class="button primary" type="button" @click="goToAttributes">继续：属性</button>
       </section>
@@ -444,7 +505,10 @@ async function reconcileSanity(): Promise<void> {
         </section>
       </section>
 
-      <OccupationBrowser v-else-if="currentStep === 'occupation'" />
+      <OccupationBrowser
+        v-else-if="currentStep === 'occupation'"
+        :era-id="characterStore.current.data.eraId"
+      />
 
       <section v-else-if="currentStep === 'skills'" class="panel form-stack">
         <div>

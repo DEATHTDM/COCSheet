@@ -15,6 +15,8 @@ import {
 } from "../../coc7/rules/skills";
 import type { CharacterSkill, SkillDefinition, SkillRef } from "../../coc7/types/skill";
 import type { CharacterResources } from "../../coc7/types/character";
+import type { EraId } from "../../coc7/types/occupation";
+import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import type { CharacterRecord } from "../../db/records";
@@ -105,6 +107,13 @@ export const useCharacterStore = defineStore("characters", () => {
 
     const updated = await characterRepository.update({ ...existing.data, name });
     return synchronize(updated);
+  }
+
+  async function setEra(id: string, eraId: EraId): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const eras = getSettingPackOrThrow(existing.settingId).eras ?? [];
+    if (!eras.includes(eraId)) throw new Error(`当前设定不存在时代：${eraId}`);
+    return synchronize(await characterRepository.update({ ...existing.data, eraId }));
   }
 
   async function ensureResourcesInitialized(id: string): Promise<CharacterRecord> {
@@ -331,6 +340,7 @@ export const useCharacterStore = defineStore("characters", () => {
     loadList,
     loadById,
     updateName,
+    setEra,
     ensureResourcesInitialized,
     reconcileSanityToMaximum,
     setCurrentHp,

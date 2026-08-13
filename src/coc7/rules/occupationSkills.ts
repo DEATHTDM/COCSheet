@@ -23,6 +23,7 @@ import type {
 } from "../../creation/types/skillCreation";
 import { evaluateOccupationPointFormula } from "./occupationPointFormula";
 import { evaluateOccupationPrerequisite } from "./occupationPrerequisite";
+import { isOccupationAvailableInEra, isSkillAvailableInEra } from "./availability";
 import {
   calculateSkillBaseValue,
   getSkillBaseValueRule,
@@ -35,6 +36,8 @@ export type SkillAllocationErrorCode =
   | "existing-manual-skills"
   | "custom-occupation-skill-capacity"
   | "occupation-prerequisite"
+  | "occupation-era-incompatible"
+  | "skill-era-incompatible"
   | "preset-occupation-banned"
   | "invalid-occupation-skill-replacement"
   | "missing-requirement-selection"
@@ -442,6 +445,12 @@ function addSkillRef(map: Map<string, SkillRef>, ref: SkillRef): void {
   map.set(getSkillRefKey(ref), ref);
 }
 
+function formatEraForIssue(eraId: string): string {
+  if (eraId === "classic-1920s") return "古典（1920年代）";
+  if (eraId === "modern") return "现代";
+  return eraId;
+}
+
 export function finalizeSkillAllocation(
   input: FinalizeSkillAllocationInput,
 ): FinalizeSkillAllocationResult {
@@ -466,6 +475,13 @@ export function finalizeSkillAllocation(
       remainingInterestPoints: 0,
       skills: [],
     };
+  }
+
+  if (character.eraId && !isOccupationAvailableInEra(definition, character.eraId)) {
+    errors.push({
+      code: "occupation-era-incompatible",
+      message: `职业【${definition.name.zh}】不适用于${formatEraForIssue(character.eraId)}`,
+    });
   }
 
   const conflict = detectStructuredAllocationConflict(character);
@@ -522,6 +538,14 @@ export function finalizeSkillAllocation(
   const selections = new Map(state.requirementSelections.map((selection) => [selection.requirementId, selection]));
   const occupationEligible = new Set<string>();
   const selectedSkillRefs = new Map<string, SkillRef>();
+  const availabilitySkillRefs = new Map<string, SkillRef>();
+  for (const selection of state.requirementSelections) {
+    for (const ref of selection.refs) addSkillRef(availabilitySkillRefs, ref);
+  }
+  for (const allocation of state.allocations) addSkillRef(availabilitySkillRefs, allocation.ref);
+  if (state.occupationSkillReplacement && definition.skillReplacement) {
+    addSkillRef(availabilitySkillRefs, definition.skillReplacement.replacement.ref);
+  }
   const usedAcrossRequirements = new Map<string, string>();
   let replacementTargetRequirementId: string | undefined;
 
@@ -677,6 +701,20 @@ export function finalizeSkillAllocation(
         subjectId: key,
         message: `${key} 的创建期点数需要 Keeper 批准`,
       });
+    }
+  }
+
+  if (character.eraId) {
+    for (const ref of selectedSkillRefs.values()) addSkillRef(availabilitySkillRefs, ref);
+    for (const [key, ref] of availabilitySkillRefs) {
+      const skillDefinition = definitions.get(ref.definitionId);
+      if (skillDefinition && !isSkillAvailableInEra(skillDefinition, character.eraId)) {
+        errors.push({
+          code: "skill-era-incompatible",
+          refKey: key,
+          message: `技能【${skillDefinition.name.zh}】不适用于${formatEraForIssue(character.eraId)}`,
+        });
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import { localizedSkillNameSchema, stableMachineIdSchema } from "./skill";
 import { settingIdSchema } from "./setting";
 import { characterSkillsSchema } from "./skill";
 import { sourceReferenceSchema } from "./source";
+import { eraIdSchema } from "./occupation";
 
 export const characterOccupationSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -48,6 +49,7 @@ export const characterSchema = z
     id: z.string().uuid(),
     name: z.string(),
     settingId: settingIdSchema,
+    eraId: eraIdSchema.optional(),
     age: z.number().int().nonnegative().optional(),
     characteristics: characteristicValuesSchema.optional(),
     luck: z.number().int().min(0).max(99).optional(),

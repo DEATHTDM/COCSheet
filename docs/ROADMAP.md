@@ -124,6 +124,16 @@ Status: Completed
 - explicit persisted catalog selection with local-only preview
 - five-step creation-flow scaffold
 
+#### Phase 5C-1.5 — Persistent Era Context & Availability Guard
+
+Status: Completed
+
+- optional authoritative Character era context with explicit selection and refresh persistence
+- shared pure occupation/skill availability rules
+- occupation browser visibility, selection, current-draft, and missing-era guards
+- structured skill finalizer era errors without destructive draft cleanup
+- legacy Character compatibility with unchanged Character/Record/Dexie versions
+
 #### Phase 5C-2 — Requirement Selection
 
 Status: Not Started

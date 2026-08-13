@@ -34,6 +34,12 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 五个历史 Setting 是独立的主要建卡环境，不把 UX 设计成让普通玩家同时勾选五个时代包。
 
+### S005 — Character owns persistent era context
+
+`Character.eraId` 是人物建卡时代的唯一权威持久化上下文；`CreationSession` 不重复保存时代。SettingPack 声明可选时代时，新人物必须由用户明确选择，不提供默认值；没有时代字段的旧 Character 继续按 legacy 数据读取，不自动补写。
+
+Standard 的古典（1920年代）与现代属于同一个 Setting。时代变化保留已选职业与结构化技能草稿，由共享纯规则标记职业或技能不兼容并阻止继续/结算，不静默清除或改写。职业浏览器的适用时代筛选只是本地查看条件，首次进入时以 Character 时代初始化，之后可以独立调整。
+
 ## Attributes
 
 ### A001 — Characteristics and Luck
