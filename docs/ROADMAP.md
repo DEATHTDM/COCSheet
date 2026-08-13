@@ -76,11 +76,11 @@ Status: Completed
 
 ### Phase 5B — Verified Standard Occupation Data
 
-Status: In Progress
+Status: Completed
 
 #### Phase 5B-1 — Verified Standard Occupation Data Pilot
 
-Status: Implemented
+Status: Completed
 
 - first production pilot: 12 canonical families / 15 definitions
 - verified PDF source/page metadata and explicit Journalist / Missionary mechanics variants
@@ -88,7 +88,7 @@ Status: Implemented
 
 #### Phase 5B-2 — Full Verified Standard Dataset
 
-Status: In Progress
+Status: Completed
 
 ##### Phase 5B-2-A — Full Standard Occupation Intake Audit
 
@@ -100,14 +100,13 @@ Status: Completed
 
 ##### Phase 5B-2-B — Bulk Verified Production Import
 
-Status: In Progress
+Status: Completed
 
 - Batch 1 completed: `clergy`, `elected-official`, `judge`, and `museum-curator`
 - Batch 2 completed: Batch 2A added 14 production definitions, Batch 2B added 15 production definitions, and the Engine-pressure cleanup added `one-branch` plus `bounty-hunter`, `cowboy`, and `tribe-member`
 - Batch 2 coverage is 32 production definitions across its imports and 36 mapped official source entries; the former `exclusive-selector-branch-with-repeatable-selection` pressure is resolved without changing `one-of`
-- Batch 3 in progress: Batch 3A completed 17 production definitions across 16 families, Batch 3B completed 16 canonical definitions across 16 families, Batch 3C completed 11 definitions across five source-variant families, Batch 3D added 10 definitions while fully completing four of five touched families, Batch 3E added all 11 Investigator Handbook Criminal variants, the Keeper Criminal cleanup added top-level-only `choice-pool` plus the twelfth Criminal variant, and Batch 3F resolved Deprogrammer through a singular occupation-level skill replacement policy; together they map 78 official source entries as `production-batch-3`
-- Batch 3D withheld Clerk / Executive because the official Chinese source leaves `Language` ambiguous between Own and Other; it is now the only remaining source issue. Current coverage is 91 touched family identities / 90 fully implemented families / 118 definitions, with 1 family / 1 expected definition remaining. There is no active Engine pressure
-- enter the remaining confirmed Standard occupation definitions in complexity-based batches
+- Batch 3 completed: Batch 3A completed 17 production definitions across 16 families, Batch 3B completed 16 canonical definitions across 16 families, Batch 3C completed 11 definitions across five source-variant families, Batch 3D now contains 11 definitions after the final Clerk / Executive source clarification, Batch 3E plus the Keeper Criminal cleanup completed all 12 Criminal variants, and Batch 3F resolved Deprogrammer through a singular occupation-level skill replacement policy; together they map 79 official source entries as `production-batch-3`
+- final Standard coverage is 91 fully implemented families / 119 production definitions / 142 mapped official source entries; there is no active Engine pressure and no `needs-review` Standard source row
 - preserve mechanical source variants and source/page metadata
 - use the Excel only as an intake checklist and re-verify every production mechanical field against official PDFs
 

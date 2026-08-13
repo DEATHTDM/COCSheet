@@ -6,11 +6,11 @@ Last updated: 2026-08-13
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, Batch 3A through Batch 3F, the Keeper Criminal Engine-pressure cleanup, and the Deprogrammer Engine-pressure cleanup are completed. Formal Batch 2 is completed; Batch 3 remains in progress only for the withheld Clerk / Executive variant. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is completed: Phase 5B-1, Phase 5B-2-A, Batch 1, Batch 2, and Batch 3 are complete, including the Keeper Criminal and Deprogrammer Engine-pressure cleanups plus the final Clerk / Executive source-clarification closure. Phase 5B-2 is completed with all 91 families, 119 production definitions, and 142 official Standard source entries mapped. Phase 5C — Creation UI has not started, so Phase 5 overall remains in progress.
 
 ## Git baseline
 
-Phase 5B-2 Deprogrammer cleanup branch was created from `main` at `7d4d3fe4e9c8602d80f942162553241a4c9645a9`.
+Phase 5B-2 Standard occupation closure branch was created from `main` at `e91154e036838dab06b800fad12b5578dd003722`.
 
 ## Implemented
 
@@ -51,6 +51,7 @@ Phase 5B-2 Deprogrammer cleanup branch was created from `main` at `7d4d3fe4e9c86
 - Phase 5B-2 Batch 3E Criminal source-variant import adding all 11 Investigator Handbook subtypes, bringing coverage to 90 touched family identities / 88 fully implemented families / 116 definitions and 139 mapped official source entries; 76 source rows are now `production-batch-3`; Keeper Rulebook Criminal remains withheld under `choice-pool-with-repeatable-specialization-branch` because its choose-four category pool contains repeatable generic Fighting and Firearms children that current selector composition cannot count losslessly, no Engine change was made, and the Criminal family remains partial
 - Phase 5B-2 Keeper Criminal Engine-pressure cleanup adding top-level-only `choice-pool` and `criminal-keeper-rulebook`, bringing coverage to 90 touched family identities / 89 fully implemented families / 117 definitions and 140 mapped official source entries; 77 source rows are now `production-batch-3`; `choice-pool-with-repeatable-specialization-branch` is resolved while Clerk / Executive remains a source ambiguity and Deprogrammer remains a separate Engine pressure
 - Phase 5B-2 Deprogrammer Engine-pressure cleanup adding the singular occupation-level 1-for-1 replacement policy and `deprogrammer`, bringing coverage to 91 touched family identities / 90 fully implemented families / 118 definitions and 141 mapped official source entries; 78 source rows are now `production-batch-3`; `keeper-approved-single-occupation-skill-replacement` is resolved, no active Engine pressure remains, and Clerk / Executive remains the sole source ambiguity
+- Phase 5B-2 final Standard occupation closure adding `white-collar-worker-clerk-executive` after upstream English wording and correction evidence resolved the Chinese source's omitted Language qualifier as `Language (Own or Other)`; the definition uses the existing `one-of` selector with no Engine change, completes all 91 families / 119 definitions / 142 mapped official source entries, raises Batch 3 to 79 mapped rows, and leaves no `needs-review` row, active Engine pressure, or unresolved source ambiguity
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of, all-of, one-branch, and choice-pool requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -117,7 +118,6 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond the completed Deprogrammer cleanup
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -130,7 +130,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 Batch 3 is in progress after resolving Deprogrammer. The only remaining work is the source-ambiguous Clerk / Executive variant under `white-collar-worker`; this document does not authorize guessing or importing that withheld definition.
+Phase 5B and Phase 5B-2 Standard occupation production are complete. The next intended work is Phase 5C — Creation UI, which has not started and requires separate authorization.
 
 ## Known technical risks
 
@@ -139,5 +139,4 @@ Phase 5B-2 Batch 3 is in progress after resolving Deprogrammer. The only remaini
 - Setting-specific extension evolution
 - Deprogrammer's former `keeper-approved-single-occupation-skill-replacement` pressure is resolved by an occupation-level singular exact replacement policy with explicit target and target-scoped Keeper approval; there is no active Engine pressure
 - Keeper Criminal's former `choice-pool-with-repeatable-specialization-branch` pressure is resolved by the top-level-only `choice-pool` selector, which separates selected category count from selected SkillRef count
-- Clerk / Executive remains withheld because the authoritative Chinese source says only `Language`, without resolving Own versus Other; it remains a source semantic ambiguity rather than Engine pressure
 - browser storage can be cleared, and long-term file backup is not implemented

@@ -217,6 +217,34 @@ export const batch3dOccupationDefinitions: readonly OccupationDefinition[] = [
     { variantOf: "sailor" },
   ),
   defineOccupation(
+    "white-collar-worker-clerk-executive",
+    "职员/主管",
+    "Clerk / Executive",
+    [investigatorHandbook(
+      91,
+      "职业标题与公式见印刷页 91；技能列表见印刷页 92",
+    )],
+    { min: 9, max: 20 },
+    edu4,
+    [
+      requirement("accounting", exact(standard("accounting"))),
+      requirement("language", oneOf(
+        specializationOf("language-own"),
+        specializationOf("language-other"),
+      )),
+      requirement("law", exact(standard("law"))),
+      requirement("library-or-computer", oneOf(
+        exact(standard("library-use")),
+        exact(standard("computer-use")),
+      )),
+      requirement("listen", exact(standard("listen"))),
+      requirement("social", socialSelector),
+      requirement("personal-or-era", anySkill(), 2, 2, true, personalOrEraGuidance),
+    ],
+    "business-professional",
+    { variantOf: "white-collar-worker" },
+  ),
+  defineOccupation(
     "white-collar-worker-middle-senior-manager",
     "中层、高层管理人员",
     "Middle / Senior Manager",
