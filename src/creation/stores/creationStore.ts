@@ -142,6 +142,7 @@ export const useCreationStore = defineStore("creation", () => {
   const creating = ref(false);
   const current = ref<CreationSessionRecord>();
   const randomSource = ref<RandomSource>(systemRandomSource);
+  let skillAllocationWriteQueue: Promise<void> = Promise.resolve();
 
   const config = computed(() => resolveAttributeGenerationConfig(current.value?.data.presetSnapshot));
 
@@ -154,6 +155,12 @@ export const useCreationStore = defineStore("creation", () => {
     const record = await creationSessionRepository.update(session);
     current.value = record;
     return record;
+  }
+
+  function enqueueSkillAllocationWrite(mutation: () => Promise<void>): Promise<void> {
+    const pending = skillAllocationWriteQueue.then(mutation);
+    skillAllocationWriteQueue = pending.catch(() => undefined);
+    return pending;
   }
 
   async function start(settingId: SettingId, preset?: CreationPreset): Promise<string> {
@@ -253,6 +260,36 @@ export const useCreationStore = defineStore("creation", () => {
     await persist({
       ...session,
       skills: { ...session.skills, allocations },
+    });
+  }
+
+  async function setSkillAllocationPoint(
+    ref: SkillRef,
+    field: "occupationPoints" | "interestPoints",
+    value: number,
+  ): Promise<void> {
+    await enqueueSkillAllocationWrite(async () => {
+      if (!Number.isInteger(value) || value < 0) {
+        throw new Error("技能点必须是非负整数");
+      }
+      const parsedRef = skillRefSchema.parse(ref);
+      const session = requireSession();
+      if (!session.occupation || !session.skills) {
+        throw new Error("职业或技能创建状态尚未初始化");
+      }
+      const key = getSkillRefKey(parsedRef);
+      const currentAllocation = session.skills.allocations.find(
+        (allocation) => getSkillRefKey(allocation.ref) === key,
+      );
+      await setSkillAllocation(
+        parsedRef,
+        field === "occupationPoints"
+          ? value
+          : currentAllocation?.occupationPoints ?? 0,
+        field === "interestPoints"
+          ? value
+          : currentAllocation?.interestPoints ?? 0,
+      );
     });
   }
 
@@ -877,6 +914,7 @@ export const useCreationStore = defineStore("creation", () => {
     selectCustomOccupation,
     setSkillCreationState,
     setSkillAllocation,
+    setSkillAllocationPoint,
     removeSkillAllocation,
     createCustomInterestAllocation,
     ensureDeterministicRequirementSelections,

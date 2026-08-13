@@ -34,6 +34,95 @@ async function prepareAccountant(): Promise<{
 }
 
 describe("skill allocation store APIs", () => {
+  const rapidAccounting = { type: "standard" as const, definitionId: "accounting" };
+
+  it("serializes rapid cross-field writes without losing either field", async () => {
+    const { store } = await prepareAccountant();
+
+    const first = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", 45);
+    const second = store.setSkillAllocationPoint(rapidAccounting, "interestPoints", 10);
+    await Promise.all([first, second]);
+
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 45,
+      interestPoints: 10,
+    });
+  });
+
+  it("applies the last rapid write to the same field", async () => {
+    const { store } = await prepareAccountant();
+
+    const first = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", 4);
+    const second = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", 45);
+    await Promise.all([first, second]);
+
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 45,
+      interestPoints: 0,
+    });
+  });
+
+  it("serializes reverse rapid cross-field writes", async () => {
+    const { store } = await prepareAccountant();
+
+    const first = store.setSkillAllocationPoint(rapidAccounting, "interestPoints", 20);
+    const second = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", 30);
+    await Promise.all([first, second]);
+
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 30,
+      interestPoints: 20,
+    });
+  });
+
+  it("deletes a row after rapid writes reduce both fields to zero", async () => {
+    const { store } = await prepareAccountant();
+    await store.setSkillAllocation(rapidAccounting, 30, 20);
+
+    const first = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", 0);
+    const second = store.setSkillAllocationPoint(rapidAccounting, "interestPoints", 0);
+    await Promise.all([first, second]);
+
+    expect(store.current?.data.skills?.allocations).not.toContainEqual(
+      expect.objectContaining({ ref: rapidAccounting }),
+    );
+  });
+
+  it("restores the final rapid-write state after reload", async () => {
+    const { store, characterId } = await prepareAccountant();
+
+    const first = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", 45);
+    const second = store.setSkillAllocationPoint(rapidAccounting, "interestPoints", 10);
+    await Promise.all([first, second]);
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 45,
+      interestPoints: 10,
+    });
+  });
+
+  it("continues queued writes after a rejected mutation", async () => {
+    const { store } = await prepareAccountant();
+
+    const invalid = store.setSkillAllocationPoint(rapidAccounting, "occupationPoints", -1);
+    const valid = store.setSkillAllocationPoint(rapidAccounting, "interestPoints", 15);
+    await expect(invalid).rejects.toThrow("非负整数");
+    await valid;
+
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 0,
+      interestPoints: 15,
+    });
+  });
+
   it("upsert 唯一 row，0/0 删除，并保持 requirement/replacement/approval/CR override", async () => {
     const { store } = await prepareAccountant();
     const preserved = {

@@ -163,13 +163,8 @@ async function updateAllocation(
     errorMessage.value = "技能点必须是非负整数。";
     return;
   }
-  const current = allocationFor(ref);
   try {
-    await creationStore.setSkillAllocation(
-      ref,
-      field === "occupationPoints" ? value : current.occupationPoints,
-      field === "interestPoints" ? value : current.interestPoints,
-    );
+    await creationStore.setSkillAllocationPoint(ref, field, value);
     errorMessage.value = "";
   } catch (error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : "保存技能分配失败。";
