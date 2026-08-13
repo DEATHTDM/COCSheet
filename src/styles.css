@@ -559,6 +559,44 @@ h2 {
   opacity: 0.62;
 }
 
+.replacement-panel {
+  border-color: #8f744e;
+  background: #fffaf0;
+}
+
+.replacement-panel h3,
+.replacement-panel p,
+.custom-specialization p {
+  margin: 0;
+}
+
+.custom-specialization {
+  padding: 0.85rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.custom-specialization-action {
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.custom-specialization-action input {
+  flex: 1 1 16rem;
+  min-height: 42px;
+  padding: 0.6rem;
+  border: 1px solid #8e8474;
+  border-radius: 4px;
+}
+
+.named-custom-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .compact-button {
   min-height: 34px;
   padding: 0.25rem 0.5rem;

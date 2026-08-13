@@ -6,7 +6,7 @@ Last updated: 2026-08-13
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, and Phase 5C-2A — Catalog-backed Requirement Selection are implemented. Phase 5C-2B custom specializations and replacement target, plus point allocation, approval interaction, finalize UI, conflict handling, and custom occupation UI have not started. Phase 5 overall remains in progress.
+Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, and Phase 5C-2 — Requirement Selection are implemented. Point allocation, approval interaction, finalize UI, conflict handling, and custom occupation UI have not started. Phase 5 overall remains in progress.
 
 ## Git baseline
 
@@ -71,8 +71,12 @@ Phase 5C-1.5 Persistent Era Context & Availability Guard branch was created from
 - focused Creation Store requirement-selection upsert/remove API that allows incomplete and temporarily invalid whole selections while preserving every unrelated skill draft field and refresh persistence
 - requirement-selection UI for exact, specialization-of, one-of, all-of, one-branch, choice-pool, and any-skill selectors, delegating whole-selection legality to the existing Engine validator
 - per-requirement any-skill search, finite-maximum controls, max-one replacement interaction, current-selection display, early cross-requirement duplicate disabling, progress/status presentation, and explicit Keeper guidance/review markers
-- explicit unsupported-custom presentation: custom drafts remain visible and removable, custom-only paths are not fabricated, and mixed predefined/custom paths continue to offer catalog candidates while pointing to Phase 5C-2B
+- unified requirement selections in which catalog and custom refs remain visible, removable, and refresh-persistent without using display names as identity
 - skills-step missing-era and incompatible-occupation guards plus Character.eraId filtering that excludes modern-only catalog candidates in the classic era without hiding uncommon skills by sheet placement
+- requirement-scoped custom specialization options for open and fixed-name selectors, including era-aware any-skill custom paths and selector-exclusion enforcement
+- Creation Store custom specialization creation with Store-owned UUID identity, trimmed display names, outer-cardinality behavior, selector validation, refresh persistence, and current-occupation Language Own single-instance enforcement
+- production named-custom specialization instantiation using the selector's localized name without expanding the global Skill Catalog
+- Deprogrammer replacement-target UI and Store transition semantics covering normal-selection removal, deterministic exact restoration, non-deterministic non-guessing, derived Hypnosis refs, target progress, refresh persistence, and exact current-occupation/policy approval invalidation
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -135,7 +139,6 @@ Merged in the current enum:
 
 ## Not implemented
 
-- custom specialization creation, named-custom instantiation, and Deprogrammer replacement-target interaction (Phase 5C-2B)
 - occupation/interest point allocation, Credit Rating allocation, Keeper approval interaction, warnings, and skill finalize UI (Phase 5C-3)
 - stale-draft/manual-skill conflict handling and custom occupation UI (later Phase 5C work)
 - post-creation improvement-roll workflow
@@ -149,7 +152,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5C-2A is implemented on its feature branch. The next intended work is Phase 5C-2B — Custom Specializations & Replacement Target, which remains Not Started and requires separate authorization.
+Phase 5C-2 is completed. The next intended work is Phase 5C-3 — Skill Point Allocation & Approvals, which remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

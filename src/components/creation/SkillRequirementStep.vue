@@ -2,7 +2,10 @@
 import { computed, onMounted, ref } from "vue";
 
 import { isOccupationAvailableInEra, isSkillAvailableInEra } from "../../coc7/rules/availability";
-import { validateOccupationRequirementSelection } from "../../coc7/rules/occupationSkills";
+import {
+  matchesSkillSelector,
+  validateOccupationRequirementSelection,
+} from "../../coc7/rules/occupationSkills";
 import { getSkillRefKey } from "../../coc7/rules/skills";
 import type { EraId, OccupationRequirement } from "../../coc7/types/occupation";
 import type { SkillRef } from "../../coc7/types/skill";
@@ -13,9 +16,11 @@ import {
   formatSkillRefForOccupation,
 } from "../../creation/presentation/occupationPresentation";
 import {
+  getActiveOccupationSkillReplacement,
   getDeterministicRequirementSelection,
   listRequirementCandidates,
-  requirementHasCustomSpecializationPath,
+  listRequirementCustomOptions,
+  type RequirementCustomOption,
 } from "../../creation/rules/requirementSelection";
 import { useCreationStore } from "../../creation/stores/creationStore";
 
@@ -23,6 +28,8 @@ const props = defineProps<{ readonly eraId: EraId | undefined }>();
 const creationStore = useCreationStore();
 const errorMessage = ref("");
 const searchQueries = ref<Record<string, string>>({});
+const customParentSelections = ref<Record<string, string>>({});
+const customDisplayNames = ref<Record<string, string>>({});
 
 const session = computed(() => creationStore.current?.data);
 const occupation = computed(() => session.value?.occupation?.definitionSnapshot);
@@ -44,6 +51,19 @@ const requirementCandidates = computed(() => new Map(
       : listRequirementCandidates(requirement, skills.value.definitions, props.eraId),
   ]),
 ));
+const requirementCustomOptions = computed(() => new Map(
+  (occupation.value?.skillRequirements ?? []).map((requirement) => [
+    requirement.id,
+    props.eraId === undefined
+      ? []
+      : listRequirementCustomOptions(requirement, skills.value.definitions, props.eraId),
+  ]),
+));
+const activeReplacement = computed(() =>
+  occupation.value && skillState.value
+    ? getActiveOccupationSkillReplacement(occupation.value, skillState.value)
+    : undefined,
+);
 const completedRequirementCount = computed(() =>
   (occupation.value?.skillRequirements ?? []).filter((requirement) =>
     requirementStatus(requirement) === "complete",
@@ -82,6 +102,7 @@ function hasEraConflict(requirement: OccupationRequirement): boolean {
 }
 
 function requirementStatus(requirement: OccupationRequirement): "complete" | "incomplete" | "invalid" {
+  if (activeReplacement.value?.targetRequirementId === requirement.id) return "complete";
   const refs = selectionFor(requirement.id);
   const issues = validateOccupationRequirementSelection(requirement, refs);
   if (issues.length === 0 && !hasCrossRequirementDuplicate(requirement) && !hasEraConflict(requirement)) {
@@ -91,11 +112,91 @@ function requirementStatus(requirement: OccupationRequirement): "complete" | "in
 }
 
 function statusLabel(requirement: OccupationRequirement): string {
+  if (activeReplacement.value?.targetRequirementId === requirement.id) return "已替换";
   switch (requirementStatus(requirement)) {
     case "complete": return "完成";
     case "incomplete": return "未完成";
     case "invalid": return "当前组合非法";
   }
+}
+
+function customOptionsFor(requirementId: string): readonly RequirementCustomOption[] {
+  return requirementCustomOptions.value.get(requirementId) ?? [];
+}
+
+function openCustomOptionsFor(requirementId: string): readonly Extract<RequirementCustomOption, { kind: "open" }>[] {
+  return customOptionsFor(requirementId).filter(
+    (option): option is Extract<RequirementCustomOption, { kind: "open" }> => option.kind === "open",
+  );
+}
+
+function namedCustomOptionsFor(requirementId: string): readonly Extract<RequirementCustomOption, { kind: "named" }>[] {
+  return customOptionsFor(requirementId).filter(
+    (option): option is Extract<RequirementCustomOption, { kind: "named" }> => option.kind === "named",
+  );
+}
+
+function selectedCustomParent(requirement: OccupationRequirement): string {
+  const options = openCustomOptionsFor(requirement.id);
+  const selected = customParentSelections.value[requirement.id];
+  return selected && options.some(({ definitionId }) => definitionId === selected)
+    ? selected
+    : options[0]?.definitionId ?? "";
+}
+
+function setSelectedCustomParent(requirementId: string, event: Event): void {
+  customParentSelections.value[requirementId] = (event.target as HTMLSelectElement).value;
+}
+
+function customParentLabel(definitionId: string): string {
+  return skills.value.get(definitionId)?.name.zh ?? definitionId;
+}
+
+function hasSingleInstanceConflict(definitionId: string): boolean {
+  const definition = skills.value.get(definitionId);
+  if (definition?.specialization.type !== "required" || definition.specialization.allowMultiple) {
+    return false;
+  }
+  const requirements = new Map(
+    occupation.value?.skillRequirements.map((requirement) => [requirement.id, requirement]) ?? [],
+  );
+  return (skillState.value?.requirementSelections ?? []).some((selection) => {
+    const requirement = requirements.get(selection.requirementId);
+    return requirement !== undefined && selection.refs.some((selected) =>
+      selected.definitionId === definitionId && matchesSkillSelector(selected, requirement.selector),
+    );
+  });
+}
+
+function singleInstanceMessage(definitionId: string): string {
+  return `${customParentLabel(definitionId)}只允许一个专业化实例`;
+}
+
+function replacementTargetLabel(targetRequirementId: string): string {
+  const definition = occupation.value;
+  const policy = definition?.skillReplacement;
+  const requirement = definition?.skillRequirements.find(({ id }) => id === targetRequirementId);
+  if (!definition || !policy || !requirement) return "未知职业技能需求";
+  const label = formatOccupationRequirement(requirement, skills.value);
+  const matchingTargetIds = policy.targetRequirementIds.filter((candidateId) => {
+    const candidate = definition.skillRequirements.find(({ id }) => id === candidateId);
+    return candidate !== undefined && formatOccupationRequirement(candidate, skills.value) === label;
+  });
+  if (matchingTargetIds.length <= 1) return label;
+  return `${label}（第 ${matchingTargetIds.indexOf(targetRequirementId) + 1} 项）`;
+}
+
+function namedOptionIsSelected(
+  requirement: OccupationRequirement,
+  option: Extract<RequirementCustomOption, { kind: "named" }>,
+): boolean {
+  return selectionFor(requirement.id).some((selected) =>
+    matchesSkillSelector(selected, {
+      type: "named-custom-specialization",
+      definitionId: option.definitionId,
+      name: option.name,
+    }),
+  );
 }
 
 function formatRef(ref: SkillRef): string {
@@ -184,6 +285,48 @@ async function removeSelected(requirement: OccupationRequirement, ref: SkillRef)
   );
 }
 
+async function createOpenCustom(requirement: OccupationRequirement): Promise<void> {
+  const definitionId = selectedCustomParent(requirement);
+  if (!definitionId) return;
+  try {
+    await creationStore.createCustomRequirementSpecialization(
+      requirement.id,
+      definitionId,
+      customDisplayNames.value[requirement.id] ?? "",
+    );
+    customDisplayNames.value[requirement.id] = "";
+    errorMessage.value = "";
+  } catch (error: unknown) {
+    errorMessage.value = error instanceof Error ? error.message : "创建自定义专业化失败。";
+  }
+}
+
+async function createNamedCustom(
+  requirement: OccupationRequirement,
+  option: Extract<RequirementCustomOption, { kind: "named" }>,
+): Promise<void> {
+  try {
+    await creationStore.createCustomRequirementSpecialization(
+      requirement.id,
+      option.definitionId,
+      option.name.zh,
+    );
+    errorMessage.value = "";
+  } catch (error: unknown) {
+    errorMessage.value = error instanceof Error ? error.message : "创建固定专业化失败。";
+  }
+}
+
+async function setReplacementTarget(event: Event): Promise<void> {
+  const value = (event.target as HTMLSelectElement).value;
+  try {
+    await creationStore.setOccupationSkillReplacementTarget(value || undefined);
+    errorMessage.value = "";
+  } catch (error: unknown) {
+    errorMessage.value = error instanceof Error ? error.message : "保存职业技能替换失败。";
+  }
+}
+
 onMounted(async () => {
   if (!occupation.value || !skillState.value || !occupationEraCompatible.value) return;
   try {
@@ -234,6 +377,32 @@ onMounted(async () => {
     </section>
 
     <template v-else>
+      <section v-if="occupation.skillReplacement" class="panel form-stack replacement-panel">
+        <div>
+          <p class="eyebrow">特殊职业规则</p>
+          <h3>职业技能替换</h3>
+        </div>
+        <p>
+          经 KP 批准，可以用【{{ formatRef(occupation.skillReplacement.replacement.ref) }}】替换其中一项职业技能。
+        </p>
+        <label class="field">
+          <span>替换目标</span>
+          <select :value="activeReplacement?.targetRequirementId ?? ''" @change="setReplacementTarget">
+            <option value="">不使用替换</option>
+            <option
+              v-for="targetId in occupation.skillReplacement.targetRequirementIds"
+              :key="targetId"
+              :value="targetId"
+            >
+              {{ replacementTargetLabel(targetId) }}
+            </option>
+          </select>
+        </label>
+        <p v-if="activeReplacement" class="warning-message">
+          此替换需要 KP 批准，将在后续批准步骤处理。
+        </p>
+      </section>
+
       <article
         v-for="requirement in occupation.skillRequirements"
         :key="requirement.id"
@@ -246,11 +415,25 @@ onMounted(async () => {
           </span>
         </header>
 
-        <p v-if="getDeterministicRequirementSelection(requirement)" class="fixed-requirement">
+        <div
+          v-if="activeReplacement?.targetRequirementId === requirement.id"
+          class="selected-requirement-skills"
+        >
+          <strong>本需求由【{{ formatRef(activeReplacement.replacementRef) }}】替换</strong>
+          <p class="warning-message">此替换需要 KP 批准，将在后续批准步骤处理。</p>
+        </div>
+
+        <p
+          v-else-if="getDeterministicRequirementSelection(requirement)"
+          class="fixed-requirement"
+        >
           固定：{{ formatRef(getDeterministicRequirementSelection(requirement)!) }}
         </p>
 
-        <div v-if="selectionFor(requirement.id).length > 0" class="selected-requirement-skills">
+        <div
+          v-if="activeReplacement?.targetRequirementId !== requirement.id && selectionFor(requirement.id).length > 0"
+          class="selected-requirement-skills"
+        >
           <strong>当前已选</strong>
           <ul>
             <li v-for="ref in selectionFor(requirement.id)" :key="getSkillRefKey(ref)">
@@ -271,7 +454,9 @@ onMounted(async () => {
           </ul>
         </div>
 
-        <template v-if="!getDeterministicRequirementSelection(requirement)">
+        <template
+          v-if="activeReplacement?.targetRequirementId !== requirement.id && !getDeterministicRequirementSelection(requirement)"
+        >
           <label v-if="requirement.selector.type === 'any-skill'" class="field requirement-search">
             <span>在此需求内搜索技能</span>
             <input
@@ -303,20 +488,70 @@ onMounted(async () => {
           <p v-else-if="(requirementCandidates.get(requirement.id)?.length ?? 0) > 0" class="empty-state">
             没有符合当前搜索的技能。
           </p>
-          <p
-            v-else-if="requirementHasCustomSpecializationPath(requirement, skills.definitions)"
-            class="warning-message"
-          >
-            此需求还需要创建自定义专业化，当前阶段尚未接入。
+          <p v-else-if="customOptionsFor(requirement.id).length > 0" class="muted">
+            此需求没有预定义候选，可以创建下方的自定义专业化。
           </p>
           <p v-else class="warning-message">当前时代没有可用的目录技能。</p>
 
-          <p
-            v-if="(requirementCandidates.get(requirement.id)?.length ?? 0) > 0 && requirementHasCustomSpecializationPath(requirement, skills.definitions)"
-            class="muted"
+          <section
+            v-if="openCustomOptionsFor(requirement.id).length > 0"
+            class="custom-specialization form-stack compact-stack"
           >
-            还可以使用自定义专业化；将在 Phase 5C-2B 接入。
-          </p>
+            <strong>创建自定义专业化</strong>
+            <label
+              v-if="openCustomOptionsFor(requirement.id).length > 1"
+              class="field"
+            >
+              <span>专业化父技能</span>
+              <select
+                :value="selectedCustomParent(requirement)"
+                @change="setSelectedCustomParent(requirement.id, $event)"
+              >
+                <option
+                  v-for="option in openCustomOptionsFor(requirement.id)"
+                  :key="option.definitionId"
+                  :value="option.definitionId"
+                >{{ customParentLabel(option.definitionId) }}</option>
+              </select>
+            </label>
+            <p v-else class="muted">
+              {{ customParentLabel(openCustomOptionsFor(requirement.id)[0]!.definitionId) }}
+            </p>
+            <div class="actions custom-specialization-action">
+              <input
+                v-model="customDisplayNames[requirement.id]"
+                type="text"
+                :placeholder="`输入${customParentLabel(selectedCustomParent(requirement))}的具体名称`"
+                :disabled="hasSingleInstanceConflict(selectedCustomParent(requirement))"
+              />
+              <button
+                class="button"
+                type="button"
+                :disabled="hasSingleInstanceConflict(selectedCustomParent(requirement))"
+                @click="createOpenCustom(requirement)"
+              >创建并选择</button>
+            </div>
+            <p
+              v-if="hasSingleInstanceConflict(selectedCustomParent(requirement))"
+              class="warning-message"
+            >{{ singleInstanceMessage(selectedCustomParent(requirement)) }}</p>
+          </section>
+
+          <section
+            v-for="option in namedCustomOptionsFor(requirement.id)"
+            :key="`${option.definitionId}:${option.name.zh}`"
+            class="custom-specialization named-custom-option"
+          >
+            <span>{{ customParentLabel(option.definitionId) }}（{{ option.name.zh }}）</span>
+            <span v-if="namedOptionIsSelected(requirement, option)" class="muted">当前已选实例</span>
+            <button
+              v-else
+              class="button"
+              type="button"
+              :disabled="hasSingleInstanceConflict(option.definitionId)"
+              @click="createNamedCustom(requirement, option)"
+            >创建并选择</button>
+          </section>
         </template>
 
         <p v-if="requirement.guidance" class="requirement-guidance">
