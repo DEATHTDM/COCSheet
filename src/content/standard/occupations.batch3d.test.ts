@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { validateOccupationRequirementSelection } from "../../coc7/rules/occupationSkills";
+import {
+  finalizeSkillAllocation,
+  occupationRequirementApprovalSubject,
+  validateOccupationRequirementSelection,
+} from "../../coc7/rules/occupationSkills";
 import type { OccupationPointFormula } from "../../coc7/types/occupation";
 import type { SkillRef } from "../../coc7/types/skill";
 import { createOccupationRegistry } from "../occupationRegistry";
@@ -228,6 +232,27 @@ const expectedDefinitions = [
     sourcePages: ["coc7-investigator-handbook-zh-1-21:89"],
   },
   {
+    id: "white-collar-worker-clerk-executive",
+    name: { zh: "职员/主管", en: "Clerk / Executive" },
+    aliases: undefined,
+    variantOf: "white-collar-worker",
+    category: "business-professional",
+    era: { type: "all" },
+    creditRating: { min: 9, max: 20 },
+    pointFormula: edu4,
+    requirements: [
+      ["accounting", "exact", 1, 1],
+      ["language", "one-of", 1, 1],
+      ["law", "exact", 1, 1],
+      ["library-or-computer", "one-of", 1, 1],
+      ["listen", "exact", 1, 1],
+      ["social", "one-of", 1, 1],
+      ["personal-or-era", "any-skill", 2, 2],
+    ],
+    keeperReviewIds: ["personal-or-era"],
+    sourcePages: ["coc7-investigator-handbook-zh-1-21:91"],
+  },
+  {
     id: "white-collar-worker-middle-senior-manager",
     name: { zh: "中层、高层管理人员", en: "Middle / Senior Manager" },
     aliases: {
@@ -257,6 +282,12 @@ const predefined = (definitionId: string, specializationId: string): SkillRef =>
   type: "predefined",
   definitionId,
   specializationId,
+});
+const custom = (definitionId: string, displayName: string): SkillRef => ({
+  type: "custom",
+  definitionId,
+  specializationId: crypto.randomUUID(),
+  displayName,
 });
 
 function selectedRequirement(occupationId: string, requirementId: string) {
@@ -295,21 +326,22 @@ describe("Phase 5B-2 Batch 3D occupations", () => {
       .toEqual(expected.sourcePages);
   });
 
-  it("导入 10 个 definition；四个 family 完整，White-collar 只生产已确认 Manager variant", () => {
-    expect(batch3dOccupationDefinitions).toHaveLength(10);
+  it("导入 11 个 definition，并以两个真实 variant 完成 White-collar family", () => {
+    expect(batch3dOccupationDefinitions).toHaveLength(11);
     const expectedFamilyCounts = new Map([
       ["laborer", 3],
       ["photographer", 2],
       ["pilot", 2],
       ["sailor", 2],
-      ["white-collar-worker", 1],
+      ["white-collar-worker", 2],
     ]);
     for (const [family, count] of expectedFamilyCounts) {
       expect(registry.get(family)).toBeUndefined();
       expect(registry.definitions.filter((occupation) => occupation.variantOf === family))
         .toHaveLength(count);
     }
-    expect(registry.get("white-collar-worker-clerk-executive")).toBeUndefined();
+    expect(registry.get("white-collar-worker-clerk-executive")).toBeDefined();
+    expect(registry.get("white-collar-worker")).toBeUndefined();
   });
 
   it("Unskilled generic Fighting 接受多个不同专业并拒绝重复", () => {
@@ -421,5 +453,111 @@ describe("Phase 5B-2 Batch 3D occupations", () => {
       .toMatchObject({ cardinality: { min: 2, max: 2 }, keeperReview: true });
     expect(registry.get("white-collar-worker-middle-senior-manager")?.skillRequirements.map(({ id }) => id))
       .toContain("psychology");
+  });
+
+  it("Clerk Language exactly-one 接受 Own 或 Other，并拒绝混选、两项 Other 与无关专业", () => {
+    const ownLanguage = custom("language-own", "Chinese");
+    const otherLanguage = custom("language-other", "English");
+    const secondOtherLanguage = custom("language-other", "Spanish");
+    const chemistry = predefined("science", "chemistry");
+
+    expect(selectedRequirement("white-collar-worker-clerk-executive", "language").selector)
+      .toEqual({
+        type: "one-of",
+        selectors: [
+          { type: "specialization-of", definitionId: "language-own" },
+          { type: "specialization-of", definitionId: "language-other" },
+        ],
+      });
+    expect(issueCodes("white-collar-worker-clerk-executive", "language", [ownLanguage]))
+      .toEqual([]);
+    expect(issueCodes("white-collar-worker-clerk-executive", "language", [otherLanguage]))
+      .toEqual([]);
+    expect(issueCodes(
+      "white-collar-worker-clerk-executive",
+      "language",
+      [ownLanguage, otherLanguage],
+    )).toContain("requirement-cardinality");
+    expect(issueCodes(
+      "white-collar-worker-clerk-executive",
+      "language",
+      [otherLanguage, secondOtherLanguage],
+    )).toContain("requirement-cardinality");
+    expect(issueCodes("white-collar-worker-clerk-executive", "language", [chemistry]))
+      .toContain("selector-mismatch");
+    expect(issueCodes("white-collar-worker-clerk-executive", "language", [standard("language-own")]))
+      .toContain("selector-mismatch");
+  });
+
+  it("Clerk Library / Computer exactly-one 接受任一项并拒绝同时选择", () => {
+    const libraryUse = standard("library-use");
+    const computerUse = standard("computer-use");
+
+    expect(selectedRequirement("white-collar-worker-clerk-executive", "library-or-computer").selector)
+      .toEqual({
+        type: "one-of",
+        selectors: [
+          { type: "exact", ref: libraryUse },
+          { type: "exact", ref: computerUse },
+        ],
+      });
+    expect(issueCodes("white-collar-worker-clerk-executive", "library-or-computer", [libraryUse]))
+      .toEqual([]);
+    expect(issueCodes("white-collar-worker-clerk-executive", "library-or-computer", [computerUse]))
+      .toEqual([]);
+    expect(issueCodes(
+      "white-collar-worker-clerk-executive",
+      "library-or-computer",
+      [libraryUse, computerUse],
+    )).toContain("requirement-cardinality");
+  });
+
+  it("Clerk personal/era 要求恰好两项，并在未批准时产生 occupation-scoped fuzzy approval", () => {
+    const one = [standard("history")];
+    const two = [standard("history"), standard("natural-world")];
+    const three = [...two, standard("occult")];
+
+    expect(issueCodes("white-collar-worker-clerk-executive", "personal-or-era", one))
+      .toContain("requirement-cardinality");
+    expect(issueCodes("white-collar-worker-clerk-executive", "personal-or-era", two))
+      .toEqual([]);
+    expect(issueCodes("white-collar-worker-clerk-executive", "personal-or-era", three))
+      .toContain("requirement-cardinality");
+
+    const occupation = registry.get("white-collar-worker-clerk-executive");
+    if (!occupation) throw new Error("缺少 Clerk / Executive production definition");
+    const result = finalizeSkillAllocation({
+      character: {
+        version: 1,
+        id: crypto.randomUUID(),
+        name: "测试调查员",
+        settingId: "standard",
+        characteristics: {
+          STR: 60,
+          CON: 60,
+          SIZ: 60,
+          DEX: 60,
+          APP: 60,
+          INT: 60,
+          POW: 60,
+          EDU: 60,
+        },
+      },
+      occupation: {
+        kind: "catalog",
+        selectedOccupationId: occupation.id,
+        definitionSnapshot: occupation,
+      },
+      state: {
+        requirementSelections: [{ requirementId: "personal-or-era", refs: two }],
+        allocations: [],
+        keeperApprovals: [],
+      },
+      skillDefinitions: standardSkillDefinitions,
+    });
+    expect(result.approvals).toContainEqual(expect.objectContaining({
+      reason: "fuzzy-requirement",
+      subjectId: occupationRequirementApprovalSubject(occupation.id, "personal-or-era"),
+    }));
   });
 });
