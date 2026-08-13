@@ -6,11 +6,11 @@ Last updated: 2026-08-13
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and the Batch 3A through Batch 3D engineering sub-batches are completed. Formal Batch 2 is completed; Batch 3 remains in progress for the withheld Clerk / Executive variant, `criminal`, and `deprogrammer`. Phase 5C — Creation UI has not started.
+Phase 5A — Occupation Engine Foundation is completed. Phase 5B — Verified Standard Occupation Data is in progress: Phase 5B-1 pilot, Phase 5B-2-A full Standard intake audit, Batch 1, Batch 2A, Batch 2B, the Batch 2 Engine-pressure cleanup, and the Batch 3A through Batch 3E engineering sub-batches are completed. Formal Batch 2 is completed; Batch 3 remains in progress for Keeper Criminal, the withheld Clerk / Executive variant, and `deprogrammer`. Phase 5C — Creation UI has not started.
 
 ## Git baseline
 
-Phase 5B-2 Batch 3D branch was created from `main` at `8c06404577ac7ab5913bdb246d2c20d089cc16e6`.
+Phase 5B-2 Batch 3E branch was created from `main` at `84ed22fb4779cd6f551e18e1e1ffdebe7885d524`.
 
 ## Implemented
 
@@ -47,6 +47,7 @@ Phase 5B-2 Batch 3D branch was created from `main` at `8c06404577ac7ab5913bdb246
 - Phase 5B-2 Batch 3B canonical/fuzzy import for `federal-agent`, `foreign-correspondent`, `hobo`, `librarian`, `mechanic`, `occultist`, `parapsychologist`, `private-investigator`, `prospector`, `psychologist-psychoanalyst`, `researcher`, `scientist`, `secretary`, `sex-worker`, `waiter`, and `zealot`, bringing coverage to 79 fully implemented families / 84 definitions and 105 mapped official source entries; all 16 definitions are canonical, 42 source rows are now `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
 - Phase 5B-2 Batch 3C source-variant import for `actor`, `computer-professional`, `driver`, `gangster`, and `military-officer`, bringing coverage to 84 fully implemented families / 95 definitions and 117 mapped official source entries; 12 source rows map to 11 production variants because the two mechanically identical Hacker entries share one modern-only definition, 54 source rows are now `production-batch-3`, no family was withheld, and formal Batch 3 remains in progress
 - Phase 5B-2 Batch 3D source-variant import adding 10 definitions across `laborer`, `photographer`, `pilot`, `sailor`, and `white-collar-worker`, bringing coverage to 89 touched family identities / 88 fully implemented families / 105 definitions and 128 mapped official source entries; 11 source rows enter production because the two mechanically identical general Pilot entries share one definition, while Clerk / Executive is withheld after printed pages 91-92 leave `Language` ambiguous between Own and Other; 65 source rows are now `production-batch-3`, no Engine change was made, and formal Batch 3 remains in progress
+- Phase 5B-2 Batch 3E Criminal source-variant import adding all 11 Investigator Handbook subtypes, bringing coverage to 90 touched family identities / 88 fully implemented families / 116 definitions and 139 mapped official source entries; 76 source rows are now `production-batch-3`; Keeper Rulebook Criminal remains withheld under `choice-pool-with-repeatable-specialization-branch` because its choose-four category pool contains repeatable generic Fighting and Firearms children that current selector composition cannot count losslessly, no Engine change was made, and the Criminal family remains partial
 - deterministic OccupationRegistry cardinality hardening for impossible exact, one-of and all-of requirement structures
 - IndexedDB version 1 with `characters`, `creationSessions`, and `kpPresets`
 - repositories for Character, CreationSession, creation workflow, and KP Preset
@@ -113,7 +114,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- verified Standard occupation production data beyond completed Phase 5B-2 Batch 3D
+- verified Standard occupation production data beyond completed Phase 5B-2 Batch 3E
 - occupation browsing, requirement selection and skill allocation UI (Phase 5C)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -126,13 +127,14 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5B-2 Batch 3 is in progress after Batch 3D. Remaining work is the source-ambiguous Clerk / Executive variant under `white-collar-worker`, the `criminal` family, and the separately reviewed `deprogrammer` pressure case, but this document does not authorize that later import or Engine work.
+Phase 5B-2 Batch 3 is in progress after Batch 3E. Remaining work is Keeper Criminal's choice-pool Engine pressure, the source-ambiguous Clerk / Executive variant under `white-collar-worker`, and the separately reviewed `deprogrammer` replacement pressure, but this document does not authorize later Engine work or either withheld import.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future import/export compatibility
 - Setting-specific extension evolution
-- `deprogrammer` remains the only unresolved Engine pressure because its Keeper-approved Hypnosis replacement of one existing occupation skill is not yet expressible
-- Clerk / Executive remains withheld because the authoritative Chinese source says only `Language`, without resolving Own versus Other; `criminal` still requires entry-by-entry source verification, and `deprogrammer` separately requires a deliberate Engine-pressure decision
+- `deprogrammer` remains an unresolved Engine pressure because its Keeper-approved Hypnosis replacement of one existing occupation skill is not yet expressible
+- Keeper Criminal adds a separate unresolved Engine pressure: its seven-category choose-four pool includes generic Fighting and Firearms branches that may each produce multiple specialization refs while counting as one category
+- Clerk / Executive remains withheld because the authoritative Chinese source says only `Language`, without resolving Own versus Other; it remains a source semantic ambiguity rather than Engine pressure
 - browser storage can be cleared, and long-term file backup is not implemented

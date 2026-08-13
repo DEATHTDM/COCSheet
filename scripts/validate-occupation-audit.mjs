@@ -11,6 +11,7 @@ const productionModulePaths = [
   new URL("../src/content/standard/occupations/batch3b.ts", import.meta.url),
   new URL("../src/content/standard/occupations/batch3c.ts", import.meta.url),
   new URL("../src/content/standard/occupations/batch3d.ts", import.meta.url),
+  new URL("../src/content/standard/occupations/batch3e-criminal.ts", import.meta.url),
 ];
 
 function parseCsv(text) {
@@ -89,8 +90,9 @@ const crosswalk = recordsFromCsv(await fs.readFile(crosswalkPath, "utf8"), "Exce
 const productionModuleTexts = await Promise.all(
   productionModulePaths.map((path) => fs.readFile(path, "utf8")),
 );
-const batch3cModuleText = productionModuleTexts.at(-2) ?? "";
-const batch3dModuleText = productionModuleTexts.at(-1) ?? "";
+const batch3cModuleText = productionModuleTexts.at(-3) ?? "";
+const batch3dModuleText = productionModuleTexts.at(-2) ?? "";
+const batch3eModuleText = productionModuleTexts.at(-1) ?? "";
 const actualProductionIds = new Set(productionModuleTexts.flatMap((text) =>
   [...text.matchAll(/defineOccupation\(\s*\r?\n\s*"([a-z0-9-]+)"/g)].map((match) => match[1])),
 );
@@ -133,17 +135,25 @@ assert(inventory.filter((row) => row.implementation_status === "production-pilot
   "official inventory: pilot must map 22 source entries");
 const needsReviewRows = inventory.filter((row) => row.implementation_status === "needs-review");
 const needsReviewFamilies = new Set(needsReviewRows.map((row) => row.normalized_family_key));
-assert(needsReviewRows.length === 2
-    && needsReviewFamilies.size === 2
+assert(needsReviewRows.length === 3
+    && needsReviewFamilies.size === 3
     && needsReviewFamilies.has("deprogrammer")
-    && needsReviewFamilies.has("white-collar-worker"),
-  "official inventory: only Deprogrammer Engine pressure and Clerk / Executive source ambiguity may be needs-review");
+    && needsReviewFamilies.has("white-collar-worker")
+    && needsReviewFamilies.has("criminal"),
+  "official inventory: needs-review must contain the two Engine pressures and Clerk / Executive source ambiguity");
 const deprogrammerRows = needsReviewRows.filter((row) => row.normalized_family_key === "deprogrammer");
 assert(deprogrammerRows.length === 1
     && deprogrammerRows[0].recommended_batch === "Batch 3 - complex / review"
     && deprogrammerRows[0].keeper_approval === "KP may allow Hypnosis to replace one occupation skill"
     && !deprogrammerRows[0].notes.includes("production_id="),
   "official inventory: Deprogrammer must retain its verified replacement pressure without a production mapping");
+const keeperCriminal = needsReviewRows.find((row) => row.source_entry_id === "keeper-p40-criminal");
+assert(keeperCriminal?.normalized_family_key === "criminal"
+    && keeperCriminal.recommended_batch === "Batch 3 - complex / review"
+    && keeperCriminal.notes ===
+      "engine_pressure=choice-pool-with-repeatable-specialization-branch"
+    && !actualProductionIds.has("criminal-keeper-rulebook"),
+  "official inventory: Keeper Criminal must retain its repeatable specialization choice-pool pressure without a production definition");
 const batch1Families = new Set(["clergy", "elected-official", "judge", "museum-curator"]);
 const batch1Entries = inventory.filter((row) => batch1Families.has(row.normalized_family_key));
 assert(batch1Entries.length === 5
@@ -461,6 +471,40 @@ for (const [productionId, family] of batch3dVariantFamilyByProductionId) {
   assert(block.includes(`variantOf: "${family}"`),
     `production Batch 3D: ${productionId} must retain variantOf=${family}`);
 }
+const batch3eProductionIdBySourceEntry = new Map([
+  ["handbook-75-assassin", "criminal-assassin"],
+  ["handbook-75-bank-robber", "criminal-bank-robber"],
+  ["handbook-75-bootlegger-thug", "criminal-bootlegger-thug"],
+  ["handbook-75-burglar", "criminal-burglar"],
+  ["handbook-75-conman", "criminal-conman"],
+  ["handbook-75-criminal-freelance-solo", "criminal-freelance-solo"],
+  ["handbook-76-gun-moll", "criminal-gun-moll"],
+  ["handbook-76-fence", "criminal-fence"],
+  ["handbook-76-forger-counterfeiter", "criminal-forger-counterfeiter"],
+  ["handbook-76-smuggler", "criminal-smuggler"],
+  ["handbook-76-street-punk", "criminal-street-punk"],
+]);
+const batch3eSourceEntryIds = new Set(batch3eProductionIdBySourceEntry.keys());
+const batch3eEntries = inventory.filter((row) => batch3eSourceEntryIds.has(row.source_entry_id));
+assert(batch3eEntries.length === 11
+    && batch3eEntries.every((row) => row.implementation_status === "production-batch-3")
+    && batch3eEntries.every((row) => row.recommended_batch === "Batch 3 - complex / review")
+    && batch3eEntries.every((row) =>
+      row.notes === `production_id=${batch3eProductionIdBySourceEntry.get(row.source_entry_id)}`)
+    && batch3eEntries.every((row) => row.mechanical_comparison === "mechanical-variant-candidate")
+    && batch3eEntries.every((row) => row.variant_candidate === "yes")
+    && new Set(batch3eEntries.map((row) => row.normalized_family_key)).size === 1
+    && new Set(batch3eProductionIdBySourceEntry.values()).size === 11,
+  "official inventory: all 11 Handbook Criminal source rows must map to independent production variants");
+for (const productionId of batch3eProductionIdBySourceEntry.values()) {
+  const startPattern = new RegExp(`defineOccupation\\(\\s*"${productionId}"`);
+  const startMatch = startPattern.exec(batch3eModuleText);
+  assert(startMatch, `production Batch 3E: missing ${productionId}`);
+  const nextStart = batch3eModuleText.indexOf("defineOccupation(", startMatch.index + startMatch[0].length);
+  const block = batch3eModuleText.slice(startMatch.index, nextStart < 0 ? undefined : nextStart);
+  assert(block.includes('variantOf: "criminal"'),
+    `production Batch 3E: ${productionId} must retain variantOf=criminal`);
+}
 const ambiguousClerk = inventory.find((row) =>
   row.source_entry_id === "handbook-91-92-clerk-executive");
 assert(ambiguousClerk?.implementation_status === "needs-review"
@@ -472,8 +516,8 @@ assert(ambiguousClerk?.implementation_status === "needs-review"
   "official inventory: ambiguous Clerk / Executive Language must remain withheld without a production definition");
 assert(inventory.filter((row) => row.implementation_status === "production-batch-3").length ===
     batch3aSourceEntryIds.size + batch3bSourceEntryIds.size + batch3cSourceEntryIds.size +
-      batch3dSourceEntryIds.size,
-  "official inventory: production-batch-3 must contain exactly successful Batch 3A through Batch 3D source entries");
+      batch3dSourceEntryIds.size + batch3eSourceEntryIds.size,
+  "official inventory: production-batch-3 must contain exactly successful Batch 3A through Batch 3E source entries");
 const policeDetectiveEntries = inventory.filter((row) => [
   "keeper-p41-police-detective",
   "handbook-87-police-detective",
@@ -599,13 +643,24 @@ const expectedProductionIds = new Set([
   "sailor-naval",
   "sailor-commercial",
   "white-collar-worker-middle-senior-manager",
+  "criminal-assassin",
+  "criminal-bank-robber",
+  "criminal-bootlegger-thug",
+  "criminal-burglar",
+  "criminal-conman",
+  "criminal-freelance-solo",
+  "criminal-gun-moll",
+  "criminal-fence",
+  "criminal-forger-counterfeiter",
+  "criminal-smuggler",
+  "criminal-street-punk",
 ]);
 assert(productionIds.size === expectedProductionIds.size,
   `official inventory: expected ${expectedProductionIds.size} mapped production IDs, found ${productionIds.size}`);
 assert([...expectedProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match current production coverage");
-assert(actualProductionIds.size === 105,
-  `production modules: expected 105 definitions, found ${actualProductionIds.size}`);
+assert(actualProductionIds.size === 116,
+  `production modules: expected 116 definitions, found ${actualProductionIds.size}`);
 assert(actualProductionIds.size === productionIds.size
     && [...actualProductionIds].every((id) => productionIds.has(id)),
   "official inventory: mapped production IDs do not match actual production modules");
@@ -685,5 +740,5 @@ for (const [classification, expected] of Object.entries(expectedClassifications)
 }
 
 console.log("Occupation audit CSV validation passed.");
-console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2, and ${batch3aSourceEntryIds.size + batch3bSourceEntryIds.size + batch3cSourceEntryIds.size + batch3dSourceEntryIds.size} Batch 3 production source entries.`);
+console.log(`Official inventory: 142 rows, 91 families, 22 pilot, 5 Batch 1, ${batch2aSourceEntryIds.size + batch2bSourceEntryIds.size + batch2PressureSourceEntryIds.size} Batch 2, and ${batch3aSourceEntryIds.size + batch3bSourceEntryIds.size + batch3cSourceEntryIds.size + batch3dSourceEntryIds.size + batch3eSourceEntryIds.size} Batch 3 production source entries.`);
 console.log("Excel crosswalk: 230 rows, 229 numbered occupations, 1 custom template.");
