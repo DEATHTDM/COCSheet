@@ -98,6 +98,8 @@ Standard COC7 默认职业体系优先以 Keeper Rulebook 与 Investigator Handb
 
 这些 selector 保持闭合、声明式与针对真实来源压力的最小结构；不扩张为 generic SAT、arbitrary predicate 或内容 callback 系统。
 
+职业技能的 1-for-1 replacement 位于 `OccupationDefinition`，不扩张 `SkillSelector`。当前每个职业最多声明一个 optional policy：replacement 固定为 exact `SkillRef` selector，policy 显式列出可替换的 requirement IDs，且每个 target 必须能由低风险结构检查证明只代表一个职业技能 category。玩家在 `CreationSession` 显式保存 policy ID 与 target requirement ID；系统不从缺失 selection 反推 target，也不重复持久化 replacement ref。启用 replacement 后原 target selection 必须不存在，replacement ref 从职业 mechanics snapshot 推导并进入普通职业资格与点数分配流程。不引入 arbitrary replacement callback、predicate 或 occupation-ID special-case。
+
 ### O007 — Occupation source variants
 
 只有 point formula、Credit Rating、确定性技能需求等规范化机械字段真正不同时才建立 `variantOf` source variant。仅 summary、guidance 或可统一为 broad free-pick + Keeper review 的措辞不同时，使用单一 canonical mechanics、多个 sourceRefs 与来源注释。
@@ -113,6 +115,8 @@ CreationSession 分配行持久化完整 `SkillRef`、职业点与兴趣点，�
 ### O009 — Credit Rating and approvals
 
 Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴趣点都可投入，最终值越出职业范围时需要显式 Keeper override，且 override 必须绑定当前职业身份。Keeper approval 使用带 reason 与 subject 的强类型记录，区分职业定义、Preset 职业政策、自定义职业、Credit Rating、Cthulhu Mythos 分配与模糊需求；模糊 requirement 的 subject 同时包含职业身份与 requirement ID。
+
+职业技能 replacement 使用独立的 `occupation-skill-replacement` approval reason；subject 同时绑定 occupation ID、policy ID 与 target requirement ID。改变 replacement target 必须重新批准，未显式启用 replacement 时不产生批准要求。
 
 自定义职业的八项限制按需求最多可产生的职业技能 category 数计算，不按 requirement 条目数计算。有限需求使用外层 `cardinality.max`；`one-branch` 取一个可选 branch 的最大容量，`choice-pool` 取最多可激活 branches 中最大的有限容量之和，并继续受外层 SkillRef max 约束。无法证明不超过八项的开放上限需求被拒绝，通用 Fighting / Firearms 专业化 branch 即使允许多个 refs 也各按一个职业技能 category 计数。
 

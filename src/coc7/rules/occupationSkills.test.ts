@@ -865,6 +865,24 @@ describe("Custom occupation foundation", () => {
       maximumSkills: 8,
     });
 
+    const replacementPolicyEight: OccupationDefinition = {
+      ...customWith(Array.from({ length: 8 }, (_, index) => ({
+        id: `exact-${index + 1}`,
+        selector: { type: "exact" as const, ref: { type: "standard" as const, definitionId: "history" } },
+        cardinality: { min: 1, max: 1 },
+      }))),
+      skillReplacement: {
+        id: "keeper-approved-hypnosis",
+        replacement: { type: "exact", ref: { type: "standard", definitionId: "hypnosis" } },
+        targetRequirementIds: ["exact-1"],
+        approval: "keeper-required",
+      },
+    };
+    expect(calculateCustomOccupationSkillCapacity(replacementPolicyEight)).toMatchObject({
+      valid: true,
+      maximumSkills: 8,
+    });
+
     const choicePoolNine = customWith([
       ...fixed,
       {

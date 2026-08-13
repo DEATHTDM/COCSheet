@@ -91,6 +91,20 @@ describe("OccupationRegistry", () => {
       ...doctor,
       skillRequirements: [doctor.skillRequirements[0], doctor.skillRequirements[0]],
     }).success).toBe(false);
+
+    expect(() => createOccupationRegistry({
+      eras: ["modern"],
+      occupations: [{
+        ...doctor,
+        id: "broken-replacement-skill",
+        skillReplacement: {
+          id: "keeper-approved-unknown",
+          replacement: { type: "exact", ref: { type: "standard", definitionId: "not-real" } },
+          targetRequirementIds: [doctor.skillRequirements[0]?.id ?? "medicine"],
+          approval: "keeper-required",
+        },
+      }],
+    }, skills)).toThrow("未知技能");
   });
 
   it("specialization-of exclude 只能引用同一 SkillDefinition", () => {

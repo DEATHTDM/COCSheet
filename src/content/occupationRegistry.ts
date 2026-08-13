@@ -280,6 +280,9 @@ export function createOccupationRegistry(
         `职业 ${occupation.id} 的 requirement ${requirement.id}`,
       );
     });
+    if (occupation.skillReplacement) {
+      validateSelector(occupation.skillReplacement.replacement, skills);
+    }
     byId.set(occupation.id, occupation);
   }
 

@@ -43,6 +43,10 @@ describe("occupation skill draft actions", () => {
         interestPoints: 5,
       }],
       keeperApprovals: [],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "old-slot",
+      },
     };
     const session: CreationSession = {
       version: 1,
@@ -64,6 +68,7 @@ describe("occupation skill draft actions", () => {
     const changed = replaceOccupationSelection(session, replacement);
     expect(changed.occupation).toEqual(replacement);
     expect(changed.skills).toEqual(state);
+    expect(changed.skills?.occupationSkillReplacement).toEqual(state.occupationSkillReplacement);
     expect(changed.skills?.allocations[0]?.ref).toMatchObject({ specializationId: customId });
   });
 
@@ -82,6 +87,10 @@ describe("occupation skill draft actions", () => {
         { reason: "fuzzy-requirement", subjectId: "old-slot", approved: true },
         { reason: "cthulhu-mythos-allocation", subjectId: "skill:cthulhu-mythos", approved: true },
       ],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "old-slot",
+      },
     };
     const reset = resetOccupationAllocation(state);
     expect(reset.requirementSelections).toEqual([]);
@@ -91,6 +100,7 @@ describe("occupation skill draft actions", () => {
       interestPoints: 5,
     }]);
     expect(reset.creditRatingOverride).toBeUndefined();
+    expect(reset.occupationSkillReplacement).toBeUndefined();
     expect(reset.keeperApprovals).toEqual([{
       reason: "cthulhu-mythos-allocation",
       subjectId: "skill:cthulhu-mythos",

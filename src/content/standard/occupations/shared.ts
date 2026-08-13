@@ -138,6 +138,7 @@ interface OccupationOptions {
   readonly aliases?: OccupationDefinition["aliases"];
   readonly variantOf?: string;
   readonly era?: OccupationDefinition["era"];
+  readonly skillReplacement?: OccupationDefinition["skillReplacement"];
 }
 
 export function defineOccupation(
@@ -163,6 +164,7 @@ export function defineOccupation(
     creditRating,
     pointFormula,
     skillRequirements: [...skillRequirements],
+    ...(options.skillReplacement ? { skillReplacement: options.skillReplacement } : {}),
   };
 }
 

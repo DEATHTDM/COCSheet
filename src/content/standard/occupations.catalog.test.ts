@@ -330,20 +330,20 @@ function visitSelector(selector: SkillSelector, visit: (selector: SkillSelector)
 }
 
 describe("Standard production occupation catalog", () => {
-  it("将 90 个 canonical family identity 的 117 个生产 definition 接入 Standard SettingPack", () => {
+  it("将 91 个 canonical family identity 的 118 个生产 definition 接入 Standard SettingPack", () => {
     expect(standardSettingPack.occupations).toEqual(standardOccupationDefinitions);
-    expect(standardSettingPack.occupations).toHaveLength(117);
+    expect(standardSettingPack.occupations).toHaveLength(118);
     const families = new Set(standardSettingPack.occupations.map((occupation) =>
       occupation.variantOf ?? occupation.id,
     ));
-    expect(families.size).toBe(90);
+    expect(families.size).toBe(91);
   });
 
   it("所有 definition 通过 schema 与完整 Standard OccupationRegistry 注册", () => {
     standardSettingPack.occupations.forEach((occupation) => {
       expect(occupationDefinitionSchema.parse(occupation)).toEqual(occupation);
     });
-    expect(registry.definitions).toHaveLength(117);
+    expect(registry.definitions).toHaveLength(118);
   });
 
   it("ID 与职业内 requirement ID 唯一，并保留无空壳的 source variant identity", () => {
@@ -364,6 +364,7 @@ describe("Standard production occupation catalog", () => {
     expect(registry.get("entertainer")).toBeUndefined();
     expect(registry.definitions.filter((occupation) => occupation.variantOf === "entertainer"))
       .toHaveLength(2);
+    expect(registry.get("deprogrammer")?.variantOf).toBeUndefined();
     const productionVariantFamilies = new Map([
       ["actor", 2],
       ["computer-professional", 2],
@@ -448,7 +449,7 @@ describe("Standard production occupation catalog", () => {
     expect(registry.search("民选官员").map((occupation) => occupation.id)).toContain("elected-official");
     expect(registry.search("博物馆馆长").map((occupation) => occupation.id)).toContain("museum-curator");
     expect(registry.list({ era: "classic-1920s" })).toHaveLength(115);
-    expect(registry.list({ era: "modern" })).toHaveLength(113);
+    expect(registry.list({ era: "modern" })).toHaveLength(114);
   });
 
   it.each(batch1ExpectedDefinitions)("锁定 Batch 1 $id 的名称、cardinality、来源与完整机械", (expected) => {

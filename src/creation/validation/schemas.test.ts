@@ -9,7 +9,11 @@ import {
   type AttributeGenerationMethod,
 } from "../types/creationPreset";
 import { creationSessionSchema } from "../types/creationSession";
-import { creditRatingOverrideSchema } from "../types/skillCreation";
+import {
+  approvalReasonIdSchema,
+  creditRatingOverrideSchema,
+  skillCreationStateSchema,
+} from "../types/skillCreation";
 import { characterRecordSchema, kpPresetRecordSchema } from "../../db/records";
 
 describe("持久化 Zod Schema", () => {
@@ -19,6 +23,43 @@ describe("持久化 Zod Schema", () => {
       occupationId: "doctor",
       approved: true,
     }).success).toBe(true);
+  });
+
+  it("version 1 SkillCreationState 兼容旧草稿并可保存 replacement target", () => {
+    const oldState = {
+      requirementSelections: [],
+      allocations: [],
+      keeperApprovals: [],
+    };
+    expect(skillCreationStateSchema.parse(oldState)).not.toHaveProperty("occupationSkillReplacement");
+    expect(skillCreationStateSchema.safeParse({
+      ...oldState,
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "history",
+      },
+    }).success).toBe(true);
+    expect(skillCreationStateSchema.safeParse({
+      ...oldState,
+      occupationSkillReplacement: { policyId: "", targetRequirementId: "Not Stable" },
+    }).success).toBe(false);
+    expect(approvalReasonIdSchema.parse("occupation-skill-replacement"))
+      .toBe("occupation-skill-replacement");
+    expect(skillCreationStateSchema.safeParse({
+      ...oldState,
+      keeperApprovals: [
+        {
+          reason: "occupation-skill-replacement",
+          subjectId: "same",
+          approved: true,
+        },
+        {
+          reason: "occupation-skill-replacement",
+          subjectId: "same",
+          approved: true,
+        },
+      ],
+    }).success).toBe(false);
   });
 
   it("拒绝非法 Character", () => {

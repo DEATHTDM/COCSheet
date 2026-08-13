@@ -12,6 +12,7 @@ export const approvalReasonIds = [
   "cthulhu-mythos-allocation",
   "skill-creation-point-policy",
   "fuzzy-requirement",
+  "occupation-skill-replacement",
 ] as const;
 
 export const approvalReasonIdSchema = z.enum(approvalReasonIds);
@@ -57,6 +58,10 @@ export const skillCreationStateSchema = z
   .object({
     requirementSelections: z.array(occupationRequirementSelectionSchema),
     allocations: z.array(skillAllocationSchema),
+    occupationSkillReplacement: z.object({
+      policyId: stableMachineIdSchema,
+      targetRequirementId: stableMachineIdSchema,
+    }).strict().optional(),
     creditRatingOverride: creditRatingOverrideSchema.optional(),
     keeperApprovals: z.array(keeperApprovalGrantSchema),
     existingSkillResolution: z.object({
