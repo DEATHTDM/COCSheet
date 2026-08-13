@@ -11,10 +11,10 @@ import {
   formatDamageBonus,
 } from "../coc7/rules/derived";
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
+import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
 import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { AttributeGenerationMethod } from "../creation/types/creationPreset";
-import SkillEditor from "../components/SkillEditor.vue";
 
 const route = useRoute();
 const characterStore = useCharacterStore();
@@ -96,17 +96,6 @@ const derivedPreview = computed(() => {
   if (!finalPreview.value || session.value?.draftAge === undefined) return undefined;
   try {
     return deriveStandardCharacterValues(session.value.draftAge, finalPreview.value);
-  } catch {
-    return undefined;
-  }
-});
-const savedDerived = computed(() => {
-  const character = characterStore.current?.data;
-  if (!character?.characteristics || character.age === undefined || character.settingId !== "standard") {
-    return undefined;
-  }
-  try {
-    return deriveStandardCharacterValues(character.age, character.characteristics);
   } catch {
     return undefined;
   }
@@ -282,6 +271,7 @@ async function reconcileSanity(): Promise<void> {
         <li :class="{ active: currentStep === 'basic-info' }">基本信息</li>
         <li :class="{ active: currentStep === 'attributes' }">属性</li>
         <li :class="{ active: currentStep === 'occupation' }">职业</li>
+        <li :class="{ active: currentStep === 'skills' }">技能</li>
         <li :class="{ active: currentStep === 'review' }">检查</li>
       </ol>
 
@@ -454,26 +444,25 @@ async function reconcileSanity(): Promise<void> {
         </section>
       </section>
 
-      <section v-else-if="currentStep === 'occupation'" class="panel form-stack">
-        <p class="eyebrow">下一步</p><h2>职业（尚未实现）</h2>
-        <p>属性已保存到调查员。职业系统不在本阶段范围内。</p>
-        <div v-if="characterStore.current.data.characteristics" class="attribute-grid">
-          <div v-for="id in characteristicIds" :key="id" class="attribute-card"><strong>{{ id }} {{ characterStore.current.data.characteristics[id] }}</strong></div>
-          <div class="attribute-card"><strong>Luck {{ characterStore.current.data.luck }}</strong></div>
+      <OccupationBrowser v-else-if="currentStep === 'occupation'" />
+
+      <section v-else-if="currentStep === 'skills'" class="panel form-stack">
+        <div>
+          <p class="eyebrow">第 4 步</p>
+          <h2>技能</h2>
         </div>
-        <div v-if="characterStore.current.data.resources && savedDerived" class="attribute-grid">
-          <div class="attribute-card"><span>HP</span><strong>{{ characterStore.current.data.resources.hp.current }} / {{ savedDerived.maxHp }}</strong></div>
-          <div class="attribute-card"><span>MP</span><strong>{{ characterStore.current.data.resources.mp.current }}（起始 {{ savedDerived.initialMp }}）</strong></div>
-          <div class="attribute-card"><span>SAN</span><strong>{{ characterStore.current.data.resources.san.current }} / {{ savedMaximumSanity }}</strong></div>
-          <div class="attribute-card"><span>MOV</span><strong>{{ savedDerived.movement.status === 'value' ? savedDerived.movement.value : '需 KP 裁定' }}</strong></div>
-          <div class="attribute-card"><span>DB</span><strong>{{ formatDamageBonus(savedDerived.damageBonus) }}</strong></div>
-          <div class="attribute-card"><span>Build</span><strong>{{ savedDerived.build }}</strong></div>
-        </div>
-        <button class="button" type="button" @click="creationStore.setCurrentStep('attributes')">返回修改属性</button>
-        <SkillEditor :character="characterStore.current.data" />
+        <p>
+          当前职业：<strong>{{ session.occupation?.definitionSnapshot.name.zh ?? "尚未选择" }}</strong>
+        </p>
+        <p>职业技能需求与点数分配将在 Phase 5C 的下一子阶段接入。</p>
+        <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">
+          返回职业
+        </button>
       </section>
 
-      <section v-else class="panel"><h2>检查（尚未实现）</h2></section>
+      <section v-else-if="currentStep === 'review'" class="panel">
+        <h2>检查（尚未实现）</h2>
+      </section>
     </template>
     <p v-else>正在读取本地数据……</p>
   </section>

@@ -86,6 +86,47 @@ describe("Point Buy 未完成状态", () => {
   });
 });
 
+describe("catalog occupation selection", () => {
+  it("保存目录定义快照，并在明确更换职业时保留技能草稿", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await store.selectCatalogOccupation("accountant");
+    expect(store.current?.data.occupation).toMatchObject({
+      kind: "catalog",
+      selectedOccupationId: "accountant",
+      definitionSnapshot: { id: "accountant", name: { zh: "会计师" } },
+    });
+
+    const draft = {
+      requirementSelections: [{
+        requirementId: "history",
+        refs: [{ type: "standard" as const, definitionId: "history" }],
+      }],
+      allocations: [{
+        ref: { type: "standard" as const, definitionId: "history" },
+        occupationPoints: 20,
+        interestPoints: 10,
+      }],
+      keeperApprovals: [],
+    };
+    await store.setSkillCreationState(draft);
+    await store.selectCatalogOccupation("author");
+
+    expect(store.current?.data.occupation).toMatchObject({
+      kind: "catalog",
+      selectedOccupationId: "author",
+      definitionSnapshot: { id: "author", name: { zh: "作家（原作向）" } },
+    });
+    expect(store.current?.data.skills).toEqual(draft);
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.occupation?.definitionSnapshot.id).toBe("author");
+    expect(restored.current?.data.skills).toEqual(draft);
+  });
+});
+
 describe("完成前语义校验", () => {
   it("拒绝被篡改的 EDU 历史与 rolled Luck", async () => {
     const store = useCreationStore();
