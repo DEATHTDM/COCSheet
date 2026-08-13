@@ -514,6 +514,7 @@ async function reconcileSanity(): Promise<void> {
       <SkillRequirementStep
         v-else-if="currentStep === 'skills'"
         :era-id="characterStore.current.data.eraId"
+        :character="characterStore.current.data"
       />
 
       <section v-else-if="currentStep === 'review'" class="panel">

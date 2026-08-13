@@ -7,6 +7,7 @@ import {
   validateOccupationRequirementSelection,
 } from "../../coc7/rules/occupationSkills";
 import { getSkillRefKey } from "../../coc7/rules/skills";
+import type { Character } from "../../coc7/types/character";
 import type { EraId, OccupationRequirement } from "../../coc7/types/occupation";
 import type { SkillRef } from "../../coc7/types/skill";
 import { getSkillRegistry } from "../../content/skillRegistry";
@@ -23,8 +24,13 @@ import {
   type RequirementCustomOption,
 } from "../../creation/rules/requirementSelection";
 import { useCreationStore } from "../../creation/stores/creationStore";
+import { areCurrentOccupationRequirementsResolved } from "../../creation/rules/skillAllocationPresentation";
+import SkillAllocationPanel from "./SkillAllocationPanel.vue";
 
-const props = defineProps<{ readonly eraId: EraId | undefined }>();
+const props = defineProps<{
+  readonly eraId: EraId | undefined;
+  readonly character: Character;
+}>();
 const creationStore = useCreationStore();
 const errorMessage = ref("");
 const searchQueries = ref<Record<string, string>>({});
@@ -68,6 +74,14 @@ const completedRequirementCount = computed(() =>
   (occupation.value?.skillRequirements ?? []).filter((requirement) =>
     requirementStatus(requirement) === "complete",
   ).length,
+);
+const allocationWorkspaceReady = computed(() =>
+  occupation.value !== undefined && skillState.value !== undefined &&
+  occupationEraCompatible.value &&
+  areCurrentOccupationRequirementsResolved(occupation.value, skillState.value) &&
+  occupation.value.skillRequirements.every((requirement) =>
+    requirementStatus(requirement) === "complete",
+  ),
 );
 
 function selectionFor(requirementId: string): readonly SkillRef[] {
@@ -568,10 +582,18 @@ onMounted(async () => {
       <footer class="panel requirement-actions">
         <div>
           <strong>职业技能需求选择进度：{{ completedRequirementCount }} / {{ occupation.skillRequirements.length }}</strong>
-          <p class="muted">本阶段只保存需求选择；职业与兴趣点分配尚未开始。</p>
+          <p class="muted">完成当前职业技能需求后，可在下方分配职业点与兴趣点。</p>
         </div>
         <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">返回职业</button>
       </footer>
+
+      <SkillAllocationPanel
+        v-if="allocationWorkspaceReady"
+        :character="character"
+      />
+      <section v-else class="panel empty-state">
+        请先完成上方职业技能需求选择。
+      </section>
     </template>
   </section>
 </template>

@@ -577,6 +577,125 @@ h2 {
   background: #faf7f0;
 }
 
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.budget-card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  border: 1px solid #9eb2a5;
+  border-radius: 4px;
+  background: #f0f5f1;
+}
+
+.budget-card.exceeded {
+  border-color: #9b3a32;
+  color: #7c241e;
+  background: #fff0ed;
+}
+
+.allocation-warning-list,
+.allocation-approval-list,
+.allocation-issue-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.allocation-warning-list {
+  color: #695f52;
+}
+
+.allocation-approval-list,
+.approval-message {
+  color: #805415;
+}
+
+.allocation-table-wrap {
+  overflow-x: auto;
+}
+
+.allocation-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.allocation-table th,
+.allocation-table td {
+  padding: 0.65rem;
+  border-bottom: 1px solid #ded6c7;
+  text-align: left;
+  vertical-align: top;
+}
+
+.allocation-table tbody th {
+  min-width: 190px;
+}
+
+.allocation-table tbody th small,
+.allocation-row-status small,
+.interest-candidate small {
+  display: block;
+  margin-top: 0.3rem;
+}
+
+.allocation-table input[type="number"] {
+  width: 5.5rem;
+  min-height: 38px;
+  padding: 0.45rem;
+  border: 1px solid #8e8474;
+  border-radius: 4px;
+}
+
+.allocation-row-status {
+  min-width: 210px;
+}
+
+.interest-candidate-list {
+  display: grid;
+  gap: 0.6rem;
+  max-height: 30rem;
+  overflow-y: auto;
+}
+
+.interest-candidate {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.interest-candidate label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.interest-candidate input {
+  width: 5.5rem;
+  min-height: 38px;
+  padding: 0.45rem;
+}
+
+.interest-candidate.disabled {
+  opacity: 0.68;
+}
+
+.custom-interest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
 .custom-specialization-action {
   align-items: stretch;
   flex-wrap: wrap;
