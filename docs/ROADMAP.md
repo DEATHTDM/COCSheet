@@ -136,11 +136,25 @@ Status: Completed
 
 #### Phase 5C-2 — Requirement Selection
 
+Status: In Progress
+
+##### Phase 5C-2A — Catalog-backed Requirement Selection
+
+Status: Completed
+
+- era-compatible concrete catalog candidates for ordinary skills and predefined specializations
+- deterministic exact requirement auto-fill with draft-safe Store APIs
+- exact, specialization-of, one-of, one-branch, choice-pool, all-of, and any-skill interaction
+- incomplete and invalid intermediate draft persistence with Engine-backed whole-selection status
+- explicit unsupported-custom state without fabricated SkillRefs
+
+##### Phase 5C-2B — Custom Specializations & Replacement Target
+
 Status: Not Started
 
-- exact, specialization, and custom-specialization selection
-- one-of, one-branch, choice-pool, and all-of interaction
-- replacement target draft
+- custom specialization creation
+- named-custom specialization instantiation
+- Deprogrammer replacement target interaction
 
 #### Phase 5C-3 — Skill Point Allocation & Approvals
 

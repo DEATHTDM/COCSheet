@@ -13,6 +13,7 @@ import {
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import type { EraId } from "../coc7/types/occupation";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
+import SkillRequirementStep from "../components/creation/SkillRequirementStep.vue";
 import { getSettingPackOrThrow } from "../content/registry";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../creation/stores/creationStore";
@@ -510,19 +511,10 @@ async function reconcileSanity(): Promise<void> {
         :era-id="characterStore.current.data.eraId"
       />
 
-      <section v-else-if="currentStep === 'skills'" class="panel form-stack">
-        <div>
-          <p class="eyebrow">第 4 步</p>
-          <h2>技能</h2>
-        </div>
-        <p>
-          当前职业：<strong>{{ session.occupation?.definitionSnapshot.name.zh ?? "尚未选择" }}</strong>
-        </p>
-        <p>职业技能需求与点数分配将在 Phase 5C 的下一子阶段接入。</p>
-        <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">
-          返回职业
-        </button>
-      </section>
+      <SkillRequirementStep
+        v-else-if="currentStep === 'skills'"
+        :era-id="characterStore.current.data.eraId"
+      />
 
       <section v-else-if="currentStep === 'review'" class="panel">
         <h2>检查（尚未实现）</h2>

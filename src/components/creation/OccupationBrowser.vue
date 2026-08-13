@@ -138,6 +138,7 @@ async function selectOccupation(occupation: OccupationDefinition): Promise<void>
 async function goToSkills(): Promise<void> {
   if (!canContinue.value) return;
   try {
+    await creationStore.ensureDeterministicRequirementSelections();
     await creationStore.setCurrentStep("skills");
     errorMessage.value = "";
   } catch (error: unknown) {
@@ -355,7 +356,7 @@ async function goToSkills(): Promise<void> {
       <div>
         <strong>{{ selectedOccupationName ? `当前职业：${selectedOccupationName}` : "尚未选择职业" }}</strong>
         <p v-if="continueReason" class="warning-message">{{ continueReason }}</p>
-        <p v-else class="muted">下一步将进入技能流程；本阶段尚未接入需求选择与点数分配。</p>
+        <p v-else class="muted">下一步选择职业技能需求；点数分配将在后续阶段接入。</p>
       </div>
       <button class="button primary" type="button" :disabled="!canContinue" @click="goToSkills">
         继续：技能
