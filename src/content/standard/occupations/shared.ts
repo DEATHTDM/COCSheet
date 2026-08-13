@@ -1,5 +1,6 @@
 import type {
   AnySkillSelector,
+  ChoicePoolSkillSelector,
   ComposableSkillSelector,
   ExactSkillSelector,
   NamedCustomSpecializationSelector,
@@ -95,6 +96,15 @@ export const oneBranch = (
 ): OneBranchSkillSelector => ({
   type: "one-branch",
   branches,
+});
+
+export const choicePool = (
+  selectedBranches: ChoicePoolSkillSelector["selectedBranches"],
+  ...branches: ChoicePoolSkillSelector["branches"]
+): ChoicePoolSkillSelector => ({
+  type: "choice-pool",
+  branches,
+  selectedBranches,
 });
 
 export const anySkill = (...exclude: ComposableSkillSelector[]): AnySkillSelector => ({

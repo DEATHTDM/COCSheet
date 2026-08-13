@@ -94,6 +94,10 @@ Standard COC7 默认职业体系优先以 Keeper Rulebook 与 Investigator Handb
 
 `one-of` 中每个子 selector 在同一个 requirement 内最多满足一个已选 SkillRef；存在重叠时必须寻找可行的一对一分配。需要从同一专业化父类选多项时，使用 `specialization-of` 配合 cardinality 表达。`specialization-of.exclude` 只能引用同一父 SkillDefinition。
 
+`one-branch` 与 `choice-pool` 都只允许直接作为 `OccupationRequirement.selector`，不能嵌入 composable selectors。`one-branch` 从多个 exclusive atomic branches 中选择一个，完整 selection 必须由该 branch 单独接受并满足其 cardinality。`choice-pool` 从多个 atomic branches 中选择 `selectedBranches` 个 active branch；每个 SkillRef 恰好分配给一个 branch，每个 active branch 按自身 cardinality 消费 SkillRefs，inactive branch 不受 branch minimum 约束，同一 branch 内多个 refs 仍只计一个 selected branch。whole-selection assignment 使用 deterministic backtracking，不持久化可从 SkillRefs 推导出的 branch identity。
+
+这些 selector 保持闭合、声明式与针对真实来源压力的最小结构；不扩张为 generic SAT、arbitrary predicate 或内容 callback 系统。
+
 ### O007 — Occupation source variants
 
 只有 point formula、Credit Rating、确定性技能需求等规范化机械字段真正不同时才建立 `variantOf` source variant。仅 summary、guidance 或可统一为 broad free-pick + Keeper review 的措辞不同时，使用单一 canonical mechanics、多个 sourceRefs 与来源注释。
@@ -110,7 +114,7 @@ CreationSession 分配行持久化完整 `SkillRef`、职业点与兴趣点，�
 
 Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴趣点都可投入，最终值越出职业范围时需要显式 Keeper override，且 override 必须绑定当前职业身份。Keeper approval 使用带 reason 与 subject 的强类型记录，区分职业定义、Preset 职业政策、自定义职业、Credit Rating、Cthulhu Mythos 分配与模糊需求；模糊 requirement 的 subject 同时包含职业身份与 requirement ID。
 
-自定义职业的八项限制按需求最多可产生的职业技能数计算，不按 requirement 条目数计算。有限需求使用外层 `cardinality.max`；无法证明不超过八项的开放上限需求被拒绝，通用 Fighting / Firearms 专业化需求各按一项计数。
+自定义职业的八项限制按需求最多可产生的职业技能 category 数计算，不按 requirement 条目数计算。有限需求使用外层 `cardinality.max`；`one-branch` 取一个可选 branch 的最大容量，`choice-pool` 取最多可激活 branches 中最大的有限容量之和，并继续受外层 SkillRef max 约束。无法证明不超过八项的开放上限需求被拒绝，通用 Fighting / Firearms 专业化 branch 即使允许多个 refs 也各按一个职业技能 category 计数。
 
 ## Skills
 

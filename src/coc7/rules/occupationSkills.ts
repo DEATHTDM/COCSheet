@@ -129,6 +129,9 @@ export function matchesSkillSelector(ref: SkillRef, selector: SkillSelector): bo
     case "one-branch":
       // This is union eligibility for one ref only. Whole-selection branch exclusivity is checked below.
       return selector.branches.some((branch) => matchesSkillSelector(ref, branch.selector));
+    case "choice-pool":
+      // This is union eligibility for one ref only. Whole-selection branch assignment is checked below.
+      return selector.branches.some((branch) => matchesSkillSelector(ref, branch.selector));
     case "one-of":
       return selector.selectors.some((candidate) => matchesSkillSelector(ref, candidate));
     case "any-skill":
@@ -205,6 +208,42 @@ function canAssignOneBranch(
   );
 }
 
+export function canAssignChoicePool(
+  refs: readonly SkillRef[],
+  branches: Extract<SkillSelector, { type: "choice-pool" }>["branches"],
+  selectedBranches: SelectorCardinality,
+): boolean {
+  const counts = branches.map(() => 0);
+
+  function assign(index: number): boolean {
+    if (index === refs.length) {
+      const activeBranchIndexes = counts
+        .map((count, branchIndex) => ({ count, branchIndex }))
+        .filter(({ count }) => count > 0);
+      return cardinalityMatches(activeBranchIndexes.length, selectedBranches) &&
+        activeBranchIndexes.every(({ count, branchIndex }) => {
+          const branch = branches[branchIndex];
+          return branch !== undefined && cardinalityMatches(count, branch.cardinality);
+        });
+    }
+
+    const ref = refs[index];
+    if (!ref) return false;
+    for (let branchIndex = 0; branchIndex < branches.length; branchIndex += 1) {
+      const branch = branches[branchIndex];
+      if (!branch || !matchesSkillSelector(ref, branch.selector)) continue;
+      const maximum = branch.cardinality.max;
+      if (maximum !== undefined && (counts[branchIndex] ?? 0) >= maximum) continue;
+      counts[branchIndex] = (counts[branchIndex] ?? 0) + 1;
+      if (assign(index + 1)) return true;
+      counts[branchIndex] = (counts[branchIndex] ?? 1) - 1;
+    }
+    return false;
+  }
+
+  return assign(0);
+}
+
 export function validateOccupationRequirementSelection(
   requirement: OccupationRequirement,
   refs: readonly SkillRef[],
@@ -236,7 +275,13 @@ export function validateOccupationRequirementSelection(
       ? canAssignOneOf(refs, requirement.selector.selectors)
       : requirement.selector.type === "one-branch"
         ? canAssignOneBranch(refs, requirement.selector.branches)
-        : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
+        : requirement.selector.type === "choice-pool"
+          ? canAssignChoicePool(
+            refs,
+            requirement.selector.branches,
+            requirement.selector.selectedBranches,
+          )
+          : refs.every((ref) => matchesSkillSelector(ref, requirement.selector));
   if (!selectorMatches) {
     errors.push({
       code: "selector-mismatch",
@@ -278,6 +323,19 @@ export interface CustomOccupationSkillCapacityResult {
   readonly errors: readonly string[];
 }
 
+function calculateBranchSkillCapacity(
+  branch: Extract<SkillSelector, { type: "one-branch" | "choice-pool" }>["branches"][number],
+  outerMaximum: number | undefined,
+): number | undefined {
+  if (branch.cardinality.max !== undefined) return branch.cardinality.max;
+  if (branch.selector.type === "exact") return 1;
+  if (branch.selector.type === "specialization-of" &&
+    (branch.selector.definitionId === "fighting" || branch.selector.definitionId === "firearms")) {
+    return 1;
+  }
+  return outerMaximum;
+}
+
 export function calculateCustomOccupationSkillCapacity(
   occupation: OccupationDefinition,
 ): CustomOccupationSkillCapacityResult {
@@ -286,15 +344,8 @@ export function calculateCustomOccupationSkillCapacity(
   const errors: string[] = [];
   for (const requirement of occupation.skillRequirements) {
     if (requirement.selector.type === "one-branch") {
-      const branchCapacities = requirement.selector.branches.map((branch) => {
-        if (branch.cardinality.max !== undefined) return branch.cardinality.max;
-        if (branch.selector.type === "exact") return 1;
-        if (branch.selector.type === "specialization-of" &&
-          (branch.selector.definitionId === "fighting" || branch.selector.definitionId === "firearms")) {
-          return 1;
-        }
-        return requirement.cardinality.max;
-      });
+      const branchCapacities = requirement.selector.branches.map((branch) =>
+        calculateBranchSkillCapacity(branch, requirement.cardinality.max));
       if (branchCapacities.some((capacity) => capacity === undefined)) {
         hasUnboundedRequirement = true;
         errors.push(`自定义职业需求 ${requirement.id} 的 one-branch 无法证明有限容量`);
@@ -304,6 +355,26 @@ export function calculateCustomOccupationSkillCapacity(
       maximumSkills += requirement.cardinality.max === undefined
         ? branchMaximum
         : Math.min(branchMaximum, requirement.cardinality.max);
+      continue;
+    }
+    if (requirement.selector.type === "choice-pool") {
+      const branchCapacities = requirement.selector.branches.map((branch) =>
+        calculateBranchSkillCapacity(branch, requirement.cardinality.max));
+      if (branchCapacities.some((capacity) => capacity === undefined)) {
+        hasUnboundedRequirement = true;
+        errors.push(`自定义职业需求 ${requirement.id} 的 choice-pool 无法证明有限容量`);
+        continue;
+      }
+      const maximumActiveBranches = requirement.selector.selectedBranches.max ??
+        requirement.selector.branches.length;
+      const poolMaximum = branchCapacities
+        .map((capacity) => capacity ?? 0)
+        .sort((left, right) => right - left)
+        .slice(0, maximumActiveBranches)
+        .reduce((sum, capacity) => sum + capacity, 0);
+      maximumSkills += requirement.cardinality.max === undefined
+        ? poolMaximum
+        : Math.min(poolMaximum, requirement.cardinality.max);
       continue;
     }
     if (requirement.cardinality.max !== undefined) {

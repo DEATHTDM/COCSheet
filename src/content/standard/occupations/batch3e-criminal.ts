@@ -2,11 +2,13 @@ import type { OccupationDefinition } from "../../../coc7/types/occupation";
 
 import {
   anySkill,
+  choicePool,
   defineOccupation,
   edu2Plus,
   edu4,
   exact,
   investigatorHandbook,
+  keeperRulebook,
   oneBranch,
   oneOf,
   personalOrEraGuidance,
@@ -25,6 +27,32 @@ const brawl = exact(predefined("fighting", "brawl"));
 const handgun = exact(predefined("firearms", "handgun"));
 
 export const batch3eCriminalOccupationDefinitions: readonly OccupationDefinition[] = [
+  defineOccupation(
+    "criminal-keeper-rulebook",
+    "罪犯",
+    "Criminal",
+    [keeperRulebook(40)],
+    { min: 5, max: 65 },
+    edu2Plus("DEX", "STR"),
+    [
+      requirement("social", socialSelector),
+      requirement("stealth", exact(standard("stealth"))),
+      requirement("psychology", exact(standard("psychology"))),
+      requirement("spot-hidden", exact(standard("spot-hidden"))),
+      requirement("criminal-specialties", choicePool(
+        { min: 4, max: 4 },
+        { selector: genericFighting, cardinality: { min: 1 } },
+        { selector: exact(standard("appraise")), cardinality: { min: 1, max: 1 } },
+        { selector: exact(standard("mechanical-repair")), cardinality: { min: 1, max: 1 } },
+        { selector: exact(standard("sleight-of-hand")), cardinality: { min: 1, max: 1 } },
+        { selector: exact(standard("disguise")), cardinality: { min: 1, max: 1 } },
+        { selector: genericFirearms, cardinality: { min: 1 } },
+        { selector: exact(standard("locksmith")), cardinality: { min: 1, max: 1 } },
+      ), 4, null),
+    ],
+    "criminal-underworld",
+    { variantOf: "criminal" },
+  ),
   defineOccupation(
     "criminal-assassin",
     "刺客",

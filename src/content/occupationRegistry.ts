@@ -68,6 +68,9 @@ function validateSelector(selector: SkillSelector, skills: SkillRegistry): void 
     case "one-branch":
       selector.branches.forEach((branch) => validateSelector(branch.selector, skills));
       return;
+    case "choice-pool":
+      selector.branches.forEach((branch) => validateSelector(branch.selector, skills));
+      return;
     case "one-of":
       selector.selectors.forEach((child) => validateSelector(child, skills));
       return;
@@ -109,6 +112,51 @@ function validateSelectorCardinality(
         throw new Error(`${branchContext} 的 cardinality 与外层 requirement 不相容`);
       }
     });
+    return;
+  }
+
+  if (selector.type === "choice-pool") {
+    const available = selector.branches.length;
+    if (selector.selectedBranches.min > available) {
+      throw new Error(`${context} 的 selectedBranches.min ${selector.selectedBranches.min} 超过 ${available} 个 branch`);
+    }
+    if (selector.selectedBranches.max !== undefined && selector.selectedBranches.max > available) {
+      throw new Error(`${context} 的 selectedBranches.max ${selector.selectedBranches.max} 超过 ${available} 个 branch`);
+    }
+    selector.branches.forEach((branch, index) => {
+      validateSelectorCardinality(
+        branch.selector,
+        branch.cardinality,
+        `${context}.choice-pool[${index}]`,
+      );
+    });
+
+    const minimumActiveBranches = selector.selectedBranches.min;
+    const minimumPossibleRefs = selector.branches
+      .map((branch) => branch.cardinality.min)
+      .sort((left, right) => left - right)
+      .slice(0, minimumActiveBranches)
+      .reduce((sum, minimum) => sum + minimum, 0);
+    if (cardinality.max !== undefined && cardinality.max < minimumPossibleRefs) {
+      throw new Error(
+        `${context} 的外层 max ${cardinality.max} 低于 choice-pool minimum possible refs ${minimumPossibleRefs}`,
+      );
+    }
+
+    const maximumActiveBranches = selector.selectedBranches.max ?? available;
+    const boundedBranchMaximums = selector.branches.map((branch) => branch.cardinality.max);
+    if (boundedBranchMaximums.every((maximum) => maximum !== undefined)) {
+      const maximumPossibleRefs = boundedBranchMaximums
+        .map((maximum) => maximum ?? 0)
+        .sort((left, right) => right - left)
+        .slice(0, maximumActiveBranches)
+        .reduce((sum, maximum) => sum + maximum, 0);
+      if (cardinality.min > maximumPossibleRefs) {
+        throw new Error(
+          `${context} 的外层 min ${cardinality.min} 超过 choice-pool maximum possible refs ${maximumPossibleRefs}`,
+        );
+      }
+    }
     return;
   }
 
@@ -158,6 +206,15 @@ function validateNestedSelectorStructure(selector: SkillSelector, context: strin
           branch.selector,
           branch.cardinality,
           `${context}.one-branch[${index}]`,
+        );
+      });
+      return;
+    case "choice-pool":
+      selector.branches.forEach((branch, index) => {
+        validateSelectorCardinality(
+          branch.selector,
+          branch.cardinality,
+          `${context}.choice-pool[${index}]`,
         );
       });
       return;

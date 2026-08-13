@@ -270,4 +270,44 @@ describe("OccupationRegistry", () => {
       }],
     }).success).toBe(false);
   });
+
+  it("注册 choice-pool 并拒绝 minimum possible refs 超过外层 max", () => {
+    const doctor = phase5aOccupationFixtures.find((occupation) => occupation.id === "doctor");
+    if (!doctor) throw new Error("缺少 doctor fixture");
+    const branch = (definitionId: string, min = 1, max: number | undefined = 1) => ({
+      selector: { type: "specialization-of" as const, definitionId },
+      cardinality: { min, ...(max === undefined ? {} : { max }) },
+    });
+    const valid = {
+      ...doctor,
+      id: "valid-choice-pool",
+      skillRequirements: [{
+        id: "choice-pool",
+        selector: {
+          type: "choice-pool" as const,
+          branches: [branch("fighting", 1, undefined), branch("firearms", 1, undefined)],
+          selectedBranches: { min: 1, max: 2 },
+        },
+        cardinality: { min: 1 },
+      }],
+    };
+    expect(() => createOccupationRegistry({ eras: ["modern"], occupations: [valid] }, skills))
+      .not.toThrow();
+
+    const impossible = {
+      ...doctor,
+      id: "impossible-choice-pool",
+      skillRequirements: [{
+        id: "choice-pool",
+        selector: {
+          type: "choice-pool" as const,
+          branches: [branch("science", 2, 2), branch("art-craft", 2, 2), branch("language-other", 2, 2)],
+          selectedBranches: { min: 3, max: 3 },
+        },
+        cardinality: { min: 3, max: 5 },
+      }],
+    };
+    expect(() => createOccupationRegistry({ eras: ["modern"], occupations: [impossible] }, skills))
+      .toThrow("minimum possible refs 6");
+  });
 });
