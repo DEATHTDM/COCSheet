@@ -30,6 +30,7 @@ import {
 } from "../../coc7/types/attribute";
 import type { Character } from "../../coc7/types/character";
 import { occupationDefinitionSchema, type OccupationDefinition } from "../../coc7/types/occupation";
+import { skillRefSchema, type SkillRef } from "../../coc7/types/skill";
 import type { SettingId } from "../../coc7/types/setting";
 import { getOccupationRegistry } from "../../content/occupationRegistry";
 import { getSettingPackOrThrow } from "../../content/registry";
@@ -51,6 +52,7 @@ import type {
   CreationStepId,
 } from "../types/creationSession";
 import { replaceOccupationSelection, resetOccupationAllocation } from "../rules/skillDraft";
+import { getDeterministicRequirementSelection } from "../rules/requirementSelection";
 import type { SkillCreationState } from "../types/skillCreation";
 
 function emptyAgeAdjustment(age: number): AgeAdjustmentState {
@@ -163,6 +165,66 @@ export const useCreationStore = defineStore("creation", () => {
 
   async function setSkillCreationState(skills: SkillCreationState): Promise<void> {
     await persist({ ...requireSession(), skills });
+  }
+
+  async function ensureDeterministicRequirementSelections(): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+
+    const existingRequirementIds = new Set(
+      session.skills.requirementSelections.map((selection) => selection.requirementId),
+    );
+    const additions = session.occupation.definitionSnapshot.skillRequirements.flatMap((requirement) => {
+      if (existingRequirementIds.has(requirement.id)) return [];
+      const ref = getDeterministicRequirementSelection(requirement);
+      return ref ? [{ requirementId: requirement.id, refs: [ref] }] : [];
+    });
+    if (additions.length === 0) return;
+
+    await persist({
+      ...session,
+      skills: {
+        ...session.skills,
+        requirementSelections: [...session.skills.requirementSelections, ...additions],
+      },
+    });
+  }
+
+  async function setRequirementSelection(
+    requirementId: string,
+    refs: readonly SkillRef[],
+  ): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    if (!session.occupation.definitionSnapshot.skillRequirements.some(
+      (requirement) => requirement.id === requirementId,
+    )) {
+      throw new Error("该职业不存在此技能需求");
+    }
+
+    const parsedRefs = skillRefSchema.array().parse(refs);
+    const requirementSelections = session.skills.requirementSelections
+      .filter((selection) => selection.requirementId !== requirementId);
+    const existingIndex = session.skills.requirementSelections.findIndex(
+      (selection) => selection.requirementId === requirementId,
+    );
+    if (parsedRefs.length > 0) {
+      const nextSelection = { requirementId, refs: parsedRefs };
+      if (existingIndex >= 0) {
+        requirementSelections.splice(existingIndex, 0, nextSelection);
+      } else {
+        requirementSelections.push(nextSelection);
+      }
+    }
+
+    await persist({
+      ...session,
+      skills: { ...session.skills, requirementSelections },
+    });
   }
 
   async function resetCurrentOccupationAllocation(): Promise<void> {
@@ -510,6 +572,8 @@ export const useCreationStore = defineStore("creation", () => {
     selectCatalogOccupation,
     selectCustomOccupation,
     setSkillCreationState,
+    ensureDeterministicRequirementSelections,
+    setRequirementSelection,
     resetCurrentOccupationAllocation,
     getSkillFinalizePlan,
     completeSkills,

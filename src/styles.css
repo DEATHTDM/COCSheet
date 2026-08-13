@@ -448,6 +448,117 @@ h2 {
   align-items: center;
 }
 
+.requirement-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.requirement-card h3,
+.requirement-card p,
+.requirement-actions p {
+  margin: 0;
+}
+
+.requirement-heading,
+.requirement-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.requirement-status {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid #7b6a52;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.requirement-status.complete {
+  border-color: #315649;
+  color: #315649;
+  background: #f0f5f1;
+}
+
+.requirement-status.incomplete {
+  color: #695f52;
+  background: #faf7f0;
+}
+
+.requirement-status.invalid {
+  border-color: #9b3a32;
+  color: #7c241e;
+  background: #fff0ed;
+}
+
+.fixed-requirement,
+.requirement-guidance {
+  padding: 0.75rem;
+  background: #faf7f0;
+}
+
+.selected-requirement-skills {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.selected-requirement-skills ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-requirement-skills li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #cfc6b3;
+  border-radius: 4px;
+  background: #fffdf8;
+}
+
+.selected-requirement-skills small {
+  display: block;
+}
+
+.requirement-search {
+  width: min(100%, 32rem);
+}
+
+.requirement-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.55rem;
+}
+
+.requirement-candidate {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.55rem;
+  align-items: center;
+  padding: 0.65rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+  cursor: pointer;
+}
+
+.requirement-candidate small {
+  grid-column: 2;
+  color: #8c2e2e;
+}
+
+.requirement-candidate.disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .compact-button {
   min-height: 34px;
   padding: 0.25rem 0.5rem;
@@ -631,7 +742,9 @@ h2 {
   .current-occupation-panel,
   .occupation-actions,
   .occupation-detail-heading,
-  .occupation-card-heading {
+  .occupation-card-heading,
+  .requirement-heading,
+  .requirement-actions {
     align-items: flex-start;
     flex-direction: column;
   }

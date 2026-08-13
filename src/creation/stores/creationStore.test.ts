@@ -128,6 +128,111 @@ describe("catalog occupation selection", () => {
   });
 });
 
+describe("requirement selection store API", () => {
+  it("自动补齐 deterministic exact 需求，重复调用保持相同结果", async () => {
+    const store = useCreationStore();
+    await store.start("standard");
+    await store.selectCatalogOccupation("accountant");
+
+    await store.ensureDeterministicRequirementSelections();
+    const first = store.current?.data.skills?.requirementSelections;
+    expect(first).toEqual(expect.arrayContaining([
+      { requirementId: "accounting", refs: [{ type: "standard", definitionId: "accounting" }] },
+      { requirementId: "law", refs: [{ type: "standard", definitionId: "law" }] },
+      { requirementId: "library-use", refs: [{ type: "standard", definitionId: "library-use" }] },
+      { requirementId: "listen", refs: [{ type: "standard", definitionId: "listen" }] },
+      { requirementId: "persuade", refs: [{ type: "standard", definitionId: "persuade" }] },
+      { requirementId: "spot-hidden", refs: [{ type: "standard", definitionId: "spot-hidden" }] },
+    ]));
+    expect(first).toHaveLength(6);
+
+    await store.ensureDeterministicRequirementSelections();
+    expect(store.current?.data.skills?.requirementSelections).toEqual(first);
+  });
+
+  it("不覆盖已有同 requirement draft，也不删除旧职业留下的 stale selection", async () => {
+    const store = useCreationStore();
+    await store.start("standard");
+    await store.selectCatalogOccupation("accountant");
+    await store.setSkillCreationState({
+      requirementSelections: [
+        { requirementId: "law", refs: [{ type: "standard", definitionId: "history" }] },
+        { requirementId: "old-occupation-slot", refs: [{ type: "standard", definitionId: "medicine" }] },
+      ],
+      allocations: [],
+      keeperApprovals: [],
+    });
+
+    await store.ensureDeterministicRequirementSelections();
+
+    expect(store.current?.data.skills?.requirementSelections).toEqual(expect.arrayContaining([
+      { requirementId: "law", refs: [{ type: "standard", definitionId: "history" }] },
+      { requirementId: "old-occupation-slot", refs: [{ type: "standard", definitionId: "medicine" }] },
+    ]));
+    expect(store.current?.data.skills?.requirementSelections.filter(
+      (selection) => selection.requirementId === "law",
+    )).toHaveLength(1);
+  });
+
+  it("upsert/remove 后可刷新恢复，并保持 allocations、approvals 与 replacement draft", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await store.selectCatalogOccupation("deprogrammer");
+    const preserved = {
+      allocations: [{
+        ref: { type: "standard" as const, definitionId: "history" },
+        occupationPoints: 20,
+        interestPoints: 10,
+      }],
+      keeperApprovals: [{
+        reason: "occupation-skill-replacement" as const,
+        subjectId: "deprogrammer:keeper-approved-hypnosis:history",
+        approved: true as const,
+      }],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "history",
+      },
+    };
+    await store.setSkillCreationState({ requirementSelections: [], ...preserved });
+
+    await store.setRequirementSelection("brawl-or-firearms", [{
+      type: "predefined",
+      definitionId: "firearms",
+      specializationId: "handgun",
+    }]);
+    expect(store.current?.data.skills).toMatchObject(preserved);
+    expect(store.current?.data.skills?.requirementSelections).toEqual([{
+      requirementId: "brawl-or-firearms",
+      refs: [{ type: "predefined", definitionId: "firearms", specializationId: "handgun" }],
+    }]);
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.skills?.requirementSelections).toEqual([{
+      requirementId: "brawl-or-firearms",
+      refs: [{ type: "predefined", definitionId: "firearms", specializationId: "handgun" }],
+    }]);
+    expect(restored.current?.data.skills).toMatchObject(preserved);
+
+    await restored.setRequirementSelection("brawl-or-firearms", []);
+    expect(restored.current?.data.skills?.requirementSelections).toEqual([]);
+    expect(restored.current?.data.skills).toMatchObject(preserved);
+  });
+
+  it("拒绝非当前职业 requirementId", async () => {
+    const store = useCreationStore();
+    await store.start("standard");
+    await store.selectCatalogOccupation("accountant");
+
+    await expect(store.setRequirementSelection("old-occupation-slot", [{
+      type: "standard",
+      definitionId: "history",
+    }])).rejects.toThrow("该职业不存在此技能需求");
+  });
+});
+
 describe("完成前语义校验", () => {
   it("拒绝被篡改的 EDU 历史与 rolled Luck", async () => {
     const store = useCreationStore();
