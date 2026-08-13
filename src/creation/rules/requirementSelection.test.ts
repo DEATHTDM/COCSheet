@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { validateOccupationRequirementSelection } from "../../coc7/rules/occupationSkills";
+import {
+  instantiateNamedCustomSpecialization,
+  matchesSkillSelector,
+  validateOccupationRequirementSelection,
+} from "../../coc7/rules/occupationSkills";
 import { getSkillRefKey } from "../../coc7/rules/skills";
 import type { OccupationRequirement } from "../../coc7/types/occupation";
 import type { SkillRef } from "../../coc7/types/skill";
 import { getOccupationRegistry } from "../../content/occupationRegistry";
 import { getStandardSkillCatalog } from "../../content/skillRegistry";
+import type { SkillCreationState } from "../types/skillCreation";
 import {
+  getActiveOccupationSkillReplacement,
   getDeterministicRequirementSelection,
   listConcreteSkillRefs,
   listRequirementCandidates,
+  listRequirementCustomOptions,
 } from "./requirementSelection";
 
 const skills = getStandardSkillCatalog();
@@ -89,6 +96,103 @@ describe("catalog-backed requirement selection", () => {
       definitionId: "accounting",
     });
     expect(getDeterministicRequirementSelection(choice)).toBeUndefined();
+  });
+
+  it("枚举开放、固定名称与 any-skill custom 路径，并按时代、exclude 与 definition 去重", () => {
+    expect(listRequirementCustomOptions(
+      requirement("antiquarian", "other-language"),
+      skills,
+      "classic-1920s",
+    )).toEqual([{ kind: "open", definitionId: "language-other" }]);
+
+    const languageOptions = listRequirementCustomOptions(
+      requirement("white-collar-worker-clerk-executive", "language"),
+      skills,
+      "modern",
+    );
+    expect(languageOptions).toEqual([
+      { kind: "open", definitionId: "language-own" },
+      { kind: "open", definitionId: "language-other" },
+    ]);
+
+    const namedRequirement = requirement("engineer", "technical-drawing");
+    const namedOptions = listRequirementCustomOptions(namedRequirement, skills, "modern");
+    expect(namedOptions).toEqual([{
+      kind: "named",
+      definitionId: "art-craft",
+      name: { zh: "技术制图", en: "Technical Drawing" },
+    }]);
+    const named = namedOptions[0];
+    if (!named || named.kind !== "named") throw new Error("缺少 production named custom option");
+    const instantiated = instantiateNamedCustomSpecialization(
+      { type: "named-custom-specialization", definitionId: named.definitionId, name: named.name },
+      "00000000-0000-4000-8000-000000000001",
+      named.name.zh,
+    );
+    expect(matchesSkillSelector(instantiated, namedRequirement.selector)).toBe(true);
+
+    const anyOptions = listRequirementCustomOptions(
+      requirement("white-collar-worker-clerk-executive", "personal-or-era"),
+      skills,
+      "modern",
+    );
+    const anyDefinitionIds = anyOptions.map(({ definitionId }) => definitionId);
+    expect(anyDefinitionIds).toEqual(expect.arrayContaining([
+      "art-craft",
+      "language-own",
+      "language-other",
+      "lore",
+      "pilot",
+      "science",
+      "survival",
+    ]));
+    expect(anyDefinitionIds).not.toContain("fighting");
+    expect(anyDefinitionIds).not.toContain("firearms");
+    expect(new Set(anyDefinitionIds).size).toBe(anyDefinitionIds.length);
+
+    const excluded: OccupationRequirement = {
+      id: "no-art-craft-custom",
+      selector: {
+        type: "any-skill",
+        exclude: [{ type: "specialization-of", definitionId: "art-craft" }],
+      },
+      cardinality: { min: 1, max: 1 },
+    };
+    expect(listRequirementCustomOptions(excluded, skills, "modern")
+      .map(({ definitionId }) => definitionId)).not.toContain("art-craft");
+  });
+
+  it("只把匹配当前 definition 且没有普通 target selection 的 replacement draft 视为 active", () => {
+    const definition = occupations.get("deprogrammer");
+    if (!definition) throw new Error("缺少 Deprogrammer production definition");
+    const baseState: SkillCreationState = {
+      requirementSelections: [],
+      allocations: [],
+      keeperApprovals: [],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "history",
+      },
+    };
+
+    expect(getActiveOccupationSkillReplacement(definition, baseState)).toMatchObject({
+      targetRequirementId: "history",
+      replacementRef: { type: "standard", definitionId: "hypnosis" },
+    });
+    expect(getActiveOccupationSkillReplacement(definition, {
+      ...baseState,
+      requirementSelections: [{
+        requirementId: "history",
+        refs: [{ type: "standard", definitionId: "history" }],
+      }],
+    })).toBeUndefined();
+    expect(getActiveOccupationSkillReplacement(definition, {
+      ...baseState,
+      occupationSkillReplacement: {
+        policyId: "old-policy",
+        targetRequirementId: "history",
+      },
+    })).toBeUndefined();
   });
 });
 

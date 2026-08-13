@@ -358,6 +358,225 @@ describe("requirement selection store API", () => {
       definitionId: "history",
     }])).rejects.toThrow("该职业不存在此技能需求");
   });
+
+  it("创建并刷新恢复 Antiquarian Other Language custom，且 outer 1/1 会替换旧 selection", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "classic-1920s");
+    await store.selectCatalogOccupation("antiquarian");
+
+    await store.createCustomRequirementSpecialization(
+      "other-language",
+      "language-other",
+      "  西班牙语  ",
+    );
+    const first = store.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "other-language",
+    )?.refs[0];
+    expect(first).toMatchObject({
+      type: "custom",
+      definitionId: "language-other",
+      displayName: "西班牙语",
+    });
+    expect(first?.type === "custom" ? first.specializationId : undefined)
+      .toMatch(/^[0-9a-f-]{36}$/i);
+
+    await store.createCustomRequirementSpecialization(
+      "other-language",
+      "language-other",
+      "法语",
+    );
+    const second = store.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "other-language",
+    )?.refs;
+    expect(second).toHaveLength(1);
+    expect(second?.[0]).toMatchObject({
+      type: "custom",
+      definitionId: "language-other",
+      displayName: "法语",
+    });
+    expect(second?.[0]?.type === "custom" ? second[0].specializationId : undefined)
+      .not.toBe(first?.type === "custom" ? first.specializationId : undefined);
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "other-language",
+    )?.refs).toEqual(second);
+  });
+
+  it("Clerk / Executive 可在 Own / Other custom 间切换，且 Language Own 不能绕过单实例限制", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("white-collar-worker-clerk-executive");
+
+    await store.createCustomRequirementSpecialization("language", "language-own", "中文");
+    await expect(store.createCustomRequirementSpecialization(
+      "personal-or-era",
+      "language-own",
+      "粤语",
+    )).rejects.toThrow("母语只允许一个专业化实例");
+
+    await store.createCustomRequirementSpecialization("language", "language-other", "英语");
+    expect(store.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "language",
+    )?.refs).toEqual([expect.objectContaining({
+      type: "custom",
+      definitionId: "language-other",
+      displayName: "英语",
+    })]);
+  });
+
+  it("Language Other 在允许多个的 any-skill 2/2 中可创建多个不同 UUID 实例", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("white-collar-worker-clerk-executive");
+
+    await store.createCustomRequirementSpecialization("personal-or-era", "language-other", "西班牙语");
+    await store.createCustomRequirementSpecialization("personal-or-era", "language-other", "法语");
+    const refs = store.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "personal-or-era",
+    )?.refs;
+    expect(refs).toHaveLength(2);
+    expect(refs?.map((ref) => ref.type === "custom" ? ref.specializationId : undefined))
+      .toHaveLength(new Set(refs?.map((ref) => ref.type === "custom" ? ref.specializationId : undefined)).size);
+  });
+
+  it("production named-custom 使用固定中文名称且任意名称不能满足 selector", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("engineer");
+
+    await expect(store.createCustomRequirementSpecialization(
+      "technical-drawing",
+      "art-craft",
+      "随意名称",
+    )).rejects.toThrow("不符合当前职业技能需求");
+    await store.createCustomRequirementSpecialization(
+      "technical-drawing",
+      "art-craft",
+      "Technical Drawing",
+    );
+    expect(store.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "technical-drawing",
+    )?.refs).toEqual([expect.objectContaining({
+      type: "custom",
+      definitionId: "art-craft",
+      displayName: "技术制图",
+    })]);
+  });
+
+  it("真实 any-skill 2/2 可混合 Art/Craft custom 与 concrete ref", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("white-collar-worker-clerk-executive");
+    await store.setRequirementSelection("personal-or-era", [{
+      type: "standard",
+      definitionId: "history",
+    }]);
+    await store.createCustomRequirementSpecialization("personal-or-era", "art-craft", "陶艺");
+    expect(store.current?.data.skills?.requirementSelections.find(
+      ({ requirementId }) => requirementId === "personal-or-era",
+    )?.refs).toEqual(expect.arrayContaining([
+      { type: "standard", definitionId: "history" },
+      expect.objectContaining({ type: "custom", definitionId: "art-craft", displayName: "陶艺" }),
+    ]));
+  });
+
+  it("Deprogrammer replacement target 切换/取消会恢复 deterministic selection 且非 deterministic 不猜测", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("deprogrammer");
+    await store.ensureDeterministicRequirementSelections();
+    await store.setRequirementSelection("brawl-or-firearms", [{
+      type: "predefined",
+      definitionId: "firearms",
+      specializationId: "handgun",
+    }]);
+
+    await store.setOccupationSkillReplacementTarget("history");
+    expect(store.current?.data.skills?.requirementSelections.map(({ requirementId }) => requirementId))
+      .not.toContain("history");
+    expect(store.current?.data.skills?.occupationSkillReplacement?.targetRequirementId).toBe("history");
+    await expect(store.setRequirementSelection("history", [{
+      type: "standard",
+      definitionId: "history",
+    }])).rejects.toThrow("已被替换的职业技能需求不能保存普通 selection");
+
+    await store.setOccupationSkillReplacementTarget("drive-auto");
+    expect(store.current?.data.skills?.requirementSelections).toEqual(expect.arrayContaining([{
+      requirementId: "history",
+      refs: [{ type: "standard", definitionId: "history" }],
+    }]));
+    expect(store.current?.data.skills?.requirementSelections.map(({ requirementId }) => requirementId))
+      .not.toContain("drive-auto");
+
+    await store.setOccupationSkillReplacementTarget("brawl-or-firearms");
+    expect(store.current?.data.skills?.requirementSelections).toEqual(expect.arrayContaining([{
+      requirementId: "drive-auto",
+      refs: [{ type: "standard", definitionId: "drive-auto" }],
+    }]));
+    expect(store.current?.data.skills?.requirementSelections.map(({ requirementId }) => requirementId))
+      .not.toContain("brawl-or-firearms");
+
+    await store.setOccupationSkillReplacementTarget(undefined);
+    expect(store.current?.data.skills?.occupationSkillReplacement).toBeUndefined();
+    expect(store.current?.data.skills?.requirementSelections.map(({ requirementId }) => requirementId))
+      .not.toContain("brawl-or-firearms");
+  });
+
+  it("replacement target 变化精确失效当前 occupation/policy approvals，同 target 为 no-op", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "modern");
+    await store.selectCatalogOccupation("deprogrammer");
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [],
+      occupationSkillReplacement: {
+        policyId: "keeper-approved-hypnosis",
+        targetRequirementId: "history",
+      },
+      keeperApprovals: [
+        {
+          reason: "occupation-skill-replacement",
+          subjectId: "occupation:deprogrammer:replacement:keeper-approved-hypnosis:target:history",
+          approved: true,
+        },
+        {
+          reason: "occupation-skill-replacement",
+          subjectId: "occupation:other:replacement:keeper-approved-hypnosis:target:history",
+          approved: true,
+        },
+        { reason: "occupation-definition", subjectId: "deprogrammer", approved: true },
+      ],
+    });
+    const updateSpy = vi.spyOn(creationSessionRepository, "update");
+
+    await store.setOccupationSkillReplacementTarget("history");
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(store.current?.data.skills?.keeperApprovals).toHaveLength(3);
+
+    await store.setOccupationSkillReplacementTarget("drive-auto");
+    expect(store.current?.data.skills?.keeperApprovals).toEqual([
+      {
+        reason: "occupation-skill-replacement",
+        subjectId: "occupation:other:replacement:keeper-approved-hypnosis:target:history",
+        approved: true,
+      },
+      { reason: "occupation-definition", subjectId: "deprogrammer", approved: true },
+    ]);
+    await store.setOccupationSkillReplacementTarget("history");
+    expect(store.current?.data.skills?.keeperApprovals).not.toContainEqual(expect.objectContaining({
+      subjectId: "occupation:deprogrammer:replacement:keeper-approved-hypnosis:target:history",
+    }));
+  });
 });
 
 describe("完成前语义校验", () => {

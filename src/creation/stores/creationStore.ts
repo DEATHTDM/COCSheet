@@ -18,6 +18,9 @@ import { systemRandomSource, type RandomSource } from "../../coc7/rules/random";
 import { clampSanityToMaximum, deriveStandardCharacterValues } from "../../coc7/rules/derived";
 import {
   finalizeSkillAllocation,
+  instantiateNamedCustomSpecialization,
+  matchesSkillSelector,
+  occupationSkillReplacementApprovalSubject,
   validateCustomOccupationDefinition,
   type FinalizeSkillAllocationResult,
 } from "../../coc7/rules/occupationSkills";
@@ -29,12 +32,18 @@ import {
   type PartialCharacteristicValues,
 } from "../../coc7/types/attribute";
 import type { Character } from "../../coc7/types/character";
-import { occupationDefinitionSchema, type OccupationDefinition } from "../../coc7/types/occupation";
+import {
+  occupationDefinitionSchema,
+  type NamedCustomSpecializationSelector,
+  type OccupationDefinition,
+  type SkillSelector,
+} from "../../coc7/types/occupation";
 import { skillRefSchema, type SkillRef } from "../../coc7/types/skill";
 import type { SettingId } from "../../coc7/types/setting";
 import { getOccupationRegistry } from "../../content/occupationRegistry";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
+import { characterRepository } from "../../db/repositories/characterRepository";
 import { creationSessionRepository } from "../../db/repositories/creationSessionRepository";
 import { creationWorkflowRepository } from "../../db/repositories/creationWorkflowRepository";
 import type { CharacterRecord, CreationSessionRecord } from "../../db/records";
@@ -52,7 +61,11 @@ import type {
   CreationStepId,
 } from "../types/creationSession";
 import { replaceOccupationSelection, resetOccupationAllocation } from "../rules/skillDraft";
-import { getDeterministicRequirementSelection } from "../rules/requirementSelection";
+import {
+  getActiveOccupationSkillReplacement,
+  getDeterministicRequirementSelection,
+  listRequirementCustomOptions,
+} from "../rules/requirementSelection";
 import type { SkillCreationState } from "../types/skillCreation";
 
 function emptyAgeAdjustment(age: number): AgeAdjustmentState {
@@ -78,6 +91,45 @@ function makeGeneration(
 
 function baseFromGeneration(generation: AttributeGenerationState): CharacteristicValues | undefined {
   return generation.baseCharacteristics;
+}
+
+function listNamedCustomSelectors(
+  selector: SkillSelector,
+): readonly NamedCustomSpecializationSelector[] {
+  switch (selector.type) {
+    case "named-custom-specialization":
+      return [selector];
+    case "one-of":
+      return selector.selectors.flatMap(listNamedCustomSelectors);
+    case "all-of":
+      return selector.groups.flatMap((group) => listNamedCustomSelectors(group.selector));
+    case "one-branch":
+    case "choice-pool":
+      return selector.branches.flatMap((branch) => listNamedCustomSelectors(branch.selector));
+    case "exact":
+    case "specialization-of":
+    case "any-skill":
+      return [];
+  }
+}
+
+function addDeterministicRequirementSelections(
+  definition: OccupationDefinition,
+  state: SkillCreationState,
+): SkillCreationState {
+  const activeReplacement = getActiveOccupationSkillReplacement(definition, state);
+  const existingRequirementIds = new Set(
+    state.requirementSelections.map((selection) => selection.requirementId),
+  );
+  const additions = definition.skillRequirements.flatMap((requirement) => {
+    if (requirement.id === activeReplacement?.targetRequirementId ||
+      existingRequirementIds.has(requirement.id)) return [];
+    const ref = getDeterministicRequirementSelection(requirement);
+    return ref ? [{ requirementId: requirement.id, refs: [ref] }] : [];
+  });
+  return additions.length === 0
+    ? state
+    : { ...state, requirementSelections: [...state.requirementSelections, ...additions] };
 }
 
 export const useCreationStore = defineStore("creation", () => {
@@ -173,36 +225,15 @@ export const useCreationStore = defineStore("creation", () => {
       throw new Error("职业或技能创建状态尚未初始化");
     }
 
-    const definition = session.occupation.definitionSnapshot;
-    const replacementDraft = session.skills.occupationSkillReplacement;
-    const replacementPolicy = definition.skillReplacement;
-    const currentRequirementIds = new Set(
-      definition.skillRequirements.map((requirement) => requirement.id),
+    const nextSkills = addDeterministicRequirementSelections(
+      session.occupation.definitionSnapshot,
+      session.skills,
     );
-    const activeReplacementTargetRequirementId = replacementDraft &&
-      replacementPolicy &&
-      replacementDraft.policyId === replacementPolicy.id &&
-      replacementPolicy.targetRequirementIds.includes(replacementDraft.targetRequirementId) &&
-      currentRequirementIds.has(replacementDraft.targetRequirementId)
-      ? replacementDraft.targetRequirementId
-      : undefined;
-    const existingRequirementIds = new Set(
-      session.skills.requirementSelections.map((selection) => selection.requirementId),
-    );
-    const additions = definition.skillRequirements.flatMap((requirement) => {
-      if (requirement.id === activeReplacementTargetRequirementId ||
-        existingRequirementIds.has(requirement.id)) return [];
-      const ref = getDeterministicRequirementSelection(requirement);
-      return ref ? [{ requirementId: requirement.id, refs: [ref] }] : [];
-    });
-    if (additions.length === 0) return;
+    if (nextSkills === session.skills) return;
 
     await persist({
       ...session,
-      skills: {
-        ...session.skills,
-        requirementSelections: [...session.skills.requirementSelections, ...additions],
-      },
+      skills: nextSkills,
     });
   }
 
@@ -218,6 +249,12 @@ export const useCreationStore = defineStore("creation", () => {
       (requirement) => requirement.id === requirementId,
     )) {
       throw new Error("该职业不存在此技能需求");
+    }
+    if (refs.length > 0 && getActiveOccupationSkillReplacement(
+      session.occupation.definitionSnapshot,
+      session.skills,
+    )?.targetRequirementId === requirementId) {
+      throw new Error("已被替换的职业技能需求不能保存普通 selection");
     }
 
     const parsedRefs = skillRefSchema.array().parse(refs);
@@ -239,6 +276,157 @@ export const useCreationStore = defineStore("creation", () => {
       ...session,
       skills: { ...session.skills, requirementSelections },
     });
+  }
+
+  async function createCustomRequirementSpecialization(
+    requirementId: string,
+    definitionId: string,
+    displayName: string,
+  ): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const requirement = session.occupation.definitionSnapshot.skillRequirements
+      .find((candidate) => candidate.id === requirementId);
+    if (!requirement) throw new Error("该职业不存在此技能需求");
+
+    const skillRegistry = getSkillRegistry(session.settingId);
+    const definition = skillRegistry.get(definitionId);
+    if (!definition) throw new Error(`找不到技能定义：${definitionId}`);
+    if (definition.specialization.type !== "required") {
+      throw new Error("该技能不使用专业化实例");
+    }
+    if (!definition.specialization.allowCustom) {
+      throw new Error("该技能不允许自定义专业化");
+    }
+    const trimmedName = displayName.trim();
+    if (!trimmedName) throw new Error("自定义专业化名称不能为空");
+
+    const character = await characterRepository.getById(session.characterId);
+    if (!character) throw new Error("找不到当前调查员");
+    if ((getSettingPackOrThrow(session.settingId).eras?.length ?? 0) > 0 && !character.data.eraId) {
+      throw new Error("请先选择建卡时代");
+    }
+    if (character.data.eraId) {
+      const customOptions = listRequirementCustomOptions(
+        requirement,
+        skillRegistry.definitions,
+        character.data.eraId,
+      );
+      if (!customOptions.some((option) => option.definitionId === definition.id)) {
+        throw new Error("该技能在当前时代或当前职业需求中不可创建");
+      }
+    }
+    if (!definition.specialization.allowMultiple) {
+      const requirements = new Map(
+        session.occupation.definitionSnapshot.skillRequirements.map((candidate) => [candidate.id, candidate]),
+      );
+      const alreadySelected = session.skills.requirementSelections.some((selection) => {
+        const currentRequirement = requirements.get(selection.requirementId);
+        return currentRequirement !== undefined && selection.refs.some((ref) =>
+          ref.definitionId === definition.id &&
+          matchesSkillSelector(ref, currentRequirement.selector),
+        );
+      });
+      if (alreadySelected) {
+        throw new Error(`${definition.name.zh}只允许一个专业化实例`);
+      }
+    }
+
+    const specializationId = crypto.randomUUID();
+    const namedSelector = listNamedCustomSelectors(requirement.selector).find((selector) => {
+      if (selector.definitionId !== definition.id) return false;
+      const candidate = instantiateNamedCustomSpecialization(
+        selector,
+        specializationId,
+        trimmedName,
+      );
+      return matchesSkillSelector(candidate, selector);
+    });
+    const ref = namedSelector
+      ? instantiateNamedCustomSpecialization(namedSelector, specializationId, namedSelector.name.zh)
+      : skillRefSchema.parse({
+        type: "custom",
+        definitionId: definition.id,
+        specializationId,
+        displayName: trimmedName,
+      });
+    if (!matchesSkillSelector(ref, requirement.selector)) {
+      throw new Error("该自定义专业化不符合当前职业技能需求");
+    }
+
+    const currentRefs = session.skills.requirementSelections
+      .find((selection) => selection.requirementId === requirementId)?.refs ?? [];
+    const maximum = requirement.cardinality.max;
+    if (maximum !== undefined && maximum !== 1 && currentRefs.length >= maximum) {
+      throw new Error("该职业技能需求已达到选择上限");
+    }
+    await setRequirementSelection(
+      requirementId,
+      maximum === 1 ? [ref] : [...currentRefs, ref],
+    );
+  }
+
+  async function setOccupationSkillReplacementTarget(
+    targetRequirementId: string | undefined,
+  ): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const definition = session.occupation.definitionSnapshot;
+    const policy = definition.skillReplacement;
+    if (!policy) throw new Error("当前职业没有技能 replacement policy");
+    if (targetRequirementId !== undefined) {
+      if (!policy.targetRequirementIds.includes(targetRequirementId)) {
+        throw new Error("该需求不是当前 replacement policy 的合法目标");
+      }
+      if (!definition.skillRequirements.some((requirement) => requirement.id === targetRequirementId)) {
+        throw new Error("当前职业不存在此 replacement target");
+      }
+    }
+
+    const currentDraft = session.skills.occupationSkillReplacement;
+    if (targetRequirementId === undefined && currentDraft === undefined) return;
+    if (targetRequirementId !== undefined &&
+      currentDraft?.policyId === policy.id &&
+      currentDraft.targetRequirementId === targetRequirementId) return;
+
+    const validApprovalSubjects = new Set(policy.targetRequirementIds.map((requirementId) =>
+      occupationSkillReplacementApprovalSubject(
+        session.occupation!.selectedOccupationId,
+        policy.id,
+        requirementId,
+      ),
+    ));
+    const keeperApprovals = session.skills.keeperApprovals.filter((approval) =>
+      approval.reason !== "occupation-skill-replacement" ||
+      approval.subjectId === undefined ||
+      !validApprovalSubjects.has(approval.subjectId),
+    );
+    const requirementSelections = targetRequirementId === undefined
+      ? session.skills.requirementSelections
+      : session.skills.requirementSelections.filter(
+        (selection) => selection.requirementId !== targetRequirementId,
+      );
+    const {
+      occupationSkillReplacement: _previousReplacement,
+      ...skillsWithoutReplacement
+    } = session.skills;
+    let nextSkills: SkillCreationState = {
+      ...skillsWithoutReplacement,
+      requirementSelections,
+      keeperApprovals,
+      ...(targetRequirementId !== undefined ? {
+        occupationSkillReplacement: {
+          policyId: policy.id,
+          targetRequirementId,
+        },
+      } : {}),
+    };
+    nextSkills = addDeterministicRequirementSelections(definition, nextSkills);
+    await persist({ ...session, skills: nextSkills });
   }
 
   async function resetCurrentOccupationAllocation(): Promise<void> {
@@ -588,6 +776,8 @@ export const useCreationStore = defineStore("creation", () => {
     setSkillCreationState,
     ensureDeterministicRequirementSelections,
     setRequirementSelection,
+    createCustomRequirementSpecialization,
+    setOccupationSkillReplacementTarget,
     resetCurrentOccupationAllocation,
     getSkillFinalizePlan,
     completeSkills,

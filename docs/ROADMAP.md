@@ -136,7 +136,7 @@ Status: Completed
 
 #### Phase 5C-2 — Requirement Selection
 
-Status: In Progress
+Status: Completed
 
 ##### Phase 5C-2A — Catalog-backed Requirement Selection
 
@@ -150,11 +150,13 @@ Status: Completed
 
 ##### Phase 5C-2B — Custom Specializations & Replacement Target
 
-Status: Not Started
+Status: Completed
 
 - custom specialization creation
 - named-custom specialization instantiation
+- any-skill custom specialization path
 - Deprogrammer replacement target interaction
+- deterministic requirement restoration and replacement approval invalidation
 
 #### Phase 5C-3 — Skill Point Allocation & Approvals
 
