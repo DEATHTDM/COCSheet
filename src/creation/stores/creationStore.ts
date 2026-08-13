@@ -16,6 +16,7 @@ import {
 import { rollLuck, validateRolledLuck } from "../../coc7/rules/luck";
 import { systemRandomSource, type RandomSource } from "../../coc7/rules/random";
 import { clampSanityToMaximum, deriveStandardCharacterValues } from "../../coc7/rules/derived";
+import { isSkillAvailableInEra } from "../../coc7/rules/availability";
 import {
   finalizeSkillAllocation,
   instantiateNamedCustomSpecialization,
@@ -24,6 +25,7 @@ import {
   validateCustomOccupationDefinition,
   type FinalizeSkillAllocationResult,
 } from "../../coc7/rules/occupationSkills";
+import { getSkillRefKey } from "../../coc7/rules/skills";
 import {
   characteristicValueSchema,
   characteristicValuesSchema,
@@ -66,7 +68,11 @@ import {
   getDeterministicRequirementSelection,
   listRequirementCustomOptions,
 } from "../rules/requirementSelection";
-import type { SkillCreationState } from "../types/skillCreation";
+import { listOccupationAllocationRefs } from "../rules/skillAllocationPresentation";
+import {
+  skillAllocationSchema,
+  type SkillCreationState,
+} from "../types/skillCreation";
 
 function emptyAgeAdjustment(age: number): AgeAdjustmentState {
   return { age, reductionAllocation: {}, eduImprovements: [] };
@@ -136,6 +142,7 @@ export const useCreationStore = defineStore("creation", () => {
   const creating = ref(false);
   const current = ref<CreationSessionRecord>();
   const randomSource = ref<RandomSource>(systemRandomSource);
+  let skillAllocationWriteQueue: Promise<void> = Promise.resolve();
 
   const config = computed(() => resolveAttributeGenerationConfig(current.value?.data.presetSnapshot));
 
@@ -148,6 +155,12 @@ export const useCreationStore = defineStore("creation", () => {
     const record = await creationSessionRepository.update(session);
     current.value = record;
     return record;
+  }
+
+  function enqueueSkillAllocationWrite(mutation: () => Promise<void>): Promise<void> {
+    const pending = skillAllocationWriteQueue.then(mutation);
+    skillAllocationWriteQueue = pending.catch(() => undefined);
+    return pending;
   }
 
   async function start(settingId: SettingId, preset?: CreationPreset): Promise<string> {
@@ -217,6 +230,132 @@ export const useCreationStore = defineStore("creation", () => {
 
   async function setSkillCreationState(skills: SkillCreationState): Promise<void> {
     await persist({ ...requireSession(), skills });
+  }
+
+  async function setSkillAllocation(
+    ref: SkillRef,
+    occupationPoints: number,
+    interestPoints: number,
+  ): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const allocation = skillAllocationSchema.parse({
+      ref: skillRefSchema.parse(ref),
+      occupationPoints,
+      interestPoints,
+    });
+    const key = getSkillRefKey(allocation.ref);
+    const allocations = session.skills.allocations.filter(
+      (current) => getSkillRefKey(current.ref) !== key,
+    );
+    const existingIndex = session.skills.allocations.findIndex(
+      (current) => getSkillRefKey(current.ref) === key,
+    );
+    if (allocation.occupationPoints !== 0 || allocation.interestPoints !== 0) {
+      if (existingIndex >= 0) allocations.splice(existingIndex, 0, allocation);
+      else allocations.push(allocation);
+    }
+    await persist({
+      ...session,
+      skills: { ...session.skills, allocations },
+    });
+  }
+
+  async function setSkillAllocationPoint(
+    ref: SkillRef,
+    field: "occupationPoints" | "interestPoints",
+    value: number,
+  ): Promise<void> {
+    await enqueueSkillAllocationWrite(async () => {
+      if (!Number.isInteger(value) || value < 0) {
+        throw new Error("技能点必须是非负整数");
+      }
+      const parsedRef = skillRefSchema.parse(ref);
+      const session = requireSession();
+      if (!session.occupation || !session.skills) {
+        throw new Error("职业或技能创建状态尚未初始化");
+      }
+      const key = getSkillRefKey(parsedRef);
+      const currentAllocation = session.skills.allocations.find(
+        (allocation) => getSkillRefKey(allocation.ref) === key,
+      );
+      await setSkillAllocation(
+        parsedRef,
+        field === "occupationPoints"
+          ? value
+          : currentAllocation?.occupationPoints ?? 0,
+        field === "interestPoints"
+          ? value
+          : currentAllocation?.interestPoints ?? 0,
+      );
+    });
+  }
+
+  async function removeSkillAllocation(ref: SkillRef): Promise<void> {
+    const parsed = skillRefSchema.parse(ref);
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const key = getSkillRefKey(parsed);
+    const allocations = session.skills.allocations.filter(
+      (allocation) => getSkillRefKey(allocation.ref) !== key,
+    );
+    if (allocations.length === session.skills.allocations.length) return;
+    await persist({ ...session, skills: { ...session.skills, allocations } });
+  }
+
+  async function createCustomInterestAllocation(
+    definitionId: string,
+    displayName: string,
+    interestPoints: number,
+  ): Promise<SkillRef> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const trimmedName = displayName.trim();
+    if (!trimmedName) throw new Error("自定义专业化名称不能为空");
+    if (!Number.isInteger(interestPoints) || interestPoints <= 0) {
+      throw new Error("兴趣技能点必须是正整数");
+    }
+
+    const skillRegistry = getSkillRegistry(session.settingId);
+    const definition = skillRegistry.get(definitionId);
+    if (!definition) throw new Error(`找不到技能定义：${definitionId}`);
+    if (definition.specialization.type !== "required" || !definition.specialization.allowCustom) {
+      throw new Error("该技能不允许创建自定义专业化");
+    }
+
+    const character = await characterRepository.getById(session.characterId);
+    if (!character) throw new Error("找不到当前调查员");
+    if ((getSettingPackOrThrow(session.settingId).eras?.length ?? 0) > 0 && !character.data.eraId) {
+      throw new Error("请先选择建卡时代");
+    }
+    if (character.data.eraId && !isSkillAvailableInEra(definition, character.data.eraId)) {
+      throw new Error("该技能不适用于当前建卡时代");
+    }
+
+    if (!definition.specialization.allowMultiple) {
+      const occupationRefs = listOccupationAllocationRefs(
+        session.occupation.definitionSnapshot,
+        session.skills,
+      );
+      const alreadyExists = [...occupationRefs, ...session.skills.allocations.map(({ ref }) => ref)]
+        .some((ref) => ref.definitionId === definition.id);
+      if (alreadyExists) throw new Error(`${definition.name.zh}只允许一个专业化实例`);
+    }
+
+    const ref = skillRefSchema.parse({
+      type: "custom",
+      definitionId: definition.id,
+      specializationId: crypto.randomUUID(),
+      displayName: trimmedName,
+    });
+    await setSkillAllocation(ref, 0, interestPoints);
+    return ref;
   }
 
   async function ensureDeterministicRequirementSelections(): Promise<void> {
@@ -774,6 +913,10 @@ export const useCreationStore = defineStore("creation", () => {
     selectCatalogOccupation,
     selectCustomOccupation,
     setSkillCreationState,
+    setSkillAllocation,
+    setSkillAllocationPoint,
+    removeSkillAllocation,
+    createCustomInterestAllocation,
     ensureDeterministicRequirementSelections,
     setRequirementSelection,
     createCustomRequirementSpecialization,

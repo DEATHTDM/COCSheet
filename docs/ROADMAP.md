@@ -160,12 +160,26 @@ Status: Completed
 
 #### Phase 5C-3 — Skill Point Allocation & Approvals
 
-Status: Not Started
+Status: In Progress
+
+##### Phase 5C-3A — Skill Point Allocation Workspace
+
+Status: Completed
 
 - occupation and interest allocations
 - Credit Rating allocation
-- Keeper approvals and warnings
-- skill finalize UI
+- interest-only catalog skills and custom specializations
+- live base/allocation/final preview from the existing Engine plan
+- budget, limit, eligibility, era, and allocation issue presentation
+
+##### Phase 5C-3B — Keeper Approvals & Skill Finalization
+
+Status: Not Started
+
+- Keeper approval interaction
+- Credit Rating override action
+- warning acknowledgement
+- skill completion and review transition UI
 
 #### Phase 5C-4 — Conflict & Custom Occupation UX
 
