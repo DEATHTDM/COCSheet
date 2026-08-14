@@ -235,6 +235,9 @@ export const useCreationStore = defineStore("creation", () => {
 
   async function selectCustomOccupation(definition: OccupationDefinition): Promise<void> {
     const session = requireSession();
+    if (session.presetSnapshot?.allowCustomOccupation === false) {
+      throw new Error("当前 KP 预设禁止自定义职业");
+    }
     const parsed = occupationDefinitionSchema.parse(definition);
     const errors = validateCustomOccupationDefinition(parsed);
     if (errors.length > 0) throw new Error(errors.join("；"));

@@ -281,6 +281,111 @@ h2 {
   color: #695f52;
 }
 
+.custom-occupation-entry,
+.builder-slot-heading,
+.formula-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.custom-occupation-entry h3,
+.custom-occupation-entry p,
+.custom-occupation-summary,
+.compact-requirements,
+.builder-fieldset p,
+.builder-slot p {
+  margin-bottom: 0;
+}
+
+.custom-occupation-builder {
+  border-color: #315649;
+  box-shadow: 0 0 0 2px rgb(49 86 73 / 12%);
+}
+
+.builder-fieldset {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #cfc6b3;
+  border-radius: 4px;
+}
+
+.builder-fieldset legend {
+  padding: 0 0.4rem;
+  font-weight: 800;
+}
+
+.formula-row {
+  justify-content: flex-start;
+}
+
+.formula-row select,
+.formula-row input,
+.inline-field input {
+  width: min(100%, 180px);
+  min-height: 42px;
+  padding: 0.55rem;
+  border: 1px solid #8e8474;
+  border-radius: 4px;
+  background: white;
+}
+
+.formula-stack,
+.best-of-options {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.best-of-options .checkbox-field {
+  gap: 0.35rem;
+}
+
+.builder-preview,
+.builder-capacity {
+  padding: 0.75rem;
+  background: #eee7d9;
+}
+
+.builder-slot-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.builder-slot {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.current-occupation-panel > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.custom-occupation-summary {
+  margin-top: 1rem;
+}
+
+.compact-requirements {
+  margin-top: 0.75rem;
+}
+
+.current-occupation-controls {
+  min-width: min(100%, 220px);
+}
+
 .occupation-layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.4fr);
@@ -1020,6 +1125,10 @@ h2 {
   .occupation-actions,
   .occupation-detail-heading,
   .occupation-card-heading,
+  .custom-occupation-entry,
+  .builder-slot-heading,
+  .formula-stack,
+  .formula-row,
   .requirement-heading,
   .requirement-actions {
     align-items: flex-start;

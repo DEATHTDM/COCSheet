@@ -60,7 +60,7 @@ Status: Completed
 
 ## Phase 5 — Occupation Engine & Standard Occupations
 
-Status: In Progress
+Status: Completed
 
 ### Phase 5A — Occupation Engine Foundation
 
@@ -112,7 +112,7 @@ Status: Completed
 
 ### Phase 5C — Creation UI
 
-Status: In Progress
+Status: Completed
 
 #### Phase 5C-1 — Occupation Browser & Catalog Selection
 
@@ -183,7 +183,7 @@ Status: Completed
 
 #### Phase 5C-4 — Conflict & Custom Occupation UX
 
-Status: In Progress
+Status: Completed
 
 ##### Phase 5C-4A — Conflict & Stale Draft Resolution
 
@@ -196,9 +196,10 @@ Status: Completed
 
 ##### Phase 5C-4B — Custom Occupation Builder
 
-Status: Not Started
+Status: Completed
 
-- custom occupation flow
+- current-investigator custom occupation Builder with safe closed formula and skill-category controls
+- create/edit snapshot persistence, Preset policy handling, and full structured Skills → Finalize → Review integration
 
 ## Later
 
