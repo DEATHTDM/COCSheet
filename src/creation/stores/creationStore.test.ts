@@ -809,6 +809,9 @@ describe("Phase 5A skills finalize foundation", () => {
       attribute: "EDU",
       multiplier: 4,
     });
+    await store.setCurrentStep("skills");
+    expect(store.getSkillFinalizePlan(completed.data).errors.map(({ code }) => code))
+      .not.toContain("existing-manual-skills");
   });
 
   it("完成技能时在同一 workflow update 中按最终 Mythos 收紧 SAN，并保留 HP/MP", async () => {
@@ -923,5 +926,67 @@ describe("Phase 5A skills finalize foundation", () => {
     expect(completed.data.skills?.find(
       (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "cthulhu-mythos",
     )?.currentValue).toBe(20);
+  });
+});
+
+describe("Phase 5C-4A manual skill conflict", () => {
+  it("显式确认可刷新恢复且不修改 Character.skills，并排空 pending allocation write", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "classic-1920s");
+    await store.selectCatalogOccupation("accountant");
+    const original = await characterRepository.getById(characterId);
+    if (!original) throw new Error("调查员不存在");
+    const manualSkills = [{
+      ref: { type: "standard" as const, definitionId: "history" },
+      currentValue: 55,
+      improvementChecked: true,
+    }];
+    const character = await characterRepository.update({
+      ...original.data,
+      characteristics: initialValues,
+      skills: manualSkills,
+    });
+    expect(store.getSkillFinalizePlan(character.data).errors.map(({ code }) => code))
+      .toContain("existing-manual-skills");
+
+    await store.setSkillAllocation(
+      { type: "standard", definitionId: "history" },
+      0,
+      10,
+    );
+    const pendingWrite = store.setSkillAllocationPoint(
+      { type: "standard", definitionId: "history" },
+      "interestPoints",
+      20,
+    );
+    await store.confirmStructuredSkillRebuild(character.data);
+    await pendingWrite;
+
+    expect((await characterRepository.getById(characterId))?.data.skills).toEqual(manualSkills);
+    expect(store.current?.data.skills?.existingSkillResolution).toEqual({
+      action: "rebuild-structured",
+      confirmed: true,
+    });
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: { type: "standard", definitionId: "history" },
+      occupationPoints: 0,
+      interestPoints: 20,
+    });
+    expect(store.getSkillFinalizePlan(character.data).errors.map(({ code }) => code))
+      .not.toContain("existing-manual-skills");
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.skills?.existingSkillResolution).toEqual({
+      action: "rebuild-structured",
+      confirmed: true,
+    });
+    expect(restored.getSkillFinalizePlan(character.data).errors.map(({ code }) => code))
+      .not.toContain("existing-manual-skills");
+    const updateSpy = vi.spyOn(creationSessionRepository, "update");
+    await restored.confirmStructuredSkillRebuild(character.data);
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 });

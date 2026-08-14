@@ -6,11 +6,11 @@ Last updated: 2026-08-14
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, Phase 5C-2 — Requirement Selection, and Phase 5C-3 — Skill Point Allocation & Approvals are implemented. Stale-draft/manual-skill conflict handling and custom occupation UI remain for Phase 5C-4. Phase 5 overall remains in progress.
+Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, Phase 5C-2 — Requirement Selection, Phase 5C-3 — Skill Point Allocation & Approvals, and Phase 5C-4A — Conflict & Stale Draft Resolution are implemented. Custom occupation builder UI remains for Phase 5C-4B. Phase 5 overall remains in progress.
 
 ## Git baseline
 
-Phase 5C-3B Keeper Approvals & Skill Finalization branch was created from `main` at `4ea6cbded7def26460f60e05c865ddfdb9b64694`.
+Phase 5C-4A Conflict & Stale Draft Resolution branch was created from `main` at `9d25f2313d435a240b68c49efeff99e288acf03f`.
 
 ## Implemented
 
@@ -85,6 +85,10 @@ Phase 5C-3B Keeper Approvals & Skill Finalization branch was created from `main`
 - fuzzy requirement approval invalidation when the selected SkillRef identity set changes, while order-only changes preserve the grant
 - dedicated skill finalization UI for Engine-owned errors, approvals and warnings, local-only unused-point acknowledgement, and the existing transactional `completeSkills` path
 - minimal persisted Review summary for identity, Setting/Era, age, occupation, final characteristics, Luck, resources and Registry-formatted final skills, with a non-destructive return to skill adjustment
+- explicit manual-skill rebuild confirmation that persists only the future structured-finalize decision and never changes existing `Character.skills` before `completeSkills()`
+- stale occupation draft presentation derived only from existing finalizer errors, with raw Engine messages and no duplicate occupation validator
+- explicit occupation reset that drains pending allocation writes, reuses the existing pure reset semantics, preserves interest allocations and skill-scoped creation approvals, and restores deterministic exact requirements for the current occupation
+- Review-to-skills round-trip recognition of the structured finalize resolution, preventing completed structured `Character.skills` from being misclassified as manual data
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -147,7 +151,7 @@ Merged in the current enum:
 
 ## Not implemented
 
-- stale-draft/manual-skill conflict handling and custom occupation UI (later Phase 5C work)
+- custom occupation builder UI (Phase 5C-4B)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
 - guide overlay
@@ -159,7 +163,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5C-3 is completed. The next intended work is Phase 5C-4 — Conflict & Custom Occupation UX, which remains Not Started and requires separate authorization.
+Phase 5C-4A is completed. The next intended work is Phase 5C-4B — Custom Occupation Builder, which remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

@@ -183,10 +183,21 @@ Status: Completed
 
 #### Phase 5C-4 — Conflict & Custom Occupation UX
 
+Status: In Progress
+
+##### Phase 5C-4A — Conflict & Stale Draft Resolution
+
+Status: Completed
+
+- explicit Phase 4 manual-skill rebuild confirmation
+- stale occupation draft conflict presentation from existing Engine errors
+- explicit occupation reset preserving interest skills and restoring deterministic requirements
+- Review round-trip protection from false manual-skill conflicts
+
+##### Phase 5C-4B — Custom Occupation Builder
+
 Status: Not Started
 
-- stale draft resolution
-- Phase 4 manual skill conflict handling
 - custom occupation flow
 
 ## Later

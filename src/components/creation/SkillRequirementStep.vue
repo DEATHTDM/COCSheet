@@ -26,6 +26,7 @@ import {
 import { useCreationStore } from "../../creation/stores/creationStore";
 import { areCurrentOccupationRequirementsResolved } from "../../creation/rules/skillAllocationPresentation";
 import SkillAllocationPanel from "./SkillAllocationPanel.vue";
+import SkillDraftConflictPanel from "./SkillDraftConflictPanel.vue";
 import SkillFinalizationPanel from "./SkillFinalizationPanel.vue";
 
 const props = defineProps<{
@@ -392,6 +393,8 @@ onMounted(async () => {
     </section>
 
     <template v-else>
+      <SkillDraftConflictPanel :character="character" />
+
       <section v-if="occupation.skillReplacement" class="panel form-stack replacement-panel">
         <div>
           <p class="eyebrow">特殊职业规则</p>
