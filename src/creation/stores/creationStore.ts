@@ -626,9 +626,35 @@ export const useCreationStore = defineStore("creation", () => {
   }
 
   async function resetCurrentOccupationAllocation(): Promise<void> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     if (!session.skills) return;
-    await persist({ ...session, skills: resetOccupationAllocation(session.skills) });
+    const resetSkills = resetOccupationAllocation(session.skills);
+    await persist({
+      ...session,
+      skills: session.occupation
+        ? addDeterministicRequirementSelections(session.occupation.definitionSnapshot, resetSkills)
+        : resetSkills,
+    });
+  }
+
+  async function confirmStructuredSkillRebuild(character: Character): Promise<void> {
+    await flushSkillAllocationWrites();
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    if (!character.skills || character.skills.length === 0) {
+      throw new Error("当前调查员没有需要确认重建的 Character.skills");
+    }
+    if (session.skills.existingSkillResolution?.action === "rebuild-structured") return;
+    await persist({
+      ...session,
+      skills: {
+        ...session.skills,
+        existingSkillResolution: { action: "rebuild-structured", confirmed: true },
+      },
+    });
   }
 
   function getSkillFinalizePlan(character: Character): FinalizeSkillAllocationResult {
@@ -1073,6 +1099,7 @@ export const useCreationStore = defineStore("creation", () => {
     createCustomRequirementSpecialization,
     setOccupationSkillReplacementTarget,
     resetCurrentOccupationAllocation,
+    confirmStructuredSkillRebuild,
     getSkillFinalizePlan,
     approvePendingSkillApproval,
     revokeKeeperApproval,
