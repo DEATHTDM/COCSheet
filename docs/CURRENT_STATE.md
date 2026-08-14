@@ -6,11 +6,11 @@ Last updated: 2026-08-14
 
 Phase 5 — Occupation Engine & Standard Occupations (In Progress)
 
-Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, Phase 5C-2 — Requirement Selection, and Phase 5C-3A — Skill Point Allocation Workspace are implemented. Keeper approval interaction, warning acknowledgement, skills completion/review transition, conflict handling, and custom occupation UI have not started. Phase 5 overall remains in progress.
+Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, Phase 5C-2 — Requirement Selection, and Phase 5C-3 — Skill Point Allocation & Approvals are implemented. Stale-draft/manual-skill conflict handling and custom occupation UI remain for Phase 5C-4. Phase 5 overall remains in progress.
 
 ## Git baseline
 
-Phase 5C-3A Skill Point Allocation Workspace branch was created from `main` at `96ae6ad9ff6b75557f9efee377d319d244d6a470`.
+Phase 5C-3B Keeper Approvals & Skill Finalization branch was created from `main` at `4ea6cbded7def26460f60e05c865ddfdb9b64694`.
 
 ## Implemented
 
@@ -80,6 +80,11 @@ Phase 5C-3A Skill Point Allocation Workspace branch was created from `main` at `
 - focused allocation Store APIs for unique SkillRef upsert/remove, draft-safe over-budget and eligibility-invalid persistence, refresh restoration, and Store-owned custom interest specialization UUIDs without schema changes
 - pure current-occupation allocation roster derivation from valid requirement identities, active replacement and Credit Rating, with stale requirement IDs ignored and stable SkillRef de-duplication
 - Phase 5C-3A skill allocation workspace with occupation plus interest point inputs, Credit Rating allocation/range guidance, interest-only catalog search, custom interest specializations, base/allocation/final previews, Engine-owned budgets, row issues, warnings and pending-approval presentation
+- current-plan-validated Keeper approval Store actions with exact reason/subject grants, precise revocation, optional trimmed notes, and stale approval rejection
+- occupation-scoped Credit Rating override approval/revocation through the existing dedicated state, without synthetic Keeper approval grants
+- fuzzy requirement approval invalidation when the selected SkillRef identity set changes, while order-only changes preserve the grant
+- dedicated skill finalization UI for Engine-owned errors, approvals and warnings, local-only unused-point acknowledgement, and the existing transactional `completeSkills` path
+- minimal persisted Review summary for identity, Setting/Era, age, occupation, final characteristics, Luck, resources and Registry-formatted final skills, with a non-destructive return to skill adjustment
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -142,7 +147,6 @@ Merged in the current enum:
 
 ## Not implemented
 
-- Keeper approval interaction, Credit Rating override action, warning acknowledgement, and skill completion/review UI (Phase 5C-3B)
 - stale-draft/manual-skill conflict handling and custom occupation UI (later Phase 5C work)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
@@ -155,7 +159,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5C-3A is completed. The next intended work is Phase 5C-3B — Keeper Approvals & Skill Finalization, which remains Not Started and requires separate authorization.
+Phase 5C-3 is completed. The next intended work is Phase 5C-4 — Conflict & Custom Occupation UX, which remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

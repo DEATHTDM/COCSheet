@@ -21,8 +21,10 @@ import {
   finalizeSkillAllocation,
   instantiateNamedCustomSpecialization,
   matchesSkillSelector,
+  occupationRequirementApprovalSubject,
   occupationSkillReplacementApprovalSubject,
   validateCustomOccupationDefinition,
+  type ApprovalRequirement,
   type FinalizeSkillAllocationResult,
 } from "../../coc7/rules/occupationSkills";
 import { getSkillRefKey } from "../../coc7/rules/skills";
@@ -71,6 +73,7 @@ import {
 import { listOccupationAllocationRefs } from "../rules/skillAllocationPresentation";
 import {
   skillAllocationSchema,
+  type ApprovalReasonId,
   type SkillCreationState,
 } from "../types/skillCreation";
 
@@ -138,6 +141,12 @@ function addDeterministicRequirementSelections(
     : { ...state, requirementSelections: [...state.requirementSelections, ...additions] };
 }
 
+function haveSameSkillRefKeys(left: readonly SkillRef[], right: readonly SkillRef[]): boolean {
+  const leftKeys = new Set(left.map(getSkillRefKey));
+  const rightKeys = new Set(right.map(getSkillRefKey));
+  return leftKeys.size === rightKeys.size && [...leftKeys].every((key) => rightKeys.has(key));
+}
+
 export const useCreationStore = defineStore("creation", () => {
   const creating = ref(false);
   const current = ref<CreationSessionRecord>();
@@ -157,10 +166,21 @@ export const useCreationStore = defineStore("creation", () => {
     return record;
   }
 
-  function enqueueSkillAllocationWrite(mutation: () => Promise<void>): Promise<void> {
+  function enqueueSkillAllocationWrite<Result>(mutation: () => Promise<Result>): Promise<Result> {
     const pending = skillAllocationWriteQueue.then(mutation);
-    skillAllocationWriteQueue = pending.catch(() => undefined);
+    skillAllocationWriteQueue = pending.then(
+      () => undefined,
+      () => undefined,
+    );
     return pending;
+  }
+
+  async function flushSkillAllocationWrites(): Promise<void> {
+    while (true) {
+      const pending = skillAllocationWriteQueue;
+      await pending;
+      if (pending === skillAllocationWriteQueue) return;
+    }
   }
 
   async function start(settingId: SettingId, preset?: CreationPreset): Promise<string> {
@@ -232,7 +252,7 @@ export const useCreationStore = defineStore("creation", () => {
     await persist({ ...requireSession(), skills });
   }
 
-  async function setSkillAllocation(
+  async function setSkillAllocationImmediate(
     ref: SkillRef,
     occupationPoints: number,
     interestPoints: number,
@@ -263,6 +283,16 @@ export const useCreationStore = defineStore("creation", () => {
     });
   }
 
+  function setSkillAllocation(
+    ref: SkillRef,
+    occupationPoints: number,
+    interestPoints: number,
+  ): Promise<void> {
+    return enqueueSkillAllocationWrite(() =>
+      setSkillAllocationImmediate(ref, occupationPoints, interestPoints),
+    );
+  }
+
   async function setSkillAllocationPoint(
     ref: SkillRef,
     field: "occupationPoints" | "interestPoints",
@@ -281,7 +311,7 @@ export const useCreationStore = defineStore("creation", () => {
       const currentAllocation = session.skills.allocations.find(
         (allocation) => getSkillRefKey(allocation.ref) === key,
       );
-      await setSkillAllocation(
+      await setSkillAllocationImmediate(
         parsedRef,
         field === "occupationPoints"
           ? value
@@ -293,7 +323,7 @@ export const useCreationStore = defineStore("creation", () => {
     });
   }
 
-  async function removeSkillAllocation(ref: SkillRef): Promise<void> {
+  async function removeSkillAllocationImmediate(ref: SkillRef): Promise<void> {
     const parsed = skillRefSchema.parse(ref);
     const session = requireSession();
     if (!session.occupation || !session.skills) {
@@ -307,7 +337,11 @@ export const useCreationStore = defineStore("creation", () => {
     await persist({ ...session, skills: { ...session.skills, allocations } });
   }
 
-  async function createCustomInterestAllocation(
+  function removeSkillAllocation(ref: SkillRef): Promise<void> {
+    return enqueueSkillAllocationWrite(() => removeSkillAllocationImmediate(ref));
+  }
+
+  async function createCustomInterestAllocationImmediate(
     definitionId: string,
     displayName: string,
     interestPoints: number,
@@ -354,8 +388,18 @@ export const useCreationStore = defineStore("creation", () => {
       specializationId: crypto.randomUUID(),
       displayName: trimmedName,
     });
-    await setSkillAllocation(ref, 0, interestPoints);
+    await setSkillAllocationImmediate(ref, 0, interestPoints);
     return ref;
+  }
+
+  function createCustomInterestAllocation(
+    definitionId: string,
+    displayName: string,
+    interestPoints: number,
+  ): Promise<SkillRef> {
+    return enqueueSkillAllocationWrite(() =>
+      createCustomInterestAllocationImmediate(definitionId, displayName, interestPoints),
+    );
   }
 
   async function ensureDeterministicRequirementSelections(): Promise<void> {
@@ -384,11 +428,10 @@ export const useCreationStore = defineStore("creation", () => {
     if (!session.occupation || !session.skills) {
       throw new Error("职业或技能创建状态尚未初始化");
     }
-    if (!session.occupation.definitionSnapshot.skillRequirements.some(
-      (requirement) => requirement.id === requirementId,
-    )) {
-      throw new Error("该职业不存在此技能需求");
-    }
+    const requirement = session.occupation.definitionSnapshot.skillRequirements.find(
+      (candidate) => candidate.id === requirementId,
+    );
+    if (!requirement) throw new Error("该职业不存在此技能需求");
     if (refs.length > 0 && getActiveOccupationSkillReplacement(
       session.occupation.definitionSnapshot,
       session.skills,
@@ -397,6 +440,20 @@ export const useCreationStore = defineStore("creation", () => {
     }
 
     const parsedRefs = skillRefSchema.array().parse(refs);
+    const previousRefs = session.skills.requirementSelections.find(
+      (selection) => selection.requirementId === requirementId,
+    )?.refs ?? [];
+    const fuzzyApprovalSubject = occupationRequirementApprovalSubject(
+      session.occupation.selectedOccupationId,
+      requirementId,
+    );
+    const keeperApprovals = requirement.keeperReview &&
+      !haveSameSkillRefKeys(previousRefs, parsedRefs)
+      ? session.skills.keeperApprovals.filter((approval) =>
+          approval.reason !== "fuzzy-requirement" ||
+          approval.subjectId !== fuzzyApprovalSubject,
+        )
+      : session.skills.keeperApprovals;
     const requirementSelections = session.skills.requirementSelections
       .filter((selection) => selection.requirementId !== requirementId);
     const existingIndex = session.skills.requirementSelections.findIndex(
@@ -413,7 +470,7 @@ export const useCreationStore = defineStore("creation", () => {
 
     await persist({
       ...session,
-      skills: { ...session.skills, requirementSelections },
+      skills: { ...session.skills, requirementSelections, keeperApprovals },
     });
   }
 
@@ -589,10 +646,104 @@ export const useCreationStore = defineStore("creation", () => {
     });
   }
 
+  async function approvePendingSkillApproval(
+    character: Character,
+    approval: ApprovalRequirement,
+    note?: string,
+  ): Promise<void> {
+    await flushSkillAllocationWrites();
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const pending = getSkillFinalizePlan(character).approvals.find((candidate) =>
+      candidate.reason === approval.reason && candidate.subjectId === approval.subjectId,
+    );
+    if (!pending) throw new Error("该 Keeper approval 已失效或并非当前待批准项目");
+    if (pending.reason === "credit-rating-override") {
+      throw new Error("Credit Rating override 必须使用独立批准操作");
+    }
+    if (session.skills.keeperApprovals.some((grant) =>
+      grant.reason === pending.reason && grant.subjectId === pending.subjectId,
+    )) return;
+
+    const trimmedNote = note?.trim();
+    await persist({
+      ...session,
+      skills: {
+        ...session.skills,
+        keeperApprovals: [
+          ...session.skills.keeperApprovals,
+          {
+            reason: pending.reason,
+            ...(pending.subjectId ? { subjectId: pending.subjectId } : {}),
+            approved: true,
+            ...(trimmedNote ? { note: trimmedNote } : {}),
+          },
+        ],
+      },
+    });
+  }
+
+  async function revokeKeeperApproval(
+    reason: ApprovalReasonId,
+    subjectId?: string,
+  ): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    const keeperApprovals = session.skills.keeperApprovals.filter((grant) =>
+      grant.reason !== reason || grant.subjectId !== subjectId,
+    );
+    if (keeperApprovals.length === session.skills.keeperApprovals.length) return;
+    await persist({ ...session, skills: { ...session.skills, keeperApprovals } });
+  }
+
+  async function approveCreditRatingOverride(
+    character: Character,
+    reason?: string,
+  ): Promise<void> {
+    await flushSkillAllocationWrites();
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    if (!getSkillFinalizePlan(character).approvals.some(
+      (approval) => approval.reason === "credit-rating-override",
+    )) {
+      throw new Error("当前没有待批准的 Credit Rating override");
+    }
+    const trimmedReason = reason?.trim();
+    await persist({
+      ...session,
+      skills: {
+        ...session.skills,
+        creditRatingOverride: {
+          occupationId: session.occupation.selectedOccupationId,
+          approved: true,
+          ...(trimmedReason ? { reason: trimmedReason } : {}),
+        },
+      },
+    });
+  }
+
+  async function revokeCurrentCreditRatingOverride(): Promise<void> {
+    const session = requireSession();
+    if (!session.occupation || !session.skills) {
+      throw new Error("职业或技能创建状态尚未初始化");
+    }
+    if (session.skills.creditRatingOverride?.occupationId !==
+      session.occupation.selectedOccupationId) return;
+    const { creditRatingOverride: _currentOverride, ...skills } = session.skills;
+    await persist({ ...session, skills });
+  }
+
   async function completeSkills(
     character: Character,
     acknowledgeWarnings = false,
   ): Promise<CharacterRecord> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     if (!session.occupation || !session.skills) throw new Error("职业或技能创建状态尚未初始化");
     const plan = getSkillFinalizePlan(character);
@@ -923,6 +1074,10 @@ export const useCreationStore = defineStore("creation", () => {
     setOccupationSkillReplacementTarget,
     resetCurrentOccupationAllocation,
     getSkillFinalizePlan,
+    approvePendingSkillApproval,
+    revokeKeeperApproval,
+    approveCreditRatingOverride,
+    revokeCurrentCreditRatingOverride,
     completeSkills,
     setAge,
     chooseGenerationMethod,

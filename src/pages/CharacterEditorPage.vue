@@ -13,6 +13,7 @@ import {
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import type { EraId } from "../coc7/types/occupation";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
+import CharacterReviewPanel from "../components/creation/CharacterReviewPanel.vue";
 import SkillRequirementStep from "../components/creation/SkillRequirementStep.vue";
 import { getSettingPackOrThrow } from "../content/registry";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
@@ -517,9 +518,10 @@ async function reconcileSanity(): Promise<void> {
         :character="characterStore.current.data"
       />
 
-      <section v-else-if="currentStep === 'review'" class="panel">
-        <h2>检查（尚未实现）</h2>
-      </section>
+      <CharacterReviewPanel
+        v-else-if="currentStep === 'review'"
+        :character="characterStore.current.data"
+      />
     </template>
     <p v-else>正在读取本地数据……</p>
   </section>

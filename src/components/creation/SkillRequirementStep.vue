@@ -26,6 +26,7 @@ import {
 import { useCreationStore } from "../../creation/stores/creationStore";
 import { areCurrentOccupationRequirementsResolved } from "../../creation/rules/skillAllocationPresentation";
 import SkillAllocationPanel from "./SkillAllocationPanel.vue";
+import SkillFinalizationPanel from "./SkillFinalizationPanel.vue";
 
 const props = defineProps<{
   readonly eraId: EraId | undefined;
@@ -587,10 +588,10 @@ onMounted(async () => {
         <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">返回职业</button>
       </footer>
 
-      <SkillAllocationPanel
-        v-if="allocationWorkspaceReady"
-        :character="character"
-      />
+      <template v-if="allocationWorkspaceReady">
+        <SkillAllocationPanel :character="character" />
+        <SkillFinalizationPanel :character="character" />
+      </template>
       <section v-else class="panel empty-state">
         请先完成上方职业技能需求选择。
       </section>

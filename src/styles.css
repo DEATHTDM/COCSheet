@@ -614,6 +614,107 @@ h2 {
   color: #805415;
 }
 
+.skill-finalization-panel {
+  border-color: #8f744e;
+}
+
+.finalization-block {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.finalization-block h3,
+.finalization-block p {
+  margin: 0;
+}
+
+.finalization-block.errors {
+  border-color: #b9685f;
+  background: #fff0ed;
+}
+
+.finalization-block.approvals,
+.finalization-block.warnings {
+  border-color: #b99a66;
+  background: #fffaf0;
+}
+
+.approval-card-list,
+.saved-approval-list,
+.review-skill-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.approval-card,
+.saved-approval-row,
+.review-skill-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: white;
+}
+
+.approval-card > div,
+.saved-approval-row > div {
+  display: grid;
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.approval-card .compact-field {
+  min-width: 240px;
+}
+
+.warning-acknowledgement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-weight: 700;
+}
+
+.warning-acknowledgement input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+}
+
+.review-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.review-summary-grid > div {
+  padding: 0.75rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.review-summary-grid dt {
+  color: #695f52;
+  font-size: 0.85rem;
+}
+
+.review-summary-grid dd {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+}
+
+.review-skill-row {
+  align-items: center;
+}
+
 .allocation-table-wrap {
   overflow-x: auto;
 }

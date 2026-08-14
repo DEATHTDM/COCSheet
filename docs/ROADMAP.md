@@ -160,7 +160,7 @@ Status: Completed
 
 #### Phase 5C-3 — Skill Point Allocation & Approvals
 
-Status: In Progress
+Status: Completed
 
 ##### Phase 5C-3A — Skill Point Allocation Workspace
 
@@ -174,7 +174,7 @@ Status: Completed
 
 ##### Phase 5C-3B — Keeper Approvals & Skill Finalization
 
-Status: Not Started
+Status: Completed
 
 - Keeper approval interaction
 - Credit Rating override action
