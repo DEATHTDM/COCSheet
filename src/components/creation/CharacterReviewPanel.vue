@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 
 import { characteristicIds } from "../../coc7/types/attribute";
 import type { Character } from "../../coc7/types/character";
+import { getSkillRefKey } from "../../coc7/rules/skills";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import {
@@ -17,7 +18,11 @@ const actionError = ref("");
 const settingName = computed(() => getSettingPackOrThrow(props.character.settingId).name);
 const skillRegistry = computed(() => getSkillRegistry(props.character.settingId));
 const skills = computed(() => [...(props.character.skills ?? [])]
-  .map((skill) => ({ ...skill, label: formatSkillRefForOccupation(skill.ref, skillRegistry.value) }))
+  .map((skill) => ({
+    skill,
+    key: getSkillRefKey(skill.ref),
+    label: formatSkillRefForOccupation(skill.ref, skillRegistry.value),
+  }))
   .sort((left, right) => left.label.localeCompare(right.label, "zh-CN")));
 
 async function returnToSkills(): Promise<void> {
@@ -77,8 +82,8 @@ async function returnToSkills(): Promise<void> {
     <section class="panel form-stack">
       <h3>最终技能</h3>
       <div v-if="skills.length" class="review-skill-list">
-        <div v-for="skill in skills" :key="skill.label" class="review-skill-row">
-          <span>{{ skill.label }}</span><strong>{{ skill.currentValue }}</strong>
+        <div v-for="item in skills" :key="item.key" class="review-skill-row">
+          <span>{{ item.label }}</span><strong>{{ item.skill.currentValue }}</strong>
         </div>
       </div>
       <p v-else class="empty-state">尚无最终技能。</p>

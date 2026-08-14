@@ -176,6 +176,37 @@ describe("Keeper approval store lifecycle", () => {
       expect.objectContaining({ reason: "cthulhu-mythos-allocation" }),
     );
   });
+
+  it("approval action drain allocation queue 后只使用最新 finalize plan", async () => {
+    const { store, character } = await prepareAccountant();
+    const mythos = { type: "standard" as const, definitionId: "cthulhu-mythos" };
+    await store.setSkillAllocation(mythos, 0, 10);
+    const stalePending = store.getSkillFinalizePlan(character).approvals.find(
+      (approval) => approval.reason === "cthulhu-mythos-allocation",
+    );
+    if (!stalePending) throw new Error("缺少待失效的 Mythos approval");
+
+    const removal = store.setSkillAllocationPoint(mythos, "interestPoints", 0);
+    const staleApproval = store.approvePendingSkillApproval(character, stalePending);
+    await removal;
+    await expect(staleApproval).rejects.toThrow("已失效或并非当前待批准项目");
+    expect(store.current?.data.skills?.keeperApprovals).not.toContainEqual(
+      expect.objectContaining({ reason: "cthulhu-mythos-allocation" }),
+    );
+
+    const creditRating = { type: "standard" as const, definitionId: "credit-rating" };
+    const outOfRangeWrite = store.setSkillAllocationPoint(
+      creditRating,
+      "occupationPoints",
+      80,
+    );
+    const latestPlanApproval = store.approveCreditRatingOverride(character);
+    await Promise.all([outOfRangeWrite, latestPlanApproval]);
+    expect(store.current?.data.skills?.creditRatingOverride).toEqual({
+      occupationId: "accountant",
+      approved: true,
+    });
+  });
 });
 
 describe("Credit Rating override store lifecycle", () => {
@@ -297,5 +328,54 @@ describe("completeSkills blockers and review transition", () => {
     });
     expect((await creationSessionRepository.getByCharacterId(character.id))?.data.currentStep)
       .toBe("review");
+  });
+
+  it("未 await 的 allocation write 会在 completeSkills 读取 plan 前完成", async () => {
+    const { store, character } = await prepareCompletion(199);
+    const accounting = { type: "standard" as const, definitionId: "accounting" };
+
+    const allocationWrite = store.setSkillAllocationPoint(
+      accounting,
+      "occupationPoints",
+      200,
+    );
+    const completion = store.completeSkills(character, true);
+    const [, completed] = await Promise.all([allocationWrite, completion]);
+
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "accounting",
+    )?.currentValue).toBe(205);
+    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: accounting,
+      occupationPoints: 200,
+      interestPoints: 0,
+    });
+    const persisted = await creationSessionRepository.getByCharacterId(character.id);
+    expect(persisted?.data.currentStep).toBe("review");
+    expect(persisted?.data.skills?.allocations).toContainEqual({
+      ref: accounting,
+      occupationPoints: 200,
+      interestPoints: 0,
+    });
+  });
+
+  it("flush 继续等待 drain 期间追加的新 allocation tail", async () => {
+    const { store, character } = await prepareCompletion(198);
+    const accounting = { type: "standard" as const, definitionId: "accounting" };
+
+    const firstWrite = store.setSkillAllocationPoint(accounting, "occupationPoints", 199);
+    const completion = store.completeSkills(character, true);
+    const finalWrite = store.setSkillAllocationPoint(accounting, "occupationPoints", 200);
+    const [, completed] = await Promise.all([Promise.all([firstWrite, finalWrite]), completion]);
+
+    expect(completed.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "accounting",
+    )?.currentValue).toBe(205);
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: accounting,
+      occupationPoints: 200,
+      interestPoints: 0,
+    });
   });
 });

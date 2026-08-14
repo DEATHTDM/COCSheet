@@ -166,10 +166,21 @@ export const useCreationStore = defineStore("creation", () => {
     return record;
   }
 
-  function enqueueSkillAllocationWrite(mutation: () => Promise<void>): Promise<void> {
+  function enqueueSkillAllocationWrite<Result>(mutation: () => Promise<Result>): Promise<Result> {
     const pending = skillAllocationWriteQueue.then(mutation);
-    skillAllocationWriteQueue = pending.catch(() => undefined);
+    skillAllocationWriteQueue = pending.then(
+      () => undefined,
+      () => undefined,
+    );
     return pending;
+  }
+
+  async function flushSkillAllocationWrites(): Promise<void> {
+    while (true) {
+      const pending = skillAllocationWriteQueue;
+      await pending;
+      if (pending === skillAllocationWriteQueue) return;
+    }
   }
 
   async function start(settingId: SettingId, preset?: CreationPreset): Promise<string> {
@@ -241,7 +252,7 @@ export const useCreationStore = defineStore("creation", () => {
     await persist({ ...requireSession(), skills });
   }
 
-  async function setSkillAllocation(
+  async function setSkillAllocationImmediate(
     ref: SkillRef,
     occupationPoints: number,
     interestPoints: number,
@@ -272,6 +283,16 @@ export const useCreationStore = defineStore("creation", () => {
     });
   }
 
+  function setSkillAllocation(
+    ref: SkillRef,
+    occupationPoints: number,
+    interestPoints: number,
+  ): Promise<void> {
+    return enqueueSkillAllocationWrite(() =>
+      setSkillAllocationImmediate(ref, occupationPoints, interestPoints),
+    );
+  }
+
   async function setSkillAllocationPoint(
     ref: SkillRef,
     field: "occupationPoints" | "interestPoints",
@@ -290,7 +311,7 @@ export const useCreationStore = defineStore("creation", () => {
       const currentAllocation = session.skills.allocations.find(
         (allocation) => getSkillRefKey(allocation.ref) === key,
       );
-      await setSkillAllocation(
+      await setSkillAllocationImmediate(
         parsedRef,
         field === "occupationPoints"
           ? value
@@ -302,7 +323,7 @@ export const useCreationStore = defineStore("creation", () => {
     });
   }
 
-  async function removeSkillAllocation(ref: SkillRef): Promise<void> {
+  async function removeSkillAllocationImmediate(ref: SkillRef): Promise<void> {
     const parsed = skillRefSchema.parse(ref);
     const session = requireSession();
     if (!session.occupation || !session.skills) {
@@ -316,7 +337,11 @@ export const useCreationStore = defineStore("creation", () => {
     await persist({ ...session, skills: { ...session.skills, allocations } });
   }
 
-  async function createCustomInterestAllocation(
+  function removeSkillAllocation(ref: SkillRef): Promise<void> {
+    return enqueueSkillAllocationWrite(() => removeSkillAllocationImmediate(ref));
+  }
+
+  async function createCustomInterestAllocationImmediate(
     definitionId: string,
     displayName: string,
     interestPoints: number,
@@ -363,8 +388,18 @@ export const useCreationStore = defineStore("creation", () => {
       specializationId: crypto.randomUUID(),
       displayName: trimmedName,
     });
-    await setSkillAllocation(ref, 0, interestPoints);
+    await setSkillAllocationImmediate(ref, 0, interestPoints);
     return ref;
+  }
+
+  function createCustomInterestAllocation(
+    definitionId: string,
+    displayName: string,
+    interestPoints: number,
+  ): Promise<SkillRef> {
+    return enqueueSkillAllocationWrite(() =>
+      createCustomInterestAllocationImmediate(definitionId, displayName, interestPoints),
+    );
   }
 
   async function ensureDeterministicRequirementSelections(): Promise<void> {
@@ -616,6 +651,7 @@ export const useCreationStore = defineStore("creation", () => {
     approval: ApprovalRequirement,
     note?: string,
   ): Promise<void> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     if (!session.occupation || !session.skills) {
       throw new Error("职业或技能创建状态尚未初始化");
@@ -668,6 +704,7 @@ export const useCreationStore = defineStore("creation", () => {
     character: Character,
     reason?: string,
   ): Promise<void> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     if (!session.occupation || !session.skills) {
       throw new Error("职业或技能创建状态尚未初始化");
@@ -706,6 +743,7 @@ export const useCreationStore = defineStore("creation", () => {
     character: Character,
     acknowledgeWarnings = false,
   ): Promise<CharacterRecord> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     if (!session.occupation || !session.skills) throw new Error("职业或技能创建状态尚未初始化");
     const plan = getSkillFinalizePlan(character);
