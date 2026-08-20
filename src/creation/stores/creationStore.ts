@@ -147,6 +147,30 @@ function haveSameSkillRefKeys(left: readonly SkillRef[], right: readonly SkillRe
   return leftKeys.size === rightKeys.size && [...leftKeys].every((key) => rightKeys.has(key));
 }
 
+function haveSameCustomOccupationApprovalMechanics(
+  left: OccupationDefinition,
+  right: OccupationDefinition,
+): boolean {
+  const approvalMechanics = (definition: OccupationDefinition) => ({
+    era: definition.era,
+    creditRating: definition.creditRating,
+    pointFormula: definition.pointFormula,
+    skillRequirements: definition.skillRequirements,
+    skillReplacement: definition.skillReplacement,
+    prerequisites: definition.prerequisites,
+    approval: definition.approval,
+  });
+  return JSON.stringify(approvalMechanics(left)) === JSON.stringify(approvalMechanics(right));
+}
+
+function haveSameCreditRatingRange(
+  left: OccupationDefinition,
+  right: OccupationDefinition,
+): boolean {
+  return left.creditRating.min === right.creditRating.min &&
+    left.creditRating.max === right.creditRating.max;
+}
+
 export const useCreationStore = defineStore("creation", () => {
   const creating = ref(false);
   const current = ref<CreationSessionRecord>();
@@ -212,6 +236,7 @@ export const useCreationStore = defineStore("creation", () => {
   }
 
   async function setCurrentStep(step: CreationStepId): Promise<void> {
+    await flushSkillAllocationWrites();
     await persist({ ...requireSession(), currentStep: step });
   }
 
@@ -220,6 +245,7 @@ export const useCreationStore = defineStore("creation", () => {
   }
 
   async function selectCatalogOccupation(occupationId: string): Promise<void> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     const definition = getOccupationRegistry(session.settingId).get(occupationId);
     if (!definition) throw new Error(`找不到职业：${occupationId}`);
@@ -234,6 +260,7 @@ export const useCreationStore = defineStore("creation", () => {
   }
 
   async function selectCustomOccupation(definition: OccupationDefinition): Promise<void> {
+    await flushSkillAllocationWrites();
     const session = requireSession();
     if (session.presetSnapshot?.allowCustomOccupation === false) {
       throw new Error("当前 KP 预设禁止自定义职业");
@@ -241,13 +268,31 @@ export const useCreationStore = defineStore("creation", () => {
     const parsed = occupationDefinitionSchema.parse(definition);
     const errors = validateCustomOccupationDefinition(parsed);
     if (errors.length > 0) throw new Error(errors.join("；"));
+    let skills = session.skills ?? emptySkillCreationState();
+    if (session.occupation?.kind === "custom" &&
+      session.occupation.selectedOccupationId === parsed.id) {
+      const previousDefinition = session.occupation.definitionSnapshot;
+      if (!haveSameCustomOccupationApprovalMechanics(previousDefinition, parsed)) {
+        skills = {
+          ...skills,
+          keeperApprovals: skills.keeperApprovals.filter((grant) =>
+            grant.reason !== "custom-occupation" || grant.subjectId !== parsed.id,
+          ),
+        };
+      }
+      if (!haveSameCreditRatingRange(previousDefinition, parsed) &&
+        skills.creditRatingOverride?.occupationId === parsed.id) {
+        const { creditRatingOverride: _staleOverride, ...skillsWithoutOverride } = skills;
+        skills = skillsWithoutOverride;
+      }
+    }
     await persist({
       ...replaceOccupationSelection(session, {
         kind: "custom",
         selectedOccupationId: parsed.id,
         definitionSnapshot: parsed,
       }),
-      skills: session.skills ?? emptySkillCreationState(),
+      skills,
     });
   }
 

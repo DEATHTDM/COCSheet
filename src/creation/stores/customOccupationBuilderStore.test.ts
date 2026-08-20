@@ -169,6 +169,189 @@ describe("custom occupation builder store integration", () => {
     }));
   });
 
+  it("同 UUID mechanics 编辑只撤销当前 custom-occupation approval 并重新产生 pending", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard", preset("keeper-approval"));
+    await useCharacterStore().setEra(characterId, "classic-1920s");
+    await store.selectCustomOccupation({ ...customOccupation(), skillRequirements: [] });
+    const character: Character = {
+      version: 1,
+      id: characterId,
+      name: "测试调查员",
+      settingId: "standard",
+      eraId: "classic-1920s",
+      characteristics,
+    };
+    const pending = store.getSkillFinalizePlan(character).approvals.find(
+      ({ reason }) => reason === "custom-occupation",
+    );
+    if (!pending) throw new Error("未产生 custom occupation approval");
+    await store.approvePendingSkillApproval(character, pending, "KP 已确认旧 mechanics");
+    expect(store.getSkillFinalizePlan(character).approvals).not.toContainEqual(
+      expect.objectContaining({ reason: "custom-occupation" }),
+    );
+    const approvedSkills = store.current?.data.skills;
+    if (!approvedSkills) throw new Error("技能草稿不存在");
+    const otherOccupationId = "44444444-4444-4444-8444-444444444444";
+    await store.setSkillCreationState({
+      ...approvedSkills,
+      keeperApprovals: [
+        ...approvedSkills.keeperApprovals,
+        {
+          reason: "cthulhu-mythos-allocation",
+          subjectId: "skill:cthulhu-mythos",
+          approved: true,
+        },
+        {
+          reason: "skill-creation-point-policy",
+          subjectId: "skill:art-craft",
+          approved: true,
+        },
+        { reason: "custom-occupation", subjectId: otherOccupationId, approved: true },
+      ],
+    });
+
+    await store.selectCustomOccupation({
+      ...customOccupation(),
+      pointFormula: { type: "attribute", attribute: "INT", multiplier: 4 },
+      skillRequirements: [],
+    });
+
+    expect(store.current?.data.occupation?.selectedOccupationId).toBe(occupationId);
+    expect(store.current?.data.skills?.keeperApprovals).not.toContainEqual(
+      expect.objectContaining({ reason: "custom-occupation", subjectId: occupationId }),
+    );
+    expect(store.current?.data.skills?.keeperApprovals).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        reason: "cthulhu-mythos-allocation",
+        subjectId: "skill:cthulhu-mythos",
+      }),
+      expect.objectContaining({
+        reason: "skill-creation-point-policy",
+        subjectId: "skill:art-craft",
+      }),
+      expect.objectContaining({ reason: "custom-occupation", subjectId: otherOccupationId }),
+    ]));
+    expect(store.getSkillFinalizePlan(character).approvals).toContainEqual(
+      expect.objectContaining({ reason: "custom-occupation", subjectId: occupationId }),
+    );
+  });
+
+  it("同 UUID 只改 name/category 时保留 custom-occupation approval", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard", preset("keeper-approval"));
+    await useCharacterStore().setEra(characterId, "classic-1920s");
+    await store.selectCustomOccupation({ ...customOccupation(), skillRequirements: [] });
+    const character: Character = {
+      version: 1,
+      id: characterId,
+      name: "测试调查员",
+      settingId: "standard",
+      eraId: "classic-1920s",
+      characteristics,
+    };
+    const pending = store.getSkillFinalizePlan(character).approvals.find(
+      ({ reason }) => reason === "custom-occupation",
+    );
+    if (!pending) throw new Error("未产生 custom occupation approval");
+    await store.approvePendingSkillApproval(character, pending);
+
+    await store.selectCustomOccupation({
+      ...customOccupation("仅修改展示名称"),
+      category: "academic",
+      skillRequirements: [],
+    });
+
+    expect(store.current?.data.occupation?.selectedOccupationId).toBe(occupationId);
+    expect(store.current?.data.skills?.keeperApprovals).toContainEqual(
+      expect.objectContaining({ reason: "custom-occupation", subjectId: occupationId }),
+    );
+    expect(store.getSkillFinalizePlan(character).approvals).not.toContainEqual(
+      expect.objectContaining({ reason: "custom-occupation" }),
+    );
+  });
+
+  it("同 UUID CR range 编辑撤销当前 override，纯改名保留新 override", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "classic-1920s");
+    await store.selectCustomOccupation({ ...customOccupation(), skillRequirements: [] });
+    await store.setSkillAllocation(
+      { type: "standard", definitionId: "credit-rating" },
+      80,
+      0,
+    );
+    const character: Character = {
+      version: 1,
+      id: characterId,
+      name: "测试调查员",
+      settingId: "standard",
+      eraId: "classic-1920s",
+      characteristics,
+    };
+    await store.approveCreditRatingOverride(character, "旧范围 override");
+
+    await store.selectCustomOccupation({
+      ...customOccupation(),
+      creditRating: { min: 10, max: 70 },
+      skillRequirements: [],
+    });
+
+    expect(store.current?.data.occupation?.selectedOccupationId).toBe(occupationId);
+    expect(store.current?.data.skills?.creditRatingOverride).toBeUndefined();
+    expect(store.getSkillFinalizePlan(character).approvals).toContainEqual(
+      expect.objectContaining({ reason: "credit-rating-override" }),
+    );
+
+    await store.approveCreditRatingOverride(character, "新范围 override");
+    const approvedOverride = store.current?.data.skills?.creditRatingOverride;
+    await store.selectCustomOccupation({
+      ...customOccupation("仅改职业名称"),
+      creditRating: { min: 10, max: 70 },
+      skillRequirements: [],
+    });
+    expect(store.current?.data.skills?.creditRatingOverride).toEqual(approvedOverride);
+    expect(store.getSkillFinalizePlan(character).approvals).not.toContainEqual(
+      expect.objectContaining({ reason: "credit-rating-override" }),
+    );
+  });
+
+  it("pending allocation 后立即 selectCustomOccupation 保留最新 allocation，reload 一致", async () => {
+    const store = useCreationStore();
+    const characterId = await store.start("standard");
+    await useCharacterStore().setEra(characterId, "classic-1920s");
+    await store.selectCatalogOccupation("accountant");
+    const history = { type: "standard" as const, definitionId: "history" };
+    await store.setSkillAllocation(history, 5, 10);
+
+    const pendingWrite = store.setSkillAllocationPoint(history, "interestPoints", 20);
+    const occupationSwitch = store.selectCustomOccupation(customOccupation());
+    await Promise.all([pendingWrite, occupationSwitch]);
+
+    expect(store.current?.data.occupation).toMatchObject({
+      kind: "custom",
+      selectedOccupationId: occupationId,
+    });
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: history,
+      occupationPoints: 5,
+      interestPoints: 20,
+    });
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.occupation).toMatchObject({
+      kind: "custom",
+      selectedOccupationId: occupationId,
+    });
+    expect(restored.current?.data.skills?.allocations).toContainEqual({
+      ref: history,
+      occupationPoints: 5,
+      interestPoints: 20,
+    });
+  });
+
   it("custom occupation 完整走过 requirement、allocation、approval、completeSkills 到 Review", async () => {
     const store = useCreationStore();
     const characterId = await store.start("standard", preset("keeper-approval"));

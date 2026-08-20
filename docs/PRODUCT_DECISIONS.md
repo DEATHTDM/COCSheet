@@ -122,6 +122,8 @@ CreationSession 分配行持久化完整 `SkillRef`、职业点与兴趣点，�
 
 Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴趣点都可投入，最终值越出职业范围时需要显式 Keeper override，且 override 必须绑定当前职业身份。Keeper approval 使用带 reason 与 subject 的强类型记录，区分职业定义、Preset 职业政策、自定义职业、Credit Rating、Cthulhu Mythos 分配与模糊需求；模糊 requirement 的 subject 同时包含职业身份与 requirement ID。
 
+同一 custom occupation UUID 的 approval-sensitive mechanics 发生变化时，原 custom-occupation approval 失效并需要重新批准；Credit Rating range 变化使当前职业的 CR override 失效；纯名称、category 等 presentation 修改不使上述批准失效。
+
 职业技能 replacement 使用独立的 `occupation-skill-replacement` approval reason；subject 同时绑定 occupation ID、policy ID 与 target requirement ID。改变 replacement target 必须重新批准，未显式启用 replacement 时不产生批准要求。
 
 自定义职业的八项限制按需求最多可产生的职业技能 category 数计算，不按 requirement 条目数计算。有限需求使用外层 `cardinality.max`；`one-branch` 取一个可选 branch 的最大容量，`choice-pool` 取最多可激活 branches 中最大的有限容量之和，并继续受外层 SkillRef max 约束。无法证明不超过八项的开放上限需求被拒绝，通用 Fighting / Firearms 专业化 branch 即使允许多个 refs 也各按一个职业技能 category 计数。
