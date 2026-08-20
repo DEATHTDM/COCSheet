@@ -150,6 +150,36 @@ describe("skill allocation store APIs", () => {
     }]);
   });
 
+  it("pending allocation 后立即 navigation 保留最新值与 step，reload 一致", async () => {
+    const { store, characterId } = await prepareAccountant();
+    await store.setSkillAllocation(rapidAccounting, 10, 5);
+
+    const pendingWrite = store.setSkillAllocationPoint(
+      rapidAccounting,
+      "interestPoints",
+      20,
+    );
+    const navigation = store.setCurrentStep("occupation");
+    await Promise.all([pendingWrite, navigation]);
+
+    expect(store.current?.data.currentStep).toBe("occupation");
+    expect(store.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 10,
+      interestPoints: 20,
+    });
+
+    setActivePinia(createPinia());
+    const restored = useCreationStore();
+    await restored.loadByCharacterId(characterId);
+    expect(restored.current?.data.currentStep).toBe("occupation");
+    expect(restored.current?.data.skills?.allocations).toContainEqual({
+      ref: rapidAccounting,
+      occupationPoints: 10,
+      interestPoints: 20,
+    });
+  });
+
   it("upsert 唯一 row，0/0 删除，并保持 requirement/replacement/approval/CR override", async () => {
     const { store } = await prepareAccountant();
     const preserved = {

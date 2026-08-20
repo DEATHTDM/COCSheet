@@ -4,13 +4,13 @@ Last updated: 2026-08-14
 
 ## Current phase
 
-Phase 5 — Occupation Engine & Standard Occupations (In Progress)
+Phase 5 — Occupation Engine & Standard Occupations (Completed)
 
-Phase 5A — Occupation Engine Foundation and Phase 5B — Verified Standard Occupation Data are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C — Creation UI is in progress: Phase 5C-1 — Occupation Browser & Catalog Selection, Phase 5C-1.5 — Persistent Era Context & Availability Guard, Phase 5C-2 — Requirement Selection, Phase 5C-3 — Skill Point Allocation & Approvals, and Phase 5C-4A — Conflict & Stale Draft Resolution are implemented. Custom occupation builder UI remains for Phase 5C-4B. Phase 5 overall remains in progress.
+Phase 5A — Occupation Engine Foundation, Phase 5B — Verified Standard Occupation Data, and Phase 5C — Creation UI are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C now covers occupation browsing and era guards, structured requirement selection, skill allocation and approvals, stale-draft resolution, and a user-operable Custom Occupation Builder connected to the complete Occupation → Skills → Finalize → Review flow.
 
 ## Git baseline
 
-Phase 5C-4A Conflict & Stale Draft Resolution branch was created from `main` at `9d25f2313d435a240b68c49efeff99e288acf03f`.
+Phase 5C-4B Custom Occupation Builder branch was created from `main` at `2eac0cb20c464be5675482ff3295a46b29a2d3cd`.
 
 ## Implemented
 
@@ -89,6 +89,8 @@ Phase 5C-4A Conflict & Stale Draft Resolution branch was created from `main` at 
 - stale occupation draft presentation derived only from existing finalizer errors, with raw Engine messages and no duplicate occupation validator
 - explicit occupation reset that drains pending allocation writes, reuses the existing pure reset semantics, preserves interest allocations and skill-scoped creation approvals, and restores deterministic exact requirements for the current occupation
 - Review-to-skills round-trip recognition of the structured finalize resolution, preventing completed structured `Character.skills` from being misclassified as manual data
+- current-investigator Custom Occupation Builder with local-only incomplete drafts, UUID occupation identity, stable requirement-slot identities, friendly closed point-formula controls, up to eight Engine-supported skill categories, era-filtered Setting skill choices, and fixed custom source/all-era metadata
+- custom occupation creation and same-UUID editing through the existing Creation Store snapshot action, preserving structured skill drafts and delegating stale conflicts, capacity proof, Preset approvals, allocation, finalization, refresh persistence, and Review transition to the existing Phase 5 Engine and 4A UX
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -151,7 +153,6 @@ Merged in the current enum:
 
 ## Not implemented
 
-- custom occupation builder UI (Phase 5C-4B)
 - post-creation improvement-roll workflow
 - independent final character sheet UI/module
 - guide overlay
@@ -163,7 +164,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5C-4A is completed. The next intended work is Phase 5C-4B — Custom Occupation Builder, which remains Not Started and requires separate authorization.
+Phase 5 is completed. No next phase is named here; the ordering of Roadmap Later items remains unfrozen and any further phase requires separate authorization.
 
 ## Known technical risks
 

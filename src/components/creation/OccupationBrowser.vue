@@ -24,6 +24,7 @@ import {
   type OccupationPresetPolicyStatus,
 } from "../../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../../creation/stores/creationStore";
+import CustomOccupationBuilder from "./CustomOccupationBuilder.vue";
 
 const props = defineProps<{ readonly eraId: EraId | undefined }>();
 const creationStore = useCreationStore();
@@ -33,6 +34,7 @@ const era = ref<EraId | "">(props.eraId ?? "");
 const tag = ref("");
 const errorMessage = ref("");
 const selectionMessage = ref("");
+const showCustomBuilder = ref(false);
 
 const session = computed(() => creationStore.current?.data);
 const registry = computed(() => getOccupationRegistry(session.value?.settingId ?? "standard"));
@@ -69,6 +71,25 @@ const previewOccupation = computed<OccupationDefinition | undefined>(() => {
     : undefined;
 });
 const selectedOccupationName = computed(() => currentSelection.value?.definitionSnapshot.name.zh);
+const selectedCustomOccupation = computed(() =>
+  currentSelection.value?.kind === "custom" ? currentSelection.value.definitionSnapshot : undefined,
+);
+const customOccupationPolicy = computed(() =>
+  session.value?.presetSnapshot?.allowCustomOccupation ?? true,
+);
+const selectedCustomIsBanned = computed(() =>
+  currentSelection.value?.kind === "custom" && customOccupationPolicy.value === false,
+);
+const hasStructuredSkillDraft = computed(() => {
+  const state = session.value?.skills;
+  return Boolean(state && (
+    state.requirementSelections.length > 0 ||
+    state.allocations.length > 0 ||
+    state.occupationSkillReplacement ||
+    state.creditRatingOverride ||
+    state.keeperApprovals.length > 0
+  ));
+});
 const selectedCatalogIsBanned = computed(() => {
   const selection = currentSelection.value;
   return selection?.kind === "catalog" && getOccupationPresetPolicyStatus(
@@ -86,12 +107,14 @@ const canContinue = computed(() =>
   Boolean(currentSelection.value) &&
   !eraContextMissing.value &&
   !selectedCatalogIsBanned.value &&
+  !selectedCustomIsBanned.value &&
   currentSelectionEraCompatible.value,
 );
 const continueReason = computed(() => {
   if (eraContextMissing.value) return "请先返回基本信息选择建卡时代。";
   if (!currentSelection.value) return "请先选择一个职业。";
   if (selectedCatalogIsBanned.value) return "当前已选职业被此 KP 预设禁用，请先更换职业。";
+  if (selectedCustomIsBanned.value) return "当前 KP 预设禁止自定义职业，请先更换职业。";
   if (!currentSelectionEraCompatible.value && props.eraId) {
     return `当前职业不适用于${formatOccupationEraId(props.eraId)}`;
   }
@@ -116,6 +139,34 @@ function canSelectOccupation(occupation: OccupationDefinition): boolean {
 function preview(occupationId: string): void {
   previewOccupationId.value = occupationId;
   selectionMessage.value = "";
+}
+
+function openCustomOccupationBuilder(): void {
+  if (eraContextMissing.value || customOccupationPolicy.value === false) return;
+  showCustomBuilder.value = true;
+  errorMessage.value = "";
+  selectionMessage.value = "";
+}
+
+async function saveCustomOccupation(definition: OccupationDefinition): Promise<void> {
+  const selection = currentSelection.value;
+  const isEditingCurrent = selection?.kind === "custom" &&
+    selection.selectedOccupationId === definition.id;
+  if (isEditingCurrent && hasStructuredSkillDraft.value && !window.confirm(
+    "修改职业定义会保留现有技能草稿；不再匹配的内容需在技能步骤调整或重置。是否继续？",
+  )) return;
+  if (!isEditingCurrent && selection && !window.confirm(
+    "更换职业会保留现有技能草稿；与新职业不匹配的选择将在技能步骤中标记为过期或冲突。是否继续？",
+  )) return;
+
+  try {
+    await creationStore.selectCustomOccupation(definition);
+    showCustomBuilder.value = false;
+    errorMessage.value = "";
+    selectionMessage.value = `已${isEditingCurrent ? "更新" : "选择"}自定义职业：${definition.name.zh}`;
+  } catch (error: unknown) {
+    errorMessage.value = error instanceof Error ? error.message : "保存自定义职业失败。";
+  }
 }
 
 async function selectOccupation(occupation: OccupationDefinition): Promise<void> {
@@ -178,20 +229,102 @@ async function goToSkills(): Promise<void> {
           当前已选择自定义职业：{{ currentSelection.definitionSnapshot.name.zh }}
         </strong>
         <strong v-else>当前已选择职业：{{ currentSelection.definitionSnapshot.name.zh }}</strong>
+        <template v-if="currentSelection.kind === 'custom'">
+          <dl class="occupation-facts custom-occupation-summary">
+            <div>
+              <dt>分类</dt>
+              <dd>{{ formatOccupationCategory(currentSelection.definitionSnapshot.category) }}</dd>
+            </div>
+            <div>
+              <dt>信用评级</dt>
+              <dd>{{ currentSelection.definitionSnapshot.creditRating.min }}～{{ currentSelection.definitionSnapshot.creditRating.max }}</dd>
+            </div>
+            <div>
+              <dt>职业技能点</dt>
+              <dd>{{ formatOccupationPointFormula(currentSelection.definitionSnapshot.pointFormula) }}</dd>
+            </div>
+            <div>
+              <dt>职业技能 category</dt>
+              <dd>{{ currentSelection.definitionSnapshot.skillRequirements.length }} 个栏位</dd>
+            </div>
+          </dl>
+          <ol class="occupation-requirements compact-requirements">
+            <li
+              v-for="requirement in currentSelection.definitionSnapshot.skillRequirements"
+              :key="requirement.id"
+            >
+              {{ formatOccupationRequirement(requirement, skills) }}
+            </li>
+          </ol>
+        </template>
       </div>
-      <button
-        v-if="currentSelection.kind === 'catalog' && previewOccupationId !== currentSelection.selectedOccupationId"
-        class="button"
-        type="button"
-        @click="preview(currentSelection.selectedOccupationId)"
-      >
-        查看当前职业
-      </button>
-      <p v-if="!currentSelectionEraCompatible && props.eraId" class="warning-message" role="alert">
-        当前职业不适用于{{ formatOccupationEraId(props.eraId) }}
-      </p>
+      <div class="form-stack compact-stack current-occupation-controls">
+        <button
+          v-if="currentSelection.kind === 'catalog' && previewOccupationId !== currentSelection.selectedOccupationId"
+          class="button"
+          type="button"
+          @click="preview(currentSelection.selectedOccupationId)"
+        >
+          查看当前职业
+        </button>
+        <button
+          v-if="currentSelection.kind === 'custom'"
+          class="button"
+          type="button"
+          :disabled="eraContextMissing || customOccupationPolicy === false"
+          @click="openCustomOccupationBuilder"
+        >
+          编辑自定义职业
+        </button>
+        <p v-if="!currentSelectionEraCompatible && props.eraId" class="warning-message" role="alert">
+          当前职业不适用于{{ formatOccupationEraId(props.eraId) }}
+        </p>
+        <p v-if="selectedCustomIsBanned" class="warning-message" role="alert">
+          当前 KP 预设禁止自定义职业。
+        </p>
+        <p
+          v-else-if="currentSelection.kind === 'custom' && customOccupationPolicy === 'keeper-approval'"
+          class="warning-message"
+        >
+          此自定义职业最终需要 KP 批准。
+        </p>
+      </div>
     </aside>
 
+    <section class="panel custom-occupation-entry">
+      <div>
+        <p class="eyebrow">当前调查员专用</p>
+        <h3>{{ selectedCustomOccupation ? "编辑自定义职业" : "创建自定义职业" }}</h3>
+        <p v-if="customOccupationPolicy === false" class="warning-message" role="alert">
+          当前 KP 预设禁止自定义职业。
+        </p>
+        <p v-else-if="customOccupationPolicy === 'keeper-approval'" class="warning-message">
+          此自定义职业最终需要 KP 批准。
+        </p>
+        <p v-else class="muted">自定义职业只保存在当前建卡会话的职业快照中。</p>
+      </div>
+      <button
+        class="button primary"
+        data-testid="open-custom-occupation-builder"
+        type="button"
+        :disabled="eraContextMissing || customOccupationPolicy === false"
+        @click="openCustomOccupationBuilder"
+      >
+        {{ selectedCustomOccupation ? "编辑自定义职业" : "创建自定义职业" }}
+      </button>
+    </section>
+
+    <CustomOccupationBuilder
+      v-if="showCustomBuilder"
+      :setting-id="session?.settingId ?? 'standard'"
+      :era-id="props.eraId"
+      :initial-definition="selectedCustomOccupation"
+      :has-structured-skill-draft="Boolean(selectedCustomOccupation) && hasStructuredSkillDraft"
+      @save="saveCustomOccupation"
+      @cancel="showCustomBuilder = false"
+    />
+
+    <template v-if="!showCustomBuilder">
     <section class="panel occupation-filter-bar" aria-label="职业浏览筛选">
       <label class="field occupation-search-field">
         <span>搜索职业</span>
@@ -362,5 +495,6 @@ async function goToSkills(): Promise<void> {
         继续：技能
       </button>
     </footer>
+    </template>
   </section>
 </template>
