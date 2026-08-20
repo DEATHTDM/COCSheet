@@ -36,11 +36,11 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，可选人物信息 `sex`、`residence`、`birthplace`，可选 `backstory`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`skills` 和轻量 `occupation` 身份快照。背景条目使用 UUID 稳定 identity 与闭合类别；Key Connection 引用 entry ID。创建期 3～6 条和 Key Connection 完成条件属于纯 creation validation，不是 Character schema 的长期上限。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，可选人物信息 `sex`、`residence`、`birthplace`，可选 `backstory`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`wealth`、`skills` 和轻量 `occupation` 身份快照。背景条目使用 UUID 稳定 identity 与闭合类别；Key Connection 引用 entry ID。创建期 3～6 条和 Key Connection 完成条件属于纯 creation validation，不是 Character schema 的长期上限。`wealth` 只保存 integer minor-unit current cash/assets totals 与 UUID-backed 资产构成说明；spending level 不持久化。资产条目可选估值且不要求合计等于 assets total。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
-`CreationSession` 负责建卡流程状态，但不重复保存时代；所有时代判断都读取 `Character.eraId`。当前 Schema 包含 `version`、`characterId`、`settingId`、`currentStep`、可选 `presetSnapshot`、草稿年龄及强类型属性阶段状态。属性状态以 discriminated union 区分六种生成方式，并保存原始骰值、分配、候选组、Base Characteristics、年龄减值、EDU 成长记录与 Luck 来源。职业阶段保存完整 `OccupationDefinition` mechanics snapshot；技能阶段保存 requirement selections、完整 `SkillRef` allocation rows、可选的 occupation skill replacement policy/target draft、Credit Rating override、分理由的 Keeper approvals 与手动技能冲突处理决定。replacement SkillRef 从 mechanics snapshot 实时推导，不重复持久化。预算、base/final/Half/Fifth、剩余点数和 validation issues 均实时推导，不持久化。
+`CreationSession` 负责建卡流程状态，但不重复保存时代；所有时代判断都读取 `Character.eraId`。当前 Schema 包含 `version`、`characterId`、`settingId`、`currentStep`、可选 `presetSnapshot`、草稿年龄及强类型属性阶段状态。属性状态以 discriminated union 区分六种生成方式，并保存原始骰值、分配、候选组、Base Characteristics、年龄减值、EDU 成长记录与 Luck 来源。职业阶段保存完整 `OccupationDefinition` mechanics snapshot；技能阶段保存 requirement selections、完整 `SkillRef` allocation rows、可选的 occupation skill replacement policy/target draft、Credit Rating override、分理由的 Keeper approvals 与手动技能冲突处理决定。replacement SkillRef 从 mechanics snapshot 实时推导，不重复持久化。预算、base/final/Half/Fifth、剩余点数和 validation issues 均实时推导，不持久化。Phase 7A 的 optional `wealthInitialization` 只记录创建期显式初始化时的 Standard era + finalized Credit Rating provenance，用于纯 stale 检测，不复制到 Character。
 
 Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Characteristic 校验前不生成 Base Characteristics。Point Buy 从当前预设的数学最低合法分配开始，并同样只在总点数和各项限制全部满足后生成 Base。`draftAge` 与年龄调整状态中的年龄必须一致。
 
@@ -52,7 +52,7 @@ Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Ch
 
 Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过现有 Schema 与 Repository 正常读取；读取或页面加载不会自动改写。UI 明确提示超出上限，并只在用户点击同步后调用 Store reconciliation action；该 action 仅在需要时通过一次 CharacterRepository update 修改 current SAN，不修改 Mythos、HP、MP、属性、Luck 或其他技能。
 
-创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。完成 attributes 时原子写入最终属性与推进 occupation；完成 skills 时同样通过 Creation Workflow Repository 在一个事务中原子写入 `Character.occupation`、重建后的 `Character.skills` 与 `CreationSession.currentStep = background`。Background 完成 action 从持久化 Character 读取背景并通过纯 validator 检查后才推进 review。旧 session 若已经位于 review 会原样读取，不自动倒退或 writeback。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
+创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。完成 attributes 时原子写入最终属性与推进 occupation；完成 skills 时同样通过 Creation Workflow Repository 在一个事务中原子写入 `Character.occupation`、重建后的 `Character.skills` 与 `CreationSession.currentStep = background`。Background 完成 action 从持久化 Character 读取背景并通过纯 validator 检查后推进 possessions。Standard wealth 只由显式 Creation Store action 初始化：该 action 读取最新持久化 Character，以当前 era + finalized Credit Rating 调用纯表格规则，并在同一个 Creation Workflow Repository transaction 写入 Character wealth 与 session provenance；mount、Repository read 和 stale 检测均不自动初始化或重算。Possessions completion 只在 wealth 已初始化、provenance current，并且正资产至少有一条资产说明时推进 review。旧 session 若已经位于 review 会原样读取，不自动倒退或 writeback。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 
 ## Persistence
 
@@ -82,6 +82,8 @@ Component 不直接访问 Dexie。持久化记录在写入和读取时经过 Zod
 
 Phase 3 只为 Character version 1 新增 optional `resources` 字段。CharacterRecord version 与 IndexedDB version 均保持 1，表和索引不变。
 
+Phase 7A 只为 Character version 1 新增 optional `wealth`，为 CreationSession version 1 新增 optional `wealthInitialization` 与 `possessions` step。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character / session 读取不补写财富，已在 review 的 legacy session 不倒退。
+
 可持久化状态通过结构校验后，完成属性前还会执行领域语义校验：Preset 必须数学可完成，EDU 成长历史必须逐项连续且与骰值一致，rolled Luck 必须符合当前年龄要求的 3D6×5 次数与取高结果。
 
 ## Setting architecture
@@ -99,6 +101,8 @@ regency
 避免在应用各处散布 `if (setting === "gaslight")`。`SettingPack` 是数据与扩展 ID 声明，不能注入或执行任意 JavaScript。特殊人物规则由应用内部 Extension Registry 提供，并随应用代码发布。
 
 当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition` 与必要的 canonical specializations；其余四个 SettingPack 仍是空内容占位包，不包含技能目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
+
+Standard wealth table 是内建的纯规则，不是 mutable Setting catalog。后续 equipment 属于时代化 Setting content；weapons 因包含独立战斗 mechanics 而保持独立领域模型，不塞入 generic EquipmentDefinition。Phase 7A 不包含任何 equipment/weapon catalog。
 
 ## Skill architecture
 
@@ -157,4 +161,4 @@ Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还
 
 ## Schema evolution
 
-正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。
+正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step；Phase 7A 只增加 optional Character wealth、optional CreationSession wealth provenance 与 `possessions` step。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。

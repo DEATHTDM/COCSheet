@@ -17,8 +17,16 @@ export const creationStepIdSchema = z.enum([
   "occupation",
   "skills",
   "background",
+  "possessions",
   "review",
 ]);
+
+export const wealthInitializationSchema = z
+  .object({
+    eraId: z.enum(["classic-1920s", "modern"]),
+    creditRating: z.number().int().min(0).max(99),
+  })
+  .strict();
 
 const assignmentSchema = z
   .object({
@@ -141,6 +149,7 @@ export const creationSessionSchema = z
     attributes: attributeStateSchema.optional(),
     occupation: occupationSelectionSchema.optional(),
     skills: skillCreationStateSchema.optional(),
+    wealthInitialization: wealthInitializationSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -155,6 +164,7 @@ export const creationSessionSchema = z
   });
 
 export type CreationStepId = z.infer<typeof creationStepIdSchema>;
+export type WealthInitialization = z.infer<typeof wealthInitializationSchema>;
 export type AttributeGenerationState = z.infer<typeof attributeGenerationStateSchema>;
 export type EduImprovementResult = z.infer<typeof eduImprovementResultSchema>;
 export type AgeAdjustmentState = z.infer<typeof ageAdjustmentStateSchema>;

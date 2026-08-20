@@ -198,7 +198,7 @@ async function completeBackground(): Promise<void> {
           type="button"
           :disabled="!validation.valid"
           @click="completeBackground"
-        >继续：完成建卡 / 查看调查员</button>
+        >继续：财富与物品</button>
       </div>
     </footer>
   </section>

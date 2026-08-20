@@ -95,6 +95,35 @@ export const characterResourcesSchema = z
   })
   .strict();
 
+export const characterAssetEntrySchema = z
+  .object({
+    id: z.string().uuid(),
+    description: z.string().trim().min(1, "资产描述不能为空"),
+    valueMinorUnits: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
+export const characterWealthSchema = z
+  .object({
+    cashMinorUnits: z.number().int().nonnegative(),
+    assetsMinorUnits: z.number().int().nonnegative(),
+    assetEntries: z.array(characterAssetEntrySchema),
+  })
+  .strict()
+  .superRefine((wealth, context) => {
+    const entryIds = new Set<string>();
+    wealth.assetEntries.forEach((entry, index) => {
+      if (entryIds.has(entry.id)) {
+        context.addIssue({
+          code: "custom",
+          message: "资产条目 ID 必须唯一",
+          path: ["assetEntries", index, "id"],
+        });
+      }
+      entryIds.add(entry.id);
+    });
+  });
+
 export const characterSchema = z
   .object({
     version: z.literal(1),
@@ -110,6 +139,7 @@ export const characterSchema = z
     characteristics: characteristicValuesSchema.optional(),
     luck: z.number().int().min(0).max(99).optional(),
     resources: characterResourcesSchema.optional(),
+    wealth: characterWealthSchema.optional(),
     skills: characterSkillsSchema.optional(),
     occupation: characterOccupationSchema.optional(),
   })
@@ -117,6 +147,8 @@ export const characterSchema = z
 
 export type Character = z.infer<typeof characterSchema>;
 export type CharacterResources = z.infer<typeof characterResourcesSchema>;
+export type CharacterAssetEntry = z.infer<typeof characterAssetEntrySchema>;
+export type CharacterWealth = z.infer<typeof characterWealthSchema>;
 export type CharacterOccupation = z.infer<typeof characterOccupationSchema>;
 export type BackstoryCategoryId = z.infer<typeof backstoryCategoryIdSchema>;
 export type BackstoryEntry = z.infer<typeof backstoryEntrySchema>;

@@ -15,6 +15,7 @@ import type { EraId } from "../coc7/types/occupation";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
 import CharacterReviewPanel from "../components/creation/CharacterReviewPanel.vue";
 import CharacterBackgroundStep from "../components/creation/CharacterBackgroundStep.vue";
+import CharacterPossessionsStep from "../components/creation/CharacterPossessionsStep.vue";
 import SkillRequirementStep from "../components/creation/SkillRequirementStep.vue";
 import { getSettingPackOrThrow } from "../content/registry";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
@@ -343,6 +344,7 @@ async function reconcileSanity(): Promise<void> {
         <li :class="{ active: currentStep === 'occupation' }">职业</li>
         <li :class="{ active: currentStep === 'skills' }">技能</li>
         <li :class="{ active: currentStep === 'background' }">背景</li>
+        <li :class="{ active: currentStep === 'possessions' }">财富与物品</li>
         <li :class="{ active: currentStep === 'review' }">检查</li>
       </ol>
 
@@ -549,6 +551,11 @@ async function reconcileSanity(): Promise<void> {
 
       <CharacterBackgroundStep
         v-else-if="currentStep === 'background'"
+        :character="characterStore.current.data"
+      />
+
+      <CharacterPossessionsStep
+        v-else-if="currentStep === 'possessions'"
         :character="characterStore.current.data"
       />
 

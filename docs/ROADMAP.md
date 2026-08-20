@@ -209,14 +209,34 @@ Status: Completed
 - Character-owned backstory across six creation and four game-time categories
 - stable entry UUID identity and entry-ID Key Connection reference
 - pure creation validation for 3～6 creation entries and one initial Key Connection
-- Basic Info → Attributes → Occupation → Skills → Background → Review workflow
+- Basic Info → Attributes → Occupation → Skills → Background handoff, later extended by Phase 7A through Possessions → Review
 - dedicated Background creation UI and expanded creation Review summary
 - unchanged Character/Record/Dexie version 1 with no new table or read-time migration
 
+## Phase 7 — Wealth, Equipment & Weapons
+
+Status: In Progress
+
+### Phase 7A — Standard Wealth & Possessions Foundation
+
+Status: Completed
+
+- pure Standard 1920s / Modern wealth rules derived from era + finalized Credit Rating
+- integer minor-unit current cash/assets in Character with UUID-backed asset descriptions
+- CreationSession initialization provenance and explicit stale/reset semantics
+- Background → Possessions → Review flow and dedicated wealth UI
+- unchanged Character/CreationSession/Record/Dexie version 1 with no read-time writeback
+
+### Phase 7B — Standard Equipment Catalog & Selection
+
+Status: Not Started
+
+### Phase 7C — Standard Weapons Catalog & Character Weapons
+
+Status: Not Started
+
 ## Later
 
-- equipment
-- weapons
 - final character sheet UX
 - guide overlay
 - KP preset sharing
@@ -227,4 +247,4 @@ Status: Completed
 - Dark Ages
 - Regency
 
-Order after Phase 5 is not frozen.
+Later-item ordering after Phase 7 is not frozen.
