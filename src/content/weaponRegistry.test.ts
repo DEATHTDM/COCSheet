@@ -80,7 +80,7 @@ describe("weapon registry", () => {
       expect(getWeaponRegistry(pack.id)).toBe(registry);
       expect(getSkillRegistry(pack.id)).toBeDefined();
     }
-    expect(getWeaponRegistry("standard").definitions).toHaveLength(8);
+    expect(getWeaponRegistry("standard").definitions).toHaveLength(104);
     expect(getWeaponRegistry("gaslight").definitions).toEqual([]);
     expect(getWeaponRegistry("down-darker-trails").definitions).toEqual([]);
     expect(getWeaponRegistry("dark-ages").definitions).toEqual([]);

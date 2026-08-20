@@ -1,179 +1,21 @@
-import type { SourceReference } from "../../coc7/types/source";
-import type { WeaponDefinition, WeaponSkillRef } from "../../coc7/types/weapon";
+import type { WeaponDefinition } from "../../coc7/types/weapon";
 
-const keeperRulebook = (page: number, note: string): SourceReference => ({
-  sourceId: "coc7-keeper-rulebook-40th-zh",
-  title: "《克苏鲁的呼唤 40 周年纪念版》",
-  page,
-  note,
-});
-
-const investigatorHandbook = (page: number, note: string): SourceReference => ({
-  sourceId: "coc7-investigator-handbook-zh-1-21",
-  title: "《克苏鲁的呼唤第七版调查员手册》",
-  page,
-  note,
-});
-
-const standard = (definitionId: string): WeaponSkillRef => ({
-  type: "standard",
-  definitionId,
-});
-
-const predefined = (
-  definitionId: string,
-  specializationId: string,
-): WeaponSkillRef => ({
-  type: "predefined",
-  definitionId,
-  specializationId,
-});
+import { standardAssaultRifles } from "./weapons/assaultRifles";
+import { standardExplosiveHeavyOtherWeapons } from "./weapons/explosiveHeavyOther";
+import { standardHandguns } from "./weapons/handguns";
+import { standardMachineGuns } from "./weapons/machineGuns";
+import { standardMeleeOtherWeapons } from "./weapons/meleeOther";
+import { standardRifles } from "./weapons/rifles";
+import { standardShotguns } from "./weapons/shotguns";
+import { standardSubmachineGuns } from "./weapons/submachineGuns";
 
 export const standardWeaponDefinitions: readonly WeaponDefinition[] = [
-  {
-    version: 1,
-    id: "bow",
-    name: { zh: "弓箭", en: "Bow" },
-    category: "melee-other",
-    skillRef: predefined("firearms", "bow"),
-    damage: "1D6+半DB",
-    impales: false,
-    baseRange: "30m",
-    attacksPerRound: "1",
-    capacity: "1",
-    price: { classic1920s: "$7", modern: "$75" },
-    malfunction: 97,
-    availability: { classic1920s: "available", modern: "available" },
-    sourceRefs: [
-      keeperRulebook(401, "表 17 弓箭行；本定义采用其公制射程显示"),
-      investigatorHandbook(250, "表 10-2 弓箭行"),
-    ],
-  },
-  {
-    version: 1,
-    id: "chainsaw",
-    name: { zh: "链锯", en: "Chainsaw" },
-    category: "melee-other",
-    skillRef: predefined("fighting", "chainsaw"),
-    damage: "2D8",
-    impales: true,
-    baseRange: "接触",
-    attacksPerRound: "1",
-    price: { modern: "$300" },
-    malfunction: 95,
-    availability: { classic1920s: "unavailable", modern: "available" },
-    sourceRefs: [
-      keeperRulebook(401, "表 17 链锯行"),
-      investigatorHandbook(250, "表 10-2 链锯行"),
-    ],
-  },
-  {
-    version: 1,
-    id: "large-knife",
-    name: { zh: "大型刀（甘蔗刀等）", en: "Large Knife (Machete, etc.)" },
-    category: "melee-other",
-    skillRef: predefined("fighting", "brawl"),
-    damage: "1D8+DB",
-    impales: true,
-    baseRange: "接触",
-    attacksPerRound: "1",
-    price: { classic1920s: "$4", modern: "$50" },
-    availability: { classic1920s: "available", modern: "available" },
-    sourceRefs: [
-      keeperRulebook(401, "表 17 大型刀具行；本定义采用其接触射程显示"),
-      investigatorHandbook(250, "表 10-2 大型刀行；本定义采用其中文名称"),
-    ],
-  },
-  {
-    version: 1,
-    id: "thrown-rock",
-    name: { zh: "投石", en: "Thrown Rock" },
-    category: "melee-other",
-    skillRef: standard("throw"),
-    damage: "1D4+半DB",
-    impales: false,
-    baseRange: "STR ft",
-    attacksPerRound: "1",
-    availability: { classic1920s: "available", modern: "available" },
-    sourceRefs: [
-      keeperRulebook(401, "表 17 投石行；公制版本记为 STR/5m"),
-      investigatorHandbook(250, "表 10-2 投石行；本定义采用其 STR ft 显示"),
-    ],
-  },
-  {
-    version: 1,
-    id: "12-gauge-double-barrel-shotgun",
-    name: { zh: "12号双管霰弹枪", en: "12-gauge Double-barrel Shotgun" },
-    category: "shotgun",
-    skillRef: predefined("firearms", "rifle-shotgun"),
-    damage: "4D6/2D6/1D6",
-    impales: false,
-    baseRange: "10/20/50m",
-    attacksPerRound: "1或2",
-    capacity: "2",
-    price: { classic1920s: "$40", modern: "$200" },
-    malfunction: 100,
-    availability: { classic1920s: "available", modern: "available" },
-    sourceRefs: [
-      keeperRulebook(403, "表 17 霰弹枪分表"),
-      investigatorHandbook(252, "表 10-5 霰弹枪"),
-    ],
-  },
-  {
-    version: 1,
-    id: "fn-fal",
-    name: { zh: "FN FAL突击步枪", en: "FN FAL Assault Rifle" },
-    category: "assault-rifle",
-    skillRef: predefined("firearms", "rifle-shotgun"),
-    damage: "2D6+4",
-    impales: true,
-    baseRange: "110m",
-    attacksPerRound: "1(2)或3发点射",
-    capacity: "20",
-    price: { modern: "$1500" },
-    malfunction: 97,
-    availability: { classic1920s: "unavailable", modern: "available" },
-    sourceRefs: [
-      keeperRulebook(404, "表 17 突击步枪分表"),
-      investigatorHandbook(253, "表 10-6 突击步枪"),
-    ],
-  },
-  {
-    version: 1,
-    id: "thompson-submachine-gun",
-    name: { zh: "汤普森冲锋枪", en: "Thompson Submachine Gun" },
-    category: "submachine-gun",
-    skillRef: predefined("firearms", "submachine-gun"),
-    damage: "1D10+2",
-    impales: true,
-    baseRange: "20m",
-    attacksPerRound: "1或全自动",
-    capacity: "20/30/50",
-    price: { classic1920s: "$200+", modern: "$1600" },
-    malfunction: 96,
-    availability: { classic1920s: "available", modern: "unavailable" },
-    sourceRefs: [
-      keeperRulebook(404, "表 17 冲锋枪分表"),
-      investigatorHandbook(253, "表 10-7 冲锋枪"),
-    ],
-  },
-  {
-    version: 1,
-    id: "m1918-browning-automatic-rifle",
-    name: { zh: "M1918勃朗宁自动步枪", en: "M1918 Browning Automatic Rifle" },
-    category: "machine-gun",
-    skillRef: predefined("firearms", "machine-gun"),
-    damage: "2D6+4",
-    impales: true,
-    baseRange: "90m",
-    attacksPerRound: "1(2)或全自动",
-    capacity: "20",
-    price: { classic1920s: "$800", modern: "$1500" },
-    malfunction: 100,
-    availability: { classic1920s: "available", modern: "unavailable" },
-    sourceRefs: [
-      keeperRulebook(404, "表 17 机枪分表"),
-      investigatorHandbook(253, "表 10-8 机枪"),
-    ],
-  },
+  ...standardMeleeOtherWeapons,
+  ...standardHandguns,
+  ...standardRifles,
+  ...standardShotguns,
+  ...standardAssaultRifles,
+  ...standardSubmachineGuns,
+  ...standardMachineGuns,
+  ...standardExplosiveHeavyOtherWeapons,
 ];
