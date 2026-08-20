@@ -1,16 +1,16 @@
 # Current State
 
-Last updated: 2026-08-20
+Last updated: 2026-08-21
 
 ## Current phase
 
-Phase 6 — Investigator Identity & Backstory (Completed)
+Phase 7 — Wealth, Equipment & Weapons (In Progress)
 
-Phase 6 adds final Character identity details and persistent backstory with stable entry UUIDs and an entry-ID Key Connection. The creation flow is now Basic Info → Attributes → Occupation → Skills → Background → Review; creation validation requires 3～6 entries from the six creation categories and one Key Connection, while the Character schema remains compatible with long-term game-time background categories and legacy version-1 records.
+Phase 7A — Standard Wealth & Possessions Foundation is completed. Standard initial lifestyle, cash, assets, and spending level now derive from era + finalized Credit Rating; current cash/assets and UUID-backed asset descriptions are long-term Character state, while creation provenance belongs to CreationSession. The creation flow is now Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review. Phase 7B and 7C remain unimplemented.
 
 ## Git baseline
 
-Phase 6 Investigator Identity & Backstory branch was created from `main` at `9d8b13f933c9132ea008bc84ea228b889b9ae25b`.
+Phase 7A Standard Wealth & Possessions Foundation branch was created from `main` at `a3b0782609a2baf8be0a35791e54ccd44c840eaa`.
 
 ## Implemented
 
@@ -18,11 +18,19 @@ Phase 6 Investigator Identity & Backstory branch was created from `main` at `9d8
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
 - five registered SettingPacks, with the complete core skill catalog only in Standard and empty content placeholders for the other settings
+- pure Standard 1920s/Modern wealth table for CR 0～99 with closed lifestyle IDs, integer US-cent amounts, exact/minimum asset semantics, and presentation-only dollar formatting
+- optional Character version-1 wealth containing mutable cash/assets totals and UUID-backed asset descriptions with optional estimates; no spending-level persistence or asset-entry sum invariant
+- Character Store cash/assets and asset CRUD APIs with Store-owned UUIDs, stable edit identity, refresh persistence, and no CreationSession side effects
+- optional CreationSession version-1 wealth initialization provenance, pure current/stale comparison against Character era + finalized Credit Rating, and no Dexie/Record/version bump or read-time writeback
+- explicit transactional Standard wealth initialization that resets cash/assets totals, preserves asset descriptions, and atomically writes Character wealth plus session provenance without mount/read/stale auto-recalculation
+- seven-step Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review workflow with legacy Review preservation
+- dedicated Possessions step showing CR, lifestyle, spending level, official/current cash/assets, CR99 minimum wording, explicit initialize/reinitialize, editable asset descriptions, and creation validation requiring a description only for positive assets
+- Review wealth summary with Credit Rating, lifestyle, current cash/assets, spending level, asset entries, and a return-to-Possessions action without becoming a final character sheet
 - optional Character `sex`, `residence`, and `birthplace` identity details with trimmed non-empty persistence and legacy missing-field compatibility
 - optional Character backstory aggregate with ten closed categories, globally unique UUID entry identity, trimmed text, and an entry-ID Key Connection reference
 - Character Store identity/backstory aggregate APIs with Store-owned UUID creation, stable edit identity, key-safe removal, and no separate BackgroundRepository
 - pure creation-background validation that counts only the six creation categories, requires 3～6 entries and one initial Key Connection, and excludes four game-time categories from completion
-- six-step Basic Info → Attributes → Occupation → Skills → Background → Review workflow; skills atomically hand off to Background, Background validates the persisted Character, and legacy Review sessions remain in Review without read-time migration
+- Phase 6 background workflow in which skills atomically hand off to Background and Background validates the persisted Character before Phase 7A advances to Possessions
 - dedicated Background step UI with multi-entry categories, six-entry add limit, editing/removal, single Key Connection selection and validation-backed completion
 - creation Review summaries for identity and all ten backstory categories, including Key Connection marking and non-destructive returns to Background or Skills
 - internal Extension Registry and allow-listed extension IDs
@@ -67,7 +75,7 @@ Phase 6 Investigator Identity & Backstory branch was created from `main` at `9d8
 - readable occupation previews covering formulas, Credit Rating, eras, sources, all selector structures, Keeper-review markers, variants, definition approval, and skill replacement policy without exposing machine JSON
 - Preset occupation-policy presentation that keeps banned occupations visible but unselectable, allows approval-required occupations without creating approval grants, and derives banned status ahead of approval-required status
 - explicit catalog occupation selection through the existing Creation Store action, with browse preview kept local, replacement confirmation, preserved skill drafts, catalog snapshot persistence, and custom-selection fallback
-- six-step creation stepper with explicit skills, background, and review branches; the Phase 4 manual SkillEditor is no longer embedded in the structured occupation creation step
+- seven-step creation stepper with explicit skills, background, possessions, and review branches; the Phase 4 manual SkillEditor is no longer embedded in the structured occupation creation step
 - optional authoritative `Character.eraId` with explicit Standard basic-info selection, refresh persistence, SettingPack membership validation, legacy missing-field compatibility, and no Character/Record/Dexie version change
 - era-change confirmation when occupation or skill draft state exists; acceptance preserves catalog/custom occupation, attributes, resources and every structured skill draft field, while cancellation restores the persisted selector value
 - shared pure occupation/skill era-availability rules used by the browser and finalizer; browser applicability filtering initializes from Character era but remains local and independently changeable
@@ -161,7 +169,8 @@ Merged in the current enum:
 ## Not implemented
 
 - post-creation improvement-roll workflow
-- equipment, cash/assets, and weapons
+- Standard equipment catalog and selection
+- Standard weapon schema/catalog and Character weapons
 - portrait upload
 - independent final character sheet UI/module
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
@@ -174,7 +183,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 6 is completed. No next phase is named here; the ordering of Roadmap Later items remains unfrozen and any further phase requires separate authorization.
+Phase 7B — Standard Equipment Catalog & Selection. It remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

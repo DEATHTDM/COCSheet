@@ -24,6 +24,24 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 创建阶段只统计六个创建背景类别，并要求合计 3～6 条及恰好一条初始 Key Connection。该数量与完成条件属于 creation validation，不是 `Character` schema 的长期条目上限，也不要求长期人物数据始终拥有 Key Connection。
 
+## Wealth, equipment, and weapons
+
+### W001 — Character-owned mutable wealth
+
+Current cash 与 current assets total 是 `Character` 的长期 mutable state。金额统一使用非负整数 minor units；Standard 当前的 minor unit 是 US cent，不以浮点美元持久化。
+
+资产构成使用 Store 创建的 UUID 稳定 identity，可选记录单项估值；资产条目估值总和不要求等于 Character 的 assets total，也不要求每项资产都有精确估值。
+
+### W002 — Derived spending level and creation provenance
+
+Standard lifestyle、官方初始 cash/assets 与 spending level 由当前 `Character.eraId` 和当前最终 Credit Rating 派生。Spending level 不进入 `Character.wealth`，也不是每日自动扣款账户。
+
+创建期财富初始化所依据的 era 与 Credit Rating snapshot 属于 `CreationSession` provenance，不进入长期 Character wealth。CR 或 era 改变不会静默重算或覆盖已有财富；不匹配时财富进入 stale 状态，必须由玩家显式重新初始化。重新初始化重置 cash/assets totals，但保留已有资产构成说明供玩家复核。
+
+### W003 — Weapons are not generic equipment
+
+装备目录属于时代化 Setting content。武器具有独立战斗 mechanics，不复用 generic equipment schema；Standard weapons 在独立 Phase 7C 中建模。
+
 ## Settings
 
 ### S001 — Supported settings

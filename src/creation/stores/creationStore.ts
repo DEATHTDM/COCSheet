@@ -28,6 +28,7 @@ import {
   type FinalizeSkillAllocationResult,
 } from "../../coc7/rules/occupationSkills";
 import { getSkillRefKey } from "../../coc7/rules/skills";
+import { deriveStandardInitialWealth } from "../../coc7/rules/wealth";
 import {
   characteristicValueSchema,
   characteristicValuesSchema,
@@ -72,6 +73,11 @@ import {
 } from "../rules/requirementSelection";
 import { listOccupationAllocationRefs } from "../rules/skillAllocationPresentation";
 import { validateCreationBackstory } from "../rules/creationBackstory";
+import {
+  getFinalCreditRating,
+  isStandardWealthEraId,
+  validateCreationWealth,
+} from "../rules/creationWealth";
 import {
   skillAllocationSchema,
   type ApprovalReasonId,
@@ -894,6 +900,57 @@ export const useCreationStore = defineStore("creation", () => {
     if (!validation.valid) {
       throw new Error(validation.errors.map((error) => error.message).join("；"));
     }
+    await persist({ ...session, currentStep: "possessions" });
+  }
+
+  async function initializeCurrentStandardWealth(): Promise<CharacterRecord> {
+    await flushSkillAllocationWrites();
+    const session = requireSession();
+    const characterRecord = await characterRepository.getById(session.characterId);
+    if (!characterRecord) throw new Error(`调查员不存在：${session.characterId}`);
+    const character = characterRecord.data;
+    if (character.settingId !== "standard") {
+      throw new Error("当前仅实现 Standard COC7 财富规则");
+    }
+    if (!isStandardWealthEraId(character.eraId)) {
+      throw new Error("Standard 调查员必须先选择建卡时代");
+    }
+    const creditRating = getFinalCreditRating(character);
+    if (creditRating === undefined) {
+      throw new Error("必须先完成技能并生成最终 Credit Rating");
+    }
+    const initial = deriveStandardInitialWealth(character.eraId, creditRating);
+    const completedSession: CreationSession = {
+      ...session,
+      wealthInitialization: { eraId: character.eraId, creditRating },
+    };
+    const records = await creationWorkflowRepository.updateCharacterWithSession(
+      {
+        ...character,
+        wealth: {
+          cashMinorUnits: initial.cashMinorUnits,
+          assetsMinorUnits: initial.assets.amountMinorUnits,
+          assetEntries: [...(character.wealth?.assetEntries ?? [])],
+        },
+      },
+      completedSession,
+    );
+    current.value = records.session;
+    return records.character;
+  }
+
+  async function completePossessions(): Promise<void> {
+    await flushSkillAllocationWrites();
+    const session = requireSession();
+    const character = await characterRepository.getById(session.characterId);
+    if (!character) throw new Error(`调查员不存在：${session.characterId}`);
+    const validation = validateCreationWealth(
+      character.data,
+      session.wealthInitialization,
+    );
+    if (!validation.valid) {
+      throw new Error(validation.errors.map((error) => error.message).join("；"));
+    }
     await persist({ ...session, currentStep: "review" });
   }
 
@@ -1168,6 +1225,8 @@ export const useCreationStore = defineStore("creation", () => {
     revokeCurrentCreditRatingOverride,
     completeSkills,
     completeBackground,
+    initializeCurrentStandardWealth,
+    completePossessions,
     setAge,
     chooseGenerationMethod,
     generateCurrentMethod,

@@ -427,6 +427,25 @@ describe("CreationSession 领域一致性", () => {
     expect(parsed.occupation).toBeUndefined();
     expect(parsed.skills).toBeUndefined();
   });
+
+  it("version 1 additive 支持 possessions step 与财富初始化 provenance", () => {
+    const parsed = creationSessionSchema.parse({
+      version: 1,
+      characterId: crypto.randomUUID(),
+      settingId: "standard",
+      currentStep: "possessions",
+      wealthInitialization: { eraId: "classic-1920s", creditRating: 35 },
+    });
+    expect(parsed.currentStep).toBe("possessions");
+    expect(parsed.wealthInitialization).toEqual({
+      eraId: "classic-1920s",
+      creditRating: 35,
+    });
+    expect(creationSessionSchema.safeParse({
+      ...parsed,
+      wealthInitialization: { eraId: "gaslight", creditRating: 35 },
+    }).success).toBe(false);
+  });
 });
 
 describe("Record 冗余元数据一致性", () => {

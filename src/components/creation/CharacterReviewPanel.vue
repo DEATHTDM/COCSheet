@@ -12,6 +12,16 @@ import {
 } from "../../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../../creation/stores/creationStore";
 import { backstoryCategoryLabels } from "../../creation/presentation/backstoryPresentation";
+import { deriveStandardInitialWealth } from "../../coc7/rules/wealth";
+import {
+  formatStandardInitialAssets,
+  formatStandardMoney,
+  standardLifestyleLabels,
+} from "../../creation/presentation/wealthPresentation";
+import {
+  getFinalCreditRating,
+  isStandardWealthEraId,
+} from "../../creation/rules/creationWealth";
 
 const props = defineProps<{ readonly character: Character }>();
 const creationStore = useCreationStore();
@@ -32,6 +42,17 @@ const backstoryGroups = computed(() => backstoryCategoryIds
     entries: props.character.backstory?.entries.filter((entry) => entry.category === category) ?? [],
   }))
   .filter((group) => group.entries.length > 0));
+const creditRating = computed(() => getFinalCreditRating(props.character));
+const wealthRule = computed(() => {
+  if (!isStandardWealthEraId(props.character.eraId) || creditRating.value === undefined) {
+    return undefined;
+  }
+  try {
+    return deriveStandardInitialWealth(props.character.eraId, creditRating.value);
+  } catch {
+    return undefined;
+  }
+});
 
 async function returnToSkills(): Promise<void> {
   actionError.value = "";
@@ -50,6 +71,15 @@ async function returnToBackground(): Promise<void> {
     actionError.value = error instanceof Error ? error.message : "返回背景修改失败。";
   }
 }
+
+async function returnToPossessions(): Promise<void> {
+  actionError.value = "";
+  try {
+    await creationStore.setCurrentStep("possessions");
+  } catch (error: unknown) {
+    actionError.value = error instanceof Error ? error.message : "返回财富与物品失败。";
+  }
+}
 </script>
 
 <template>
@@ -63,6 +93,7 @@ async function returnToBackground(): Promise<void> {
       <div class="actions">
         <button class="button" type="button" @click="returnToSkills">返回技能调整</button>
         <button class="button" type="button" @click="returnToBackground">返回修改背景</button>
+        <button class="button" type="button" @click="returnToPossessions">返回修改财富与物品</button>
       </div>
     </header>
 
@@ -81,6 +112,27 @@ async function returnToBackground(): Promise<void> {
         <div><dt>最终职业</dt><dd>{{ character.occupation?.displayNameSnapshot.zh ?? '—' }}</dd></div>
         <div><dt>Luck</dt><dd>{{ character.luck ?? '—' }}</dd></div>
       </dl>
+    </section>
+
+    <section class="panel form-stack">
+      <h3>财富与资产</h3>
+      <dl class="review-summary-grid">
+        <div><dt>Credit Rating</dt><dd>{{ creditRating ?? '—' }}</dd></div>
+        <div><dt>Lifestyle</dt><dd>{{ wealthRule ? standardLifestyleLabels[wealthRule.lifestyle] : '—' }}</dd></div>
+        <div><dt>Current Cash</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.cashMinorUnits) : '—' }}</dd></div>
+        <div><dt>Current Assets</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.assetsMinorUnits) : '—' }}</dd></div>
+        <div><dt>Spending Level</dt><dd>{{ wealthRule ? formatStandardMoney(wealthRule.spendingLevelMinorUnits) : '—' }}</dd></div>
+        <div v-if="wealthRule?.assets.type === 'minimum'">
+          <dt>官方初始资产</dt><dd>{{ formatStandardInitialAssets(wealthRule.assets) }}</dd>
+        </div>
+      </dl>
+      <ul v-if="character.wealth?.assetEntries.length" class="review-backstory-groups">
+        <li v-for="entry in character.wealth.assetEntries" :key="entry.id">
+          <strong>{{ entry.description }}</strong>
+          <span>：{{ entry.valueMinorUnits === undefined ? '未精确估价' : formatStandardMoney(entry.valueMinorUnits) }}</span>
+        </li>
+      </ul>
+      <p v-else class="empty-state">尚无资产构成说明。</p>
     </section>
 
     <section class="panel form-stack">

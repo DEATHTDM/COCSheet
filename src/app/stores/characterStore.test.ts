@@ -206,6 +206,74 @@ describe("Character identity 与 backstory persistence", () => {
   });
 });
 
+describe("Character wealth persistence", () => {
+  it("cash/assets 与 asset CRUD 刷新持久化，编辑保持 Store-owned UUID", async () => {
+    const character = makeLegacyCharacter({
+      wealth: { cashMinorUnits: 5_000, assetsMinorUnits: 100_000, assetEntries: [] },
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    await store.setCurrentCash(character.id, 4_250);
+    await store.setCurrentAssets(character.id, 125_000);
+    const added = await store.addAssetEntry(character.id, {
+      description: "  波士顿公寓  ",
+      valueMinorUnits: 100_000,
+    });
+    const entry = added.data.wealth?.assetEntries[0];
+    if (!entry) throw new Error("资产条目未创建");
+    expect(entry.id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(entry.description).toBe("波士顿公寓");
+
+    setActivePinia(createPinia());
+    const restoredStore = useCharacterStore();
+    const restored = await restoredStore.loadById(character.id);
+    expect(restored?.data.wealth).toMatchObject({
+      cashMinorUnits: 4_250,
+      assetsMinorUnits: 125_000,
+    });
+    expect(restored?.data.wealth?.assetEntries[0]?.id).toBe(entry.id);
+
+    const edited = await restoredStore.updateAssetEntry(character.id, entry.id, {
+      description: "  纽伯里街公寓  ",
+    });
+    expect(edited.data.wealth?.assetEntries[0]).toEqual({
+      id: entry.id,
+      description: "纽伯里街公寓",
+    });
+
+    await restoredStore.removeAssetEntry(character.id, entry.id);
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.wealth).toEqual({
+      cashMinorUnits: 4_250,
+      assetsMinorUnits: 125_000,
+      assetEntries: [],
+    });
+  });
+
+  it("拒绝未初始化、非法金额、空描述与缺失资产条目", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    await expect(store.setCurrentCash(character.id, 100)).rejects.toThrow("财富尚未初始化");
+    const initialized = await characterRepository.update({
+      ...character,
+      wealth: { cashMinorUnits: 0, assetsMinorUnits: 0, assetEntries: [] },
+    });
+    await store.loadById(initialized.id);
+    await expect(store.setCurrentAssets(character.id, -1)).rejects.toThrow("当前资产总额");
+    await expect(store.addAssetEntry(character.id, { description: "   " }))
+      .rejects.toThrow("资产描述不能为空");
+    await expect(store.updateAssetEntry(character.id, crypto.randomUUID(), { description: "汽车" }))
+      .rejects.toThrow("找不到资产条目");
+    await expect(store.removeAssetEntry(character.id, crypto.randomUUID()))
+      .rejects.toThrow("找不到资产条目");
+  });
+});
+
 describe("游戏中资源更新", () => {
   it("HP、MP、SAN 更新后可刷新恢复，SAN 可以高于 POW", async () => {
     const character = makeLegacyCharacter();

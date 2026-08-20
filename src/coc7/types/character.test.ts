@@ -67,3 +67,61 @@ describe("Character identity 与 backstory schema", () => {
     expect(parsed.backstory?.keyConnectionEntryId).toBeUndefined();
   });
 });
+
+describe("Character wealth schema", () => {
+  it("legacy Character 缺少 wealth 时仍正常解析", () => {
+    const legacy = makeCharacter();
+    expect(characterSchema.parse(legacy)).not.toHaveProperty("wealth");
+  });
+
+  it("wealth 是 version 1 optional additive 并可 round-trip", () => {
+    const entryId = crypto.randomUUID();
+    const parsed = characterSchema.parse({
+      ...makeCharacter(),
+      wealth: {
+        cashMinorUnits: 13_900,
+        assetsMinorUnits: 250_000,
+        assetEntries: [{
+          id: entryId,
+          description: "  波士顿公寓  ",
+          valueMinorUnits: 200_000,
+        }],
+      },
+    });
+    expect(parsed.version).toBe(1);
+    expect(parsed.wealth).toEqual({
+      cashMinorUnits: 13_900,
+      assetsMinorUnits: 250_000,
+      assetEntries: [{
+        id: entryId,
+        description: "波士顿公寓",
+        valueMinorUnits: 200_000,
+      }],
+    });
+    expect(characterSchema.parse(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+  });
+
+  it("拒绝重复 asset UUID、空描述与非法金额", () => {
+    const id = crypto.randomUUID();
+    const base = {
+      ...makeCharacter(),
+      wealth: {
+        cashMinorUnits: 0,
+        assetsMinorUnits: 0,
+        assetEntries: [
+          { id, description: "公寓" },
+          { id, description: "汽车" },
+        ],
+      },
+    };
+    expect(characterSchema.safeParse(base).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...base,
+      wealth: { ...base.wealth, assetEntries: [{ id: crypto.randomUUID(), description: "   " }] },
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...base,
+      wealth: { cashMinorUnits: 1.5, assetsMinorUnits: -1, assetEntries: [] },
+    }).success).toBe(false);
+  });
+});

@@ -17,7 +17,9 @@ import type { CharacterSkill, SkillDefinition, SkillRef } from "../../coc7/types
 import type {
   BackstoryCategoryId,
   CharacterBackstory,
+  CharacterAssetEntry,
   CharacterResources,
+  CharacterWealth,
 } from "../../coc7/types/character";
 import type { EraId } from "../../coc7/types/occupation";
 import { getSettingPackOrThrow } from "../../content/registry";
@@ -30,6 +32,11 @@ export interface CharacterIdentityDetails {
   readonly sex: string;
   readonly residence: string;
   readonly birthplace: string;
+}
+
+export interface CharacterAssetEntryInput {
+  readonly description: string;
+  readonly valueMinorUnits?: number;
 }
 
 export const useCharacterStore = defineStore("characters", () => {
@@ -60,6 +67,28 @@ export const useCharacterStore = defineStore("characters", () => {
     if (!Number.isInteger(value) || value < 0) {
       throw new RangeError(`${label} 必须为非负整数`);
     }
+  }
+
+  function requireWealth(record: CharacterRecord): CharacterWealth {
+    const wealth = record.data.wealth;
+    if (!wealth) throw new Error("调查员财富尚未初始化");
+    return wealth;
+  }
+
+  function normalizeAssetEntryInput(
+    input: CharacterAssetEntryInput,
+    id: string,
+  ): CharacterAssetEntry {
+    const description = input.description.trim();
+    if (!description) throw new Error("资产描述不能为空");
+    if (input.valueMinorUnits !== undefined) {
+      requireNonNegativeInteger(input.valueMinorUnits, "资产估值");
+    }
+    return {
+      id,
+      description,
+      ...(input.valueMinorUnits === undefined ? {} : { valueMinorUnits: input.valueMinorUnits }),
+    };
   }
 
   function requireSkillDefinition(record: CharacterRecord, definitionId: string): SkillDefinition {
@@ -312,6 +341,76 @@ export const useCharacterStore = defineStore("characters", () => {
     }));
   }
 
+  async function setCurrentCash(id: string, cashMinorUnits: number): Promise<CharacterRecord> {
+    requireNonNegativeInteger(cashMinorUnits, "当前现金");
+    const existing = await requireCharacter(id);
+    const wealth = requireWealth(existing);
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      wealth: { ...wealth, cashMinorUnits },
+    }));
+  }
+
+  async function setCurrentAssets(id: string, assetsMinorUnits: number): Promise<CharacterRecord> {
+    requireNonNegativeInteger(assetsMinorUnits, "当前资产总额");
+    const existing = await requireCharacter(id);
+    const wealth = requireWealth(existing);
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      wealth: { ...wealth, assetsMinorUnits },
+    }));
+  }
+
+  async function addAssetEntry(
+    id: string,
+    input: CharacterAssetEntryInput,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const wealth = requireWealth(existing);
+    const entry = normalizeAssetEntryInput(input, crypto.randomUUID());
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      wealth: { ...wealth, assetEntries: [...wealth.assetEntries, entry] },
+    }));
+  }
+
+  async function updateAssetEntry(
+    id: string,
+    entryId: string,
+    input: CharacterAssetEntryInput,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const wealth = requireWealth(existing);
+    if (!wealth.assetEntries.some((entry) => entry.id === entryId)) {
+      throw new Error(`找不到资产条目：${entryId}`);
+    }
+    const updatedEntry = normalizeAssetEntryInput(input, entryId);
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      wealth: {
+        ...wealth,
+        assetEntries: wealth.assetEntries.map((entry) =>
+          entry.id === entryId ? updatedEntry : entry,
+        ),
+      },
+    }));
+  }
+
+  async function removeAssetEntry(id: string, entryId: string): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const wealth = requireWealth(existing);
+    if (!wealth.assetEntries.some((entry) => entry.id === entryId)) {
+      throw new Error(`找不到资产条目：${entryId}`);
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      wealth: {
+        ...wealth,
+        assetEntries: wealth.assetEntries.filter((entry) => entry.id !== entryId),
+      },
+    }));
+  }
+
   async function setSkillValue(
     id: string,
     ref: SkillRef,
@@ -464,6 +563,11 @@ export const useCharacterStore = defineStore("characters", () => {
     setCurrentHp,
     setCurrentMp,
     setCurrentSan,
+    setCurrentCash,
+    setCurrentAssets,
+    addAssetEntry,
+    updateAssetEntry,
+    removeAssetEntry,
     setSkillValue,
     setImprovementChecked,
     createCustomSpecialization,

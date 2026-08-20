@@ -992,7 +992,7 @@ describe("Phase 5C-4A manual skill conflict", () => {
 });
 
 describe("Phase 6 background workflow", () => {
-  it("skills 进入 background；不完整被阻断；往返 skills 后数据保留并可完成 review", async () => {
+  it("skills 进入 background；不完整被阻断；往返 skills 后数据保留并进入 possessions", async () => {
     const store = useCreationStore();
     const characterId = await prepareCompletableManual(store);
     const initial = await characterRepository.getById(characterId);
@@ -1047,10 +1047,132 @@ describe("Phase 6 background workflow", () => {
     expect(secondFinalize.data.skills).toEqual(firstFinalize.data.skills);
 
     await store.completeBackground();
-    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.currentStep).toBe("possessions");
     expect((await creationSessionRepository.getByCharacterId(characterId))?.data.currentStep)
-      .toBe("review");
+      .toBe("possessions");
     expect((await characterRepository.getById(characterId))?.data.backstory)
       .toEqual(withKey.data.backstory);
+  });
+});
+
+describe("Phase 7A wealth and possessions workflow", () => {
+  it("显式初始化、往返 Skills、stale 检测与保留资产条目的重置均可刷新恢复", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initial = await characterRepository.getById(characterId);
+    if (!initial) throw new Error("调查员不存在");
+    const afterAttributes = await store.completeAttributes(initial.data);
+
+    await store.selectCustomOccupation({
+      version: 1,
+      id: crypto.randomUUID(),
+      name: { zh: "财富测试员", en: "Wealth Tester" },
+      category: "business-professional",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 99 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [],
+    });
+    await store.setSkillCreationState({
+      requirementSelections: [],
+      allocations: [{
+        ref: { type: "standard", definitionId: "credit-rating" },
+        occupationPoints: 20,
+        interestPoints: 0,
+      }],
+      keeperApprovals: [],
+    });
+    const firstFinalize = await store.completeSkills(afterAttributes.data, true);
+    expect(firstFinalize.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "credit-rating",
+    )?.currentValue).toBe(20);
+
+    const characterStore = useCharacterStore();
+    await characterStore.loadById(characterId);
+    const firstEntryRecord = await characterStore.addBackstoryEntry(
+      characterId,
+      "personal-description",
+      "总是穿着整洁的西装",
+    );
+    const keyEntry = firstEntryRecord.data.backstory?.entries[0];
+    if (!keyEntry) throw new Error("背景条目未创建");
+    await characterStore.addBackstoryEntry(characterId, "traits", "精于计算");
+    await characterStore.addBackstoryEntry(characterId, "traits", "谨慎投资");
+    await characterStore.setKeyConnection(characterId, keyEntry.id);
+
+    await store.completeBackground();
+    expect(store.current?.data.currentStep).toBe("possessions");
+    await expect(store.completePossessions()).rejects.toThrow("请先按当前 Credit Rating 初始化财富");
+
+    const workflowSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
+    const initialized = await store.initializeCurrentStandardWealth();
+    expect(workflowSpy).toHaveBeenCalledTimes(1);
+    expect(initialized.data.wealth).toEqual({
+      cashMinorUnits: 4_000,
+      assetsMinorUnits: 100_000,
+      assetEntries: [],
+    });
+    expect(store.current?.data.wealthInitialization).toEqual({
+      eraId: "classic-1920s",
+      creditRating: 20,
+    });
+    await expect(store.completePossessions()).rejects.toThrow("至少填写一条资产构成说明");
+
+    setActivePinia(createPinia());
+    const restoredCreationStore = useCreationStore();
+    const restoredCharacterStore = useCharacterStore();
+    await Promise.all([
+      restoredCreationStore.loadByCharacterId(characterId),
+      restoredCharacterStore.loadById(characterId),
+    ]);
+    expect(restoredCreationStore.current?.data.wealthInitialization?.creditRating).toBe(20);
+    expect(restoredCharacterStore.current?.data.wealth?.cashMinorUnits).toBe(4_000);
+
+    const withAsset = await restoredCharacterStore.addAssetEntry(characterId, {
+      description: "波士顿公寓",
+      valueMinorUnits: 100_000,
+    });
+    const assetId = withAsset.data.wealth?.assetEntries[0]?.id;
+    if (!assetId) throw new Error("资产条目未创建");
+
+    await restoredCreationStore.setCurrentStep("skills");
+    const unchangedFinalize = await restoredCreationStore.completeSkills(withAsset.data, true);
+    await restoredCreationStore.completeBackground();
+    expect(restoredCreationStore.current?.data.currentStep).toBe("possessions");
+    expect(restoredCreationStore.current?.data.wealthInitialization?.creditRating).toBe(20);
+    expect(unchangedFinalize.data.wealth?.assetEntries[0]?.id).toBe(assetId);
+
+    await restoredCreationStore.setCurrentStep("skills");
+    await restoredCreationStore.setSkillAllocation(
+      { type: "standard", definitionId: "credit-rating" },
+      30,
+      0,
+    );
+    const latestBeforeRefinalize = await characterRepository.getById(characterId);
+    if (!latestBeforeRefinalize) throw new Error("调查员不存在");
+    const changedFinalize = await restoredCreationStore.completeSkills(
+      latestBeforeRefinalize.data,
+      true,
+    );
+    await restoredCreationStore.completeBackground();
+    expect(changedFinalize.data.skills?.find(
+      (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "credit-rating",
+    )?.currentValue).toBe(30);
+    await expect(restoredCreationStore.completePossessions()).rejects.toThrow(
+      "当前财富基于旧的时代或 Credit Rating，请重新初始化财富。",
+    );
+
+    const reinitialized = await restoredCreationStore.initializeCurrentStandardWealth();
+    expect(reinitialized.data.wealth).toEqual({
+      cashMinorUnits: 6_000,
+      assetsMinorUnits: 150_000,
+      assetEntries: [{ id: assetId, description: "波士顿公寓", valueMinorUnits: 100_000 }],
+    });
+    expect(restoredCreationStore.current?.data.wealthInitialization?.creditRating).toBe(30);
+    await restoredCreationStore.completePossessions();
+    expect(restoredCreationStore.current?.data.currentStep).toBe("review");
+    expect((await creationSessionRepository.getByCharacterId(characterId))?.data.currentStep)
+      .toBe("review");
   });
 });
