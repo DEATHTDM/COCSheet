@@ -1105,6 +1105,13 @@ describe("Phase 7A wealth and possessions workflow", () => {
     expect(store.current?.data.currentStep).toBe("possessions");
     await expect(store.completePossessions()).rejects.toThrow("请先按当前 Credit Rating 初始化财富");
 
+    const beforeWealthPossession = await characterStore.addPossessionEntry(characterId, {
+      name: "莱卡相机",
+      notes: "随身携带",
+    });
+    const beforeWealthPossessionId = beforeWealthPossession.data.possessions?.[0]?.id;
+    if (!beforeWealthPossessionId) throw new Error("初始化前随身物品未创建");
+
     const workflowSpy = vi.spyOn(creationWorkflowRepository, "updateCharacterWithSession");
     const initialized = await store.initializeCurrentStandardWealth();
     expect(workflowSpy).toHaveBeenCalledTimes(1);
@@ -1113,6 +1120,11 @@ describe("Phase 7A wealth and possessions workflow", () => {
       assetsMinorUnits: 100_000,
       assetEntries: [],
     });
+    expect(initialized.data.possessions).toEqual([{
+      id: beforeWealthPossessionId,
+      name: "莱卡相机",
+      notes: "随身携带",
+    }]);
     expect(store.current?.data.wealthInitialization).toEqual({
       eraId: "classic-1920s",
       creditRating: 20,
@@ -1128,6 +1140,7 @@ describe("Phase 7A wealth and possessions workflow", () => {
     ]);
     expect(restoredCreationStore.current?.data.wealthInitialization?.creditRating).toBe(20);
     expect(restoredCharacterStore.current?.data.wealth?.cashMinorUnits).toBe(4_000);
+    expect(restoredCharacterStore.current?.data.possessions?.[0]?.id).toBe(beforeWealthPossessionId);
 
     const withAsset = await restoredCharacterStore.addAssetEntry(characterId, {
       description: "波士顿公寓",
@@ -1136,12 +1149,24 @@ describe("Phase 7A wealth and possessions workflow", () => {
     const assetId = withAsset.data.wealth?.assetEntries[0]?.id;
     if (!assetId) throw new Error("资产条目未创建");
 
+    await restoredCharacterStore.removePossessionEntry(characterId, beforeWealthPossessionId);
+    await restoredCreationStore.completePossessions();
+    expect(restoredCreationStore.current?.data.currentStep).toBe("review");
+
+    const withPossession = await restoredCharacterStore.addPossessionEntry(characterId, {
+      name: "医药箱",
+      notes: "放在旅行箱内",
+    });
+    const possessionId = withPossession.data.possessions?.[0]?.id;
+    if (!possessionId) throw new Error("随身物品未创建");
+
     await restoredCreationStore.setCurrentStep("skills");
-    const unchangedFinalize = await restoredCreationStore.completeSkills(withAsset.data, true);
+    const unchangedFinalize = await restoredCreationStore.completeSkills(withPossession.data, true);
     await restoredCreationStore.completeBackground();
     expect(restoredCreationStore.current?.data.currentStep).toBe("possessions");
     expect(restoredCreationStore.current?.data.wealthInitialization?.creditRating).toBe(20);
     expect(unchangedFinalize.data.wealth?.assetEntries[0]?.id).toBe(assetId);
+    expect(unchangedFinalize.data.possessions?.[0]?.id).toBe(possessionId);
 
     await restoredCreationStore.setCurrentStep("skills");
     await restoredCreationStore.setSkillAllocation(
@@ -1162,6 +1187,11 @@ describe("Phase 7A wealth and possessions workflow", () => {
     await expect(restoredCreationStore.completePossessions()).rejects.toThrow(
       "当前财富基于旧的时代或 Credit Rating，请重新初始化财富。",
     );
+    expect((await characterRepository.getById(characterId))?.data.possessions).toEqual([{
+      id: possessionId,
+      name: "医药箱",
+      notes: "放在旅行箱内",
+    }]);
 
     const reinitialized = await restoredCreationStore.initializeCurrentStandardWealth();
     expect(reinitialized.data.wealth).toEqual({
@@ -1169,9 +1199,33 @@ describe("Phase 7A wealth and possessions workflow", () => {
       assetsMinorUnits: 150_000,
       assetEntries: [{ id: assetId, description: "波士顿公寓", valueMinorUnits: 100_000 }],
     });
+    expect(reinitialized.data.possessions).toEqual([{
+      id: possessionId,
+      name: "医药箱",
+      notes: "放在旅行箱内",
+    }]);
     expect(restoredCreationStore.current?.data.wealthInitialization?.creditRating).toBe(30);
     await restoredCreationStore.completePossessions();
     expect(restoredCreationStore.current?.data.currentStep).toBe("review");
+
+    await restoredCreationStore.setCurrentStep("skills");
+    const beforeRoundTrip = await characterRepository.getById(characterId);
+    if (!beforeRoundTrip) throw new Error("调查员不存在");
+    await restoredCreationStore.completeSkills(beforeRoundTrip.data, true);
+    await restoredCreationStore.completeBackground();
+    expect(restoredCreationStore.current?.data.currentStep).toBe("possessions");
+
+    setActivePinia(createPinia());
+    const refreshedCreationStore = useCreationStore();
+    const refreshedCharacterStore = useCharacterStore();
+    await Promise.all([
+      refreshedCreationStore.loadByCharacterId(characterId),
+      refreshedCharacterStore.loadById(characterId),
+    ]);
+    expect(refreshedCreationStore.current?.data.currentStep).toBe("possessions");
+    expect(refreshedCharacterStore.current?.data.wealth?.assetEntries[0]?.id).toBe(assetId);
+    expect(refreshedCharacterStore.current?.data.possessions?.[0]?.id).toBe(possessionId);
+    await refreshedCreationStore.completePossessions();
     expect((await creationSessionRepository.getByCharacterId(characterId))?.data.currentStep)
       .toBe("review");
   });

@@ -24,7 +24,7 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 创建阶段只统计六个创建背景类别，并要求合计 3～6 条及恰好一条初始 Key Connection。该数量与完成条件属于 creation validation，不是 `Character` schema 的长期条目上限，也不要求长期人物数据始终拥有 Key Connection。
 
-## Wealth, equipment, and weapons
+## Wealth, gear, and weapons
 
 ### W001 — Character-owned mutable wealth
 
@@ -38,9 +38,13 @@ Standard lifestyle、官方初始 cash/assets 与 spending level 由当前 `Char
 
 创建期财富初始化所依据的 era 与 Credit Rating snapshot 属于 `CreationSession` provenance，不进入长期 Character wealth。CR 或 era 改变不会静默重算或覆盖已有财富；不匹配时财富进入 stale 状态，必须由玩家显式重新初始化。重新初始化重置 cash/assets totals，但保留已有资产构成说明供玩家复核。
 
-### W003 — Weapons are not generic equipment
+### W003 — Free-form gear and separate weapons
 
-装备目录属于时代化 Setting content。武器具有独立战斗 mechanics，不复用 generic equipment schema；Standard weapons 在独立 Phase 7C 中建模。
+普通 gear / possessions 是 `Character` 的自由文本长期数据；每条物品使用 Character Store 创建的 UUID 作为稳定 identity，名称允许重复，数组顺序就是展示顺序。Standard 不建立普通商品目录，也不通过 Cash 或 Spending Level 自动扣款、购买或判断物品是否合法；物品是否符合时代、职业与叙事由玩家和 Keeper 判断。
+
+资产构成 `Character.wealth.assetEntries` 与普通随身物品 `Character.possessions` 是两类独立数据，不自动同步或去重。武器具有独立战斗 mechanics，仍在 Phase 7C 通过独立模型处理，不以普通 possession entry 获得规则数据。
+
+现有 `SettingPack.equipment` 与 `equipmentDefinitionSchema` 保留为尚未使用的 foundation hook；Standard 当前不向其填充普通商品数据。
 
 ## Settings
 

@@ -274,6 +274,73 @@ describe("Character wealth persistence", () => {
   });
 });
 
+describe("Character possessions persistence", () => {
+  it("无需初始化 wealth 即可 add/edit/remove，并在刷新后保留 Store-owned UUID", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const firstAdd = await store.addPossessionEntry(character.id, {
+      name: "  莱卡相机  ",
+      notes: "  随身携带，另有两卷胶卷  ",
+    });
+    const first = firstAdd.data.possessions?.[0];
+    if (!first) throw new Error("随身物品未创建");
+    const secondAdd = await store.addPossessionEntry(character.id, { name: "莱卡相机" });
+    const second = secondAdd.data.possessions?.[1];
+    if (!second) throw new Error("第二条随身物品未创建");
+
+    expect(first.id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(second.id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(first.id).not.toBe(second.id);
+    expect(first).toEqual({
+      id: first.id,
+      name: "莱卡相机",
+      notes: "随身携带，另有两卷胶卷",
+    });
+
+    setActivePinia(createPinia());
+    const restoredStore = useCharacterStore();
+    expect((await restoredStore.loadById(character.id))?.data.possessions).toEqual([first, second]);
+
+    const edited = await restoredStore.updatePossessionEntry(character.id, first.id, {
+      name: "  相机  ",
+      notes: "   ",
+    });
+    expect(edited.data.possessions?.[0]).toEqual({ id: first.id, name: "相机" });
+
+    const removed = await restoredStore.removePossessionEntry(character.id, first.id);
+    expect(removed.data.possessions).toEqual([second]);
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.possessions).toEqual([second]);
+  });
+
+  it("拒绝空名称与缺失条目，并精确保留其他同名物品", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    await expect(store.addPossessionEntry(character.id, { name: "   " }))
+      .rejects.toThrow("随身物品名称不能为空");
+    await expect(store.updatePossessionEntry(
+      character.id,
+      crypto.randomUUID(),
+      { name: "相机" },
+    )).rejects.toThrow("找不到随身物品");
+    await expect(store.removePossessionEntry(character.id, crypto.randomUUID()))
+      .rejects.toThrow("找不到随身物品");
+
+    const firstAdd = await store.addPossessionEntry(character.id, { name: "绳索" });
+    const firstId = firstAdd.data.possessions?.[0]?.id;
+    const secondAdd = await store.addPossessionEntry(character.id, { name: "绳索" });
+    const secondId = secondAdd.data.possessions?.[1]?.id;
+    if (!firstId || !secondId) throw new Error("同名随身物品未创建");
+    const removed = await store.removePossessionEntry(character.id, firstId);
+    expect(removed.data.possessions).toEqual([{ id: secondId, name: "绳索" }]);
+  });
+});
+
 describe("游戏中资源更新", () => {
   it("HP、MP、SAN 更新后可刷新恢复，SAN 可以高于 POW", async () => {
     const character = makeLegacyCharacter();

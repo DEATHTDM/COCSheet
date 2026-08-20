@@ -3,8 +3,15 @@ import { computed, ref, watch } from "vue";
 
 import { useCharacterStore } from "../../app/stores/characterStore";
 import { deriveStandardInitialWealth } from "../../coc7/rules/wealth";
-import type { Character, CharacterAssetEntry } from "../../coc7/types/character";
-import type { CharacterAssetEntryInput } from "../../app/stores/characterStore";
+import type {
+  Character,
+  CharacterAssetEntry,
+  CharacterPossessionEntry,
+} from "../../coc7/types/character";
+import type {
+  CharacterAssetEntryInput,
+  CharacterPossessionEntryInput,
+} from "../../app/stores/characterStore";
 import {
   formatStandardInitialAssets,
   formatStandardMoney,
@@ -30,6 +37,11 @@ const newValue = ref("");
 const editingEntryId = ref<string>();
 const editingDescription = ref("");
 const editingValue = ref("");
+const newPossessionName = ref("");
+const newPossessionNotes = ref("");
+const editingPossessionId = ref<string>();
+const editingPossessionName = ref("");
+const editingPossessionNotes = ref("");
 const actionError = ref("");
 
 const initialization = computed(() => creationStore.current?.data.wealthInitialization);
@@ -168,6 +180,62 @@ async function removeAssetEntry(entry: CharacterAssetEntry): Promise<void> {
   }
 }
 
+function possessionEntryInput(name: string, notes: string): CharacterPossessionEntryInput {
+  return { name, ...(notes.trim() ? { notes } : {}) };
+}
+
+async function addPossessionEntry(): Promise<void> {
+  actionError.value = "";
+  try {
+    await characterStore.addPossessionEntry(
+      props.character.id,
+      possessionEntryInput(newPossessionName.value, newPossessionNotes.value),
+    );
+    newPossessionName.value = "";
+    newPossessionNotes.value = "";
+  } catch (error: unknown) {
+    reportError(error, "添加随身物品失败。");
+  }
+}
+
+function beginEditingPossession(entry: CharacterPossessionEntry): void {
+  editingPossessionId.value = entry.id;
+  editingPossessionName.value = entry.name;
+  editingPossessionNotes.value = entry.notes ?? "";
+  actionError.value = "";
+}
+
+function cancelEditingPossession(): void {
+  editingPossessionId.value = undefined;
+  editingPossessionName.value = "";
+  editingPossessionNotes.value = "";
+}
+
+async function savePossessionEntry(entryId: string): Promise<void> {
+  actionError.value = "";
+  try {
+    await characterStore.updatePossessionEntry(
+      props.character.id,
+      entryId,
+      possessionEntryInput(editingPossessionName.value, editingPossessionNotes.value),
+    );
+    cancelEditingPossession();
+  } catch (error: unknown) {
+    reportError(error, "保存随身物品失败。");
+  }
+}
+
+async function removePossessionEntry(entry: CharacterPossessionEntry): Promise<void> {
+  if (!window.confirm(`删除随身物品“${entry.name}”？`)) return;
+  actionError.value = "";
+  try {
+    await characterStore.removePossessionEntry(props.character.id, entry.id);
+    if (editingPossessionId.value === entry.id) cancelEditingPossession();
+  } catch (error: unknown) {
+    reportError(error, "删除随身物品失败。");
+  }
+}
+
 async function returnToBackground(): Promise<void> {
   actionError.value = "";
   try {
@@ -194,7 +262,7 @@ async function completePossessions(): Promise<void> {
         <p class="eyebrow">Possessions</p>
         <h2>财富与物品</h2>
       </div>
-      <p>本阶段只建立财富与资产构成；装备与武器目录将在后续阶段提供。</p>
+      <p>普通随身物品可自由填写；武器因具有独立规则数据，将在后续单独处理。</p>
     </header>
 
     <p v-if="actionError" class="error-message" role="alert">{{ actionError }}</p>
@@ -312,6 +380,74 @@ async function completePossessions(): Promise<void> {
         >添加资产</button>
       </section>
     </template>
+
+    <section class="panel form-stack">
+      <header>
+        <h3>随身物品与装备</h3>
+        <p class="muted">
+          这里用于记录调查员通常携带、拥有或在冒险中取得的普通用品。
+          系统不会建立商品目录，也不会自动从现金中扣款。
+        </p>
+      </header>
+
+      <ul v-if="character.possessions?.length" class="background-entry-list">
+        <li v-for="entry in character.possessions" :key="entry.id" class="background-entry">
+          <template v-if="editingPossessionId === entry.id">
+            <div class="wealth-edit-grid">
+              <label class="field">
+                <span>名称</span>
+                <input v-model="editingPossessionName" type="text" autocomplete="off" />
+              </label>
+              <label class="field">
+                <span>备注（可选）</span>
+                <textarea v-model="editingPossessionNotes" rows="2"></textarea>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="button primary" type="button" @click="savePossessionEntry(entry.id)">保存</button>
+              <button class="button" type="button" @click="cancelEditingPossession">取消</button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="background-entry-text">
+              <strong>{{ entry.name }}</strong>
+              <span v-if="entry.notes">{{ entry.notes }}</span>
+            </div>
+            <div class="actions background-entry-actions">
+              <button class="button" type="button" @click="beginEditingPossession(entry)">编辑</button>
+              <button class="button danger" type="button" @click="removePossessionEntry(entry)">删除</button>
+            </div>
+          </template>
+        </li>
+      </ul>
+      <p v-else class="empty-state">尚未记录普通随身物品。</p>
+
+      <div class="wealth-edit-grid">
+        <label class="field">
+          <span>名称</span>
+          <input
+            v-model="newPossessionName"
+            type="text"
+            autocomplete="off"
+            placeholder="例如：莱卡相机"
+          />
+        </label>
+        <label class="field">
+          <span>备注（可选）</span>
+          <textarea
+            v-model="newPossessionNotes"
+            rows="2"
+            placeholder="例如：随身携带，另有两卷胶卷"
+          ></textarea>
+        </label>
+      </div>
+      <button
+        class="button"
+        type="button"
+        :disabled="!newPossessionName.trim()"
+        @click="addPossessionEntry"
+      >添加随身物品</button>
+    </section>
 
     <footer class="panel form-stack compact-stack">
       <ul v-if="validation.errors.length" class="validation-list">
