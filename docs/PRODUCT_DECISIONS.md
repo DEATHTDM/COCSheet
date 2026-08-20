@@ -16,6 +16,14 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 零服务器是核心约束。除非产品方向重新决定，否则不引入账号、后端或云数据库。
 
+## Backstory
+
+### B001 — Character-owned backstory with stable entry identity
+
+背景故事是 `Character` 的长期持久数据，不是 `CreationSession` 草稿。每条背景使用 Store 创建的 UUID 作为稳定 identity；显示文字与数组 index 均不参与 identity。初始 Key Connection 通过背景 entry ID 引用实际存在的条目。
+
+创建阶段只统计六个创建背景类别，并要求合计 3～6 条及恰好一条初始 Key Connection。该数量与完成条件属于 creation validation，不是 `Character` schema 的长期条目上限，也不要求长期人物数据始终拥有 Key Connection。
+
 ## Settings
 
 ### S001 — Supported settings
@@ -116,7 +124,7 @@ CreationSession 分配行持久化完整 `SkillRef`、职业点与兴趣点，�
 
 已有 Phase 4 final skill state 与结构化分配冲突，必须由消费者显式选择重建或保留手动人物；规则层不得静默采用、反推、删除或覆盖。
 
-结构化 finalize 生成完整 `Character.skills` 后必须复用 Phase 4 人物技能领域校验。完成 skills 时若最终 Cthulhu Mythos 收紧 Maximum SAN，必须在保存职业、技能与 review 会话推进的同一事务中收紧 current SAN；降低 Mythos 不自动恢复 SAN，也不改变 HP/MP。
+结构化 finalize 生成完整 `Character.skills` 后必须复用 Phase 4 人物技能领域校验。完成 skills 时若最终 Cthulhu Mythos 收紧 Maximum SAN，必须在保存职业、技能与 background 会话推进的同一事务中收紧 current SAN；降低 Mythos 不自动恢复 SAN，也不改变 HP/MP。
 
 ### O009 — Credit Rating and approvals
 

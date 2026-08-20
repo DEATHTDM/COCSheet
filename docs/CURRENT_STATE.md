@@ -1,16 +1,16 @@
 # Current State
 
-Last updated: 2026-08-14
+Last updated: 2026-08-20
 
 ## Current phase
 
-Phase 5 — Occupation Engine & Standard Occupations (Completed)
+Phase 6 — Investigator Identity & Backstory (Completed)
 
-Phase 5A — Occupation Engine Foundation, Phase 5B — Verified Standard Occupation Data, and Phase 5C — Creation UI are completed. Phase 5B-2 closed all 91 families, 119 production definitions, and 142 official Standard source entries. Phase 5C now covers occupation browsing and era guards, structured requirement selection, skill allocation and approvals, stale-draft resolution, and a user-operable Custom Occupation Builder connected to the complete Occupation → Skills → Finalize → Review flow.
+Phase 6 adds final Character identity details and persistent backstory with stable entry UUIDs and an entry-ID Key Connection. The creation flow is now Basic Info → Attributes → Occupation → Skills → Background → Review; creation validation requires 3～6 entries from the six creation categories and one Key Connection, while the Character schema remains compatible with long-term game-time background categories and legacy version-1 records.
 
 ## Git baseline
 
-Phase 5C-4B Custom Occupation Builder branch was created from `main` at `2eac0cb20c464be5675482ff3295a46b29a2d3cd`.
+Phase 6 Investigator Identity & Backstory branch was created from `main` at `9d8b13f933c9132ea008bc84ea228b889b9ae25b`.
 
 ## Implemented
 
@@ -18,6 +18,13 @@ Phase 5C-4B Custom Occupation Builder branch was created from `main` at `2eac0cb
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
 - five registered SettingPacks, with the complete core skill catalog only in Standard and empty content placeholders for the other settings
+- optional Character `sex`, `residence`, and `birthplace` identity details with trimmed non-empty persistence and legacy missing-field compatibility
+- optional Character backstory aggregate with ten closed categories, globally unique UUID entry identity, trimmed text, and an entry-ID Key Connection reference
+- Character Store identity/backstory aggregate APIs with Store-owned UUID creation, stable edit identity, key-safe removal, and no separate BackgroundRepository
+- pure creation-background validation that counts only the six creation categories, requires 3～6 entries and one initial Key Connection, and excludes four game-time categories from completion
+- six-step Basic Info → Attributes → Occupation → Skills → Background → Review workflow; skills atomically hand off to Background, Background validates the persisted Character, and legacy Review sessions remain in Review without read-time migration
+- dedicated Background step UI with multi-entry categories, six-entry add limit, editing/removal, single Key Connection selection and validation-backed completion
+- creation Review summaries for identity and all ten backstory categories, including Key Connection marking and non-destructive returns to Background or Skills
 - internal Extension Registry and allow-listed extension IDs
 - minimal `Character`, `CreationSession`, and `CreationPreset` schemas
 - Occupation schema, occupation point formula calculation, and attribute prerequisite validation foundations
@@ -33,7 +40,7 @@ Phase 5C-4B Custom Occupation Builder branch was created from `main` at `2eac0cb
 - optional lightweight Character occupation identity snapshot without copied occupation mechanics
 - explicit custom occupation foundation with UUID identity and an eight-occupational-skill category capacity proof based on requirement cardinality; one-branch counts one branch and choice-pool counts only the maximum selectable branch capacities, with generic Fighting / Firearms remaining one category each
 - skills CreationStep and pure occupation-switch/reset draft actions that preserve allocations until explicit reset
-- atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to review in one Dexie transaction without changing HP/MP or restoring SAN
+- atomic skills completion through Creation Workflow Repository, writing Character occupation/skills, clamping current SAN to finalized Mythos when required, and advancing CreationSession to background in one Dexie transaction without changing HP/MP or restoring SAN
 - legacy CreationPreset.skillCaps read compatibility without inferred mapping or validator effect, alongside explicit final-value skillLimits
 - source-annotated Phase 5A test fixtures for ten occupation families (eleven definitions including two Missionary mechanics variants), not production occupation content
 - Phase 5B-1 Standard production occupation pilot with 12 canonical families and 15 definitions, including verified Journalist and Missionary source mechanics variants
@@ -60,7 +67,7 @@ Phase 5C-4B Custom Occupation Builder branch was created from `main` at `2eac0cb
 - readable occupation previews covering formulas, Credit Rating, eras, sources, all selector structures, Keeper-review markers, variants, definition approval, and skill replacement policy without exposing machine JSON
 - Preset occupation-policy presentation that keeps banned occupations visible but unselectable, allows approval-required occupations without creating approval grants, and derives banned status ahead of approval-required status
 - explicit catalog occupation selection through the existing Creation Store action, with browse preview kept local, replacement confirmation, preserved skill drafts, catalog snapshot persistence, and custom-selection fallback
-- five-step creation stepper with an explicit skills placeholder and explicit review branch; the Phase 4 manual SkillEditor is no longer embedded in the structured occupation creation step
+- six-step creation stepper with explicit skills, background, and review branches; the Phase 4 manual SkillEditor is no longer embedded in the structured occupation creation step
 - optional authoritative `Character.eraId` with explicit Standard basic-info selection, refresh persistence, SettingPack membership validation, legacy missing-field compatibility, and no Character/Record/Dexie version change
 - era-change confirmation when occupation or skill draft state exists; acceptance preserves catalog/custom occupation, attributes, resources and every structured skill draft field, while cancellation restores the persisted selector value
 - shared pure occupation/skill era-availability rules used by the browser and finalizer; browser applicability filtering initializes from Character era but remains local and independently changeable
@@ -84,13 +91,13 @@ Phase 5C-4B Custom Occupation Builder branch was created from `main` at `2eac0cb
 - occupation-scoped Credit Rating override approval/revocation through the existing dedicated state, without synthetic Keeper approval grants
 - fuzzy requirement approval invalidation when the selected SkillRef identity set changes, while order-only changes preserve the grant
 - dedicated skill finalization UI for Engine-owned errors, approvals and warnings, local-only unused-point acknowledgement, and the existing transactional `completeSkills` path
-- minimal persisted Review summary for identity, Setting/Era, age, occupation, final characteristics, Luck, resources and Registry-formatted final skills, with a non-destructive return to skill adjustment
+- minimal persisted Review summary for identity, Setting/Era, age, occupation, final characteristics, Luck, resources, Registry-formatted final skills and grouped backstory, with non-destructive returns to background or skill adjustment
 - explicit manual-skill rebuild confirmation that persists only the future structured-finalize decision and never changes existing `Character.skills` before `completeSkills()`
 - stale occupation draft presentation derived only from existing finalizer errors, with raw Engine messages and no duplicate occupation validator
 - explicit occupation reset that drains pending allocation writes, reuses the existing pure reset semantics, preserves interest allocations and skill-scoped creation approvals, and restores deterministic exact requirements for the current occupation
 - Review-to-skills round-trip recognition of the structured finalize resolution, preventing completed structured `Character.skills` from being misclassified as manual data
 - current-investigator Custom Occupation Builder with local-only incomplete drafts, UUID occupation identity, stable requirement-slot identities, friendly closed point-formula controls, up to eight Engine-supported skill categories, era-filtered Setting skill choices, and fixed custom source/all-era metadata
-- custom occupation creation and same-UUID editing through the existing Creation Store snapshot action, preserving structured skill drafts and delegating stale conflicts, capacity proof, Preset approvals, allocation, finalization, refresh persistence, and Review transition to the existing Phase 5 Engine and 4A UX
+- custom occupation creation and same-UUID editing through the existing Creation Store snapshot action, preserving structured skill drafts and delegating stale conflicts, capacity proof, Preset approvals, allocation, finalization, refresh persistence, and Background handoff to the existing Phase 5 Engine and 4A UX
 - Character creation with a paired CreationSession in one transaction
 - basic character list/delete, name autosave, and refresh persistence
 - basic KP preset create/read/update/delete and refresh persistence
@@ -154,7 +161,10 @@ Merged in the current enum:
 ## Not implemented
 
 - post-creation improvement-roll workflow
+- equipment, cash/assets, and weapons
+- portrait upload
 - independent final character sheet UI/module
+- Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
 - guide overlay
 - import/export and printing/export
 - URL / Hash preset sharing
@@ -164,7 +174,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 5 is completed. No next phase is named here; the ordering of Roadmap Later items remains unfrozen and any further phase requires separate authorization.
+Phase 6 is completed. No next phase is named here; the ordering of Roadmap Later items remains unfrozen and any further phase requires separate authorization.
 
 ## Known technical risks
 

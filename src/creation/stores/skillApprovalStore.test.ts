@@ -254,7 +254,7 @@ describe("Credit Rating override store lifecycle", () => {
   });
 });
 
-describe("completeSkills blockers and review transition", () => {
+describe("completeSkills blockers and background transition", () => {
   async function prepareCompletion(allocation: number): Promise<{
     readonly store: ReturnType<typeof useCreationStore>;
     readonly character: Character;
@@ -309,7 +309,7 @@ describe("completeSkills blockers and review transition", () => {
     await expect(store.completeSkills(character, true)).rejects.toThrow("需要 Keeper review");
   });
 
-  it("warning 未确认时拒绝，确认后原子写入并推进 review", async () => {
+  it("warning 未确认时拒绝，确认后原子写入并推进 background", async () => {
     const { store, character } = await prepareCompletion(199);
     expect(store.getSkillFinalizePlan(character).warnings).toContainEqual(
       expect.objectContaining({ code: "unused-occupation-points" }),
@@ -321,13 +321,13 @@ describe("completeSkills blockers and review transition", () => {
     expect(completed.data.skills?.find(
       (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "accounting",
     )?.currentValue).toBe(204);
-    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.currentStep).toBe("background");
     expect(store.current?.data.skills?.existingSkillResolution).toEqual({
       action: "rebuild-structured",
       confirmed: true,
     });
     expect((await creationSessionRepository.getByCharacterId(character.id))?.data.currentStep)
-      .toBe("review");
+      .toBe("background");
   });
 
   it("未 await 的 allocation write 会在 completeSkills 读取 plan 前完成", async () => {
@@ -345,14 +345,14 @@ describe("completeSkills blockers and review transition", () => {
     expect(completed.data.skills?.find(
       (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "accounting",
     )?.currentValue).toBe(205);
-    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.currentStep).toBe("background");
     expect(store.current?.data.skills?.allocations).toContainEqual({
       ref: accounting,
       occupationPoints: 200,
       interestPoints: 0,
     });
     const persisted = await creationSessionRepository.getByCharacterId(character.id);
-    expect(persisted?.data.currentStep).toBe("review");
+    expect(persisted?.data.currentStep).toBe("background");
     expect(persisted?.data.skills?.allocations).toContainEqual({
       ref: accounting,
       occupationPoints: 200,

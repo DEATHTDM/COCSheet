@@ -130,6 +130,82 @@ describe("Character 建卡时代", () => {
   });
 });
 
+describe("Character identity 与 backstory persistence", () => {
+  it("identity details trim 后持久化并可刷新恢复", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    const updated = await store.setIdentityDetails(character.id, {
+      sex: "  女性 ",
+      residence: " 上海 ",
+      birthplace: " 杭州 ",
+    });
+    expect(updated.data).toMatchObject({ sex: "女性", residence: "上海", birthplace: "杭州" });
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data).toMatchObject({
+      sex: "女性",
+      residence: "上海",
+      birthplace: "杭州",
+    });
+  });
+
+  it("add/edit/remove 与 key connection 全程刷新持久化，edit 保持 UUID", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const firstAdd = await store.addBackstoryEntry(character.id, "traits", "  谨慎  ");
+    const first = firstAdd.data.backstory?.entries[0];
+    if (!first) throw new Error("背景条目未创建");
+    const secondAdd = await store.addBackstoryEntry(character.id, "traits", "守时");
+    const second = secondAdd.data.backstory?.entries[1];
+    if (!second) throw new Error("第二条背景未创建");
+    expect(first.id).not.toBe(second.id);
+    expect(first.text).toBe("谨慎");
+
+    setActivePinia(createPinia());
+    const restoredStore = useCharacterStore();
+    expect((await restoredStore.loadById(character.id))?.data.backstory?.entries).toHaveLength(2);
+
+    const edited = await restoredStore.updateBackstoryEntry(character.id, first.id, "  非常谨慎 ");
+    expect(edited.data.backstory?.entries[0]).toMatchObject({ id: first.id, text: "非常谨慎" });
+    await restoredStore.setKeyConnection(character.id, first.id);
+
+    setActivePinia(createPinia());
+    const keyedStore = useCharacterStore();
+    const keyed = await keyedStore.loadById(character.id);
+    expect(keyed?.data.backstory?.keyConnectionEntryId).toBe(first.id);
+    expect(keyed?.data.backstory?.entries[0]?.id).toBe(first.id);
+
+    const removed = await keyedStore.removeBackstoryEntry(character.id, first.id);
+    expect(removed.data.backstory).toEqual({ entries: [second] });
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.backstory)
+      .toEqual({ entries: [second] });
+  });
+
+  it("拒绝空文本、缺失条目与游戏期类别 key connection", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    await expect(store.addBackstoryEntry(character.id, "traits", "   "))
+      .rejects.toThrow("背景条目不能为空");
+    await expect(store.updateBackstoryEntry(character.id, crypto.randomUUID(), "有效文本"))
+      .rejects.toThrow("找不到背景条目");
+    const updated = await store.addBackstoryEntry(character.id, "encounters", "一次诡异遭遇");
+    const encounter = updated.data.backstory?.entries[0];
+    if (!encounter) throw new Error("游戏期背景未创建");
+    await expect(store.setKeyConnection(character.id, encounter.id))
+      .rejects.toThrow("只有六个创建背景类别");
+  });
+});
+
 describe("游戏中资源更新", () => {
   it("HP、MP、SAN 更新后可刷新恢复，SAN 可以高于 POW", async () => {
     const character = makeLegacyCharacter();

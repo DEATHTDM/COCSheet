@@ -276,3 +276,18 @@ describe("KPPresetRepository", () => {
     expect(rawData).not.toHaveProperty("skillLimits");
   });
 });
+
+describe("Phase 6 legacy review session compatibility", () => {
+  it("已在 review 的旧 session 读取后不倒退到 background，也不自动写回", async () => {
+    const character = makeCharacter();
+    const session: CreationSession = { ...makeSession(character.id), currentStep: "review" };
+    await creationWorkflowRepository.createCharacterWithSession(character, session);
+    const before = await database.creationSessions.get(character.id);
+
+    const read = await creationSessionRepository.getByCharacterId(character.id);
+
+    expect(read?.data.currentStep).toBe("review");
+    const after = await database.creationSessions.get(character.id);
+    expect(after).toEqual(before);
+  });
+});

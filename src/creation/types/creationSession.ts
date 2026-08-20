@@ -11,7 +11,14 @@ import { settingIdSchema } from "../../coc7/types/setting";
 import { attributeGenerationMethodSchema, creationPresetSchema } from "./creationPreset";
 import { occupationSelectionSchema, skillCreationStateSchema } from "./skillCreation";
 
-export const creationStepIdSchema = z.enum(["basic-info", "attributes", "occupation", "skills", "review"]);
+export const creationStepIdSchema = z.enum([
+  "basic-info",
+  "attributes",
+  "occupation",
+  "skills",
+  "background",
+  "review",
+]);
 
 const assignmentSchema = z
   .object({

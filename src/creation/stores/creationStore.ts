@@ -71,6 +71,7 @@ import {
   listRequirementCustomOptions,
 } from "../rules/requirementSelection";
 import { listOccupationAllocationRefs } from "../rules/skillAllocationPresentation";
+import { validateCreationBackstory } from "../rules/creationBackstory";
 import {
   skillAllocationSchema,
   type ApprovalReasonId,
@@ -850,7 +851,7 @@ export const useCreationStore = defineStore("creation", () => {
       };
     const completedSession: CreationSession = {
       ...session,
-      currentStep: "review",
+      currentStep: "background",
       skills: {
         ...session.skills,
         // 首次结构化 finalize 后记录明确来源，返回 skills 再次计算时不会把自己的结果误判为 Phase 4 手动状态。
@@ -882,6 +883,18 @@ export const useCreationStore = defineStore("creation", () => {
     );
     current.value = records.session;
     return records.character;
+  }
+
+  async function completeBackground(): Promise<void> {
+    await flushSkillAllocationWrites();
+    const session = requireSession();
+    const character = await characterRepository.getById(session.characterId);
+    if (!character) throw new Error(`调查员不存在：${session.characterId}`);
+    const validation = validateCreationBackstory(character.data.backstory);
+    if (!validation.valid) {
+      throw new Error(validation.errors.map((error) => error.message).join("；"));
+    }
+    await persist({ ...session, currentStep: "review" });
   }
 
   async function setAge(age: number): Promise<void> {
@@ -1154,6 +1167,7 @@ export const useCreationStore = defineStore("creation", () => {
     approveCreditRatingOverride,
     revokeCurrentCreditRatingOverride,
     completeSkills,
+    completeBackground,
     setAge,
     chooseGenerationMethod,
     generateCurrentMethod,

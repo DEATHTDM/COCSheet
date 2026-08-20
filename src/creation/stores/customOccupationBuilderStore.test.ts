@@ -352,7 +352,7 @@ describe("custom occupation builder store integration", () => {
     });
   });
 
-  it("custom occupation 完整走过 requirement、allocation、approval、completeSkills 到 Review", async () => {
+  it("custom occupation 完整走过 requirement、allocation、approval、completeSkills 到 Background", async () => {
     const store = useCreationStore();
     const characterId = await store.start("standard", preset("keeper-approval"));
     await useCharacterStore().setEra(characterId, "classic-1920s");
@@ -382,7 +382,7 @@ describe("custom occupation builder store integration", () => {
 
     const completed = await store.completeSkills(character, true);
 
-    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.currentStep).toBe("background");
     expect(completed.data.occupation).toMatchObject({ kind: "custom", id: occupationId });
     expect(completed.data.skills).toContainEqual({
       ref: { type: "standard", definitionId: "history" },

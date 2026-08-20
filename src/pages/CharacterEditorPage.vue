@@ -14,6 +14,7 @@ import { characteristicIds, type CharacteristicId, type CharacteristicValues } f
 import type { EraId } from "../coc7/types/occupation";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
 import CharacterReviewPanel from "../components/creation/CharacterReviewPanel.vue";
+import CharacterBackgroundStep from "../components/creation/CharacterBackgroundStep.vue";
 import SkillRequirementStep from "../components/creation/SkillRequirementStep.vue";
 import { getSettingPackOrThrow } from "../content/registry";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
@@ -24,6 +25,9 @@ const route = useRoute();
 const characterStore = useCharacterStore();
 const creationStore = useCreationStore();
 const name = ref("");
+const sex = ref("");
+const residence = ref("");
+const birthplace = ref("");
 const age = ref<number>(20);
 const eraId = ref<EraId | "">("");
 const ready = ref(false);
@@ -135,6 +139,9 @@ onMounted(async () => {
     lastSavedName = record.name;
     age.value = sessionRecord.data.draftAge ?? record.data.age ?? 20;
     eraId.value = record.data.eraId ?? "";
+    sex.value = record.data.sex ?? "";
+    residence.value = record.data.residence ?? "";
+    birthplace.value = record.data.birthplace ?? "";
     ready.value = true;
   } catch (error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : "读取调查员失败。";
@@ -167,11 +174,20 @@ async function persistName(): Promise<void> {
 
 async function goToAttributes(): Promise<void> {
   try {
+    if (!sex.value.trim() || !residence.value.trim() || !birthplace.value.trim()) {
+      errorMessage.value = "请填写性别、住所与出身地。";
+      return;
+    }
     if (availableEras.value.length > 0 && !characterStore.current?.data.eraId) {
       errorMessage.value = "请选择建卡时代。";
       return;
     }
     await persistName();
+    await characterStore.setIdentityDetails(characterId.value, {
+      sex: sex.value,
+      residence: residence.value,
+      birthplace: birthplace.value,
+    });
     await creationStore.setAge(age.value);
     await creationStore.setCurrentStep("attributes");
   } catch (error: unknown) {
@@ -326,6 +342,7 @@ async function reconcileSanity(): Promise<void> {
         <li :class="{ active: currentStep === 'attributes' }">属性</li>
         <li :class="{ active: currentStep === 'occupation' }">职业</li>
         <li :class="{ active: currentStep === 'skills' }">技能</li>
+        <li :class="{ active: currentStep === 'background' }">背景</li>
         <li :class="{ active: currentStep === 'review' }">检查</li>
       </ol>
 
@@ -347,6 +364,18 @@ async function reconcileSanity(): Promise<void> {
             required
             @change="changeAge"
           />
+        </label>
+        <label class="field">
+          <span>性别</span>
+          <input v-model="sex" type="text" autocomplete="off" required />
+        </label>
+        <label class="field">
+          <span>住所</span>
+          <input v-model="residence" type="text" autocomplete="off" required />
+        </label>
+        <label class="field">
+          <span>出身地</span>
+          <input v-model="birthplace" type="text" autocomplete="off" required />
         </label>
         <label v-if="availableEras.length > 0" class="field">
           <span>建卡时代</span>
@@ -515,6 +544,11 @@ async function reconcileSanity(): Promise<void> {
       <SkillRequirementStep
         v-else-if="currentStep === 'skills'"
         :era-id="characterStore.current.data.eraId"
+        :character="characterStore.current.data"
+      />
+
+      <CharacterBackgroundStep
+        v-else-if="currentStep === 'background'"
         :character="characterStore.current.data"
       />
 
