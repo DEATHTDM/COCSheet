@@ -4,13 +4,13 @@ Last updated: 2026-08-21
 
 ## Current phase
 
-Phase 7 — Wealth, Equipment & Weapons (In Progress)
+Phase 7 — Wealth, Gear & Weapons (In Progress)
 
-Phase 7A — Standard Wealth & Possessions Foundation is completed. Standard initial lifestyle, cash, assets, and spending level now derive from era + finalized Credit Rating; current cash/assets and UUID-backed asset descriptions are long-term Character state, while creation provenance belongs to CreationSession. The creation flow is now Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review. Phase 7B and 7C remain unimplemented.
+Phase 7A — Standard Wealth & Possessions Foundation and Phase 7B — Character Gear & Possessions are completed. Standard initial lifestyle, cash, assets, and spending level derive from era + finalized Credit Rating; current cash/assets and UUID-backed asset descriptions are long-term Character state, while creation provenance belongs to CreationSession. Ordinary gear is now free-form UUID-backed Character possessions, independent from wealth and creation provenance. Standard ordinary equipment catalog work is explicitly outside the product plan. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review. Phase 7C remains unimplemented.
 
 ## Git baseline
 
-Phase 7A Standard Wealth & Possessions Foundation branch was created from `main` at `a3b0782609a2baf8be0a35791e54ccd44c840eaa`.
+Phase 7B Character Gear & Possessions branch was created from `main` at `758390a8687124c856f7fee5e9db4fa48b354fdf`.
 
 ## Implemented
 
@@ -26,6 +26,9 @@ Phase 7A Standard Wealth & Possessions Foundation branch was created from `main`
 - seven-step Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review workflow with legacy Review preservation
 - dedicated Possessions step showing CR, lifestyle, spending level, official/current cash/assets, CR99 minimum wording, explicit initialize/reinitialize, editable asset descriptions, and creation validation requiring a description only for positive assets
 - Review wealth summary with Credit Rating, lifestyle, current cash/assets, spending level, asset entries, and a return-to-Possessions action without becoming a final character sheet
+- optional Character version-1 possessions with Store-owned UUID identity, trimmed non-empty names, optional non-blank notes, duplicate-name support, stable array ordering, legacy compatibility, and no Dexie/version change
+- Character Store possession CRUD through the existing CharacterRepository, independent from wealth initialization, CreationSession, Setting, and era; wealth initialization, stale state, and reset preserve possessions without synchronizing them with asset entries
+- Possessions-step free-form ordinary gear editing that remains available before wealth initialization and while wealth is stale, plus a separate Review summary; no ordinary Standard product catalog, prices, purchasing, automatic cash deduction, quantity, encumbrance, armor, or weapon mechanics
 - optional Character `sex`, `residence`, and `birthplace` identity details with trimmed non-empty persistence and legacy missing-field compatibility
 - optional Character backstory aggregate with ten closed categories, globally unique UUID entry identity, trimmed text, and an entry-ID Key Connection reference
 - Character Store identity/backstory aggregate APIs with Store-owned UUID creation, stable edit identity, key-safe removal, and no separate BackgroundRepository
@@ -169,7 +172,6 @@ Merged in the current enum:
 ## Not implemented
 
 - post-creation improvement-roll workflow
-- Standard equipment catalog and selection
 - Standard weapon schema/catalog and Character weapons
 - portrait upload
 - independent final character sheet UI/module
@@ -183,7 +185,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 7B — Standard Equipment Catalog & Selection. It remains Not Started and requires separate authorization.
+Phase 7C — Standard Weapons Catalog & Character Weapons. It remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

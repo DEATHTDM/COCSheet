@@ -154,6 +154,17 @@ async function returnToPossessions(): Promise<void> {
     </section>
 
     <section class="panel form-stack">
+      <h3>随身物品与装备</h3>
+      <ul v-if="character.possessions?.length" class="review-backstory-groups">
+        <li v-for="entry in character.possessions" :key="entry.id">
+          <strong>{{ entry.name }}</strong>
+          <span v-if="entry.notes">：{{ entry.notes }}</span>
+        </li>
+      </ul>
+      <p v-else class="empty-state">尚未记录普通随身物品。</p>
+    </section>
+
+    <section class="panel form-stack">
       <h3>最终属性</h3>
       <div v-if="character.characteristics" class="attribute-grid">
         <div v-for="id in characteristicIds" :key="id" class="attribute-card">

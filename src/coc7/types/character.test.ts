@@ -125,3 +125,53 @@ describe("Character wealth schema", () => {
     }).success).toBe(false);
   });
 });
+
+describe("Character possessions schema", () => {
+  it("legacy Character 缺少 possessions 时仍正常解析", () => {
+    const legacy = makeCharacter();
+    expect(characterSchema.parse(legacy)).not.toHaveProperty("possessions");
+  });
+
+  it("possessions 是 version 1 optional additive，并 trim 名称与备注", () => {
+    const id = crypto.randomUUID();
+    const parsed = characterSchema.parse({
+      ...makeCharacter(),
+      possessions: [{ id, name: "  莱卡相机  ", notes: "  随身携带  " }],
+    });
+    expect(parsed.version).toBe(1);
+    expect(parsed.possessions).toEqual([{ id, name: "莱卡相机", notes: "随身携带" }]);
+    expect(characterSchema.parse(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+  });
+
+  it("拒绝空名称、raw blank notes 与重复 UUID", () => {
+    const id = crypto.randomUUID();
+    expect(characterSchema.safeParse({
+      ...makeCharacter(),
+      possessions: [{ id, name: "   " }],
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...makeCharacter(),
+      possessions: [{ id, name: "相机", notes: "   " }],
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...makeCharacter(),
+      possessions: [
+        { id, name: "相机" },
+        { id, name: "医药箱" },
+      ],
+    }).success).toBe(false);
+  });
+
+  it("允许同名物品并保留数组顺序", () => {
+    const firstId = crypto.randomUUID();
+    const secondId = crypto.randomUUID();
+    const parsed = characterSchema.parse({
+      ...makeCharacter(),
+      possessions: [
+        { id: firstId, name: "胶卷 ×3" },
+        { id: secondId, name: "胶卷 ×3" },
+      ],
+    });
+    expect(parsed.possessions?.map((entry) => entry.id)).toEqual([firstId, secondId]);
+  });
+});

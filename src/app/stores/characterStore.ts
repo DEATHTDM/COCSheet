@@ -18,6 +18,7 @@ import type {
   BackstoryCategoryId,
   CharacterBackstory,
   CharacterAssetEntry,
+  CharacterPossessionEntry,
   CharacterResources,
   CharacterWealth,
 } from "../../coc7/types/character";
@@ -37,6 +38,11 @@ export interface CharacterIdentityDetails {
 export interface CharacterAssetEntryInput {
   readonly description: string;
   readonly valueMinorUnits?: number;
+}
+
+export interface CharacterPossessionEntryInput {
+  readonly name: string;
+  readonly notes?: string;
 }
 
 export const useCharacterStore = defineStore("characters", () => {
@@ -88,6 +94,20 @@ export const useCharacterStore = defineStore("characters", () => {
       id,
       description,
       ...(input.valueMinorUnits === undefined ? {} : { valueMinorUnits: input.valueMinorUnits }),
+    };
+  }
+
+  function normalizePossessionEntryInput(
+    input: CharacterPossessionEntryInput,
+    id: string,
+  ): CharacterPossessionEntry {
+    const name = input.name.trim();
+    const notes = input.notes?.trim();
+    if (!name) throw new Error("随身物品名称不能为空");
+    return {
+      id,
+      name,
+      ...(notes ? { notes } : {}),
     };
   }
 
@@ -411,6 +431,49 @@ export const useCharacterStore = defineStore("characters", () => {
     }));
   }
 
+  async function addPossessionEntry(
+    id: string,
+    input: CharacterPossessionEntryInput,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const entry = normalizePossessionEntryInput(input, crypto.randomUUID());
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      possessions: [...(existing.data.possessions ?? []), entry],
+    }));
+  }
+
+  async function updatePossessionEntry(
+    id: string,
+    entryId: string,
+    input: CharacterPossessionEntryInput,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const possessions = existing.data.possessions ?? [];
+    if (!possessions.some((entry) => entry.id === entryId)) {
+      throw new Error(`找不到随身物品：${entryId}`);
+    }
+    const updatedEntry = normalizePossessionEntryInput(input, entryId);
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      possessions: possessions.map((entry) =>
+        entry.id === entryId ? updatedEntry : entry,
+      ),
+    }));
+  }
+
+  async function removePossessionEntry(id: string, entryId: string): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const possessions = existing.data.possessions ?? [];
+    if (!possessions.some((entry) => entry.id === entryId)) {
+      throw new Error(`找不到随身物品：${entryId}`);
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      possessions: possessions.filter((entry) => entry.id !== entryId),
+    }));
+  }
+
   async function setSkillValue(
     id: string,
     ref: SkillRef,
@@ -568,6 +631,9 @@ export const useCharacterStore = defineStore("characters", () => {
     addAssetEntry,
     updateAssetEntry,
     removeAssetEntry,
+    addPossessionEntry,
+    updatePossessionEntry,
+    removePossessionEntry,
     setSkillValue,
     setImprovementChecked,
     createCustomSpecialization,

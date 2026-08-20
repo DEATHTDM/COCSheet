@@ -213,7 +213,7 @@ Status: Completed
 - dedicated Background creation UI and expanded creation Review summary
 - unchanged Character/Record/Dexie version 1 with no new table or read-time migration
 
-## Phase 7 — Wealth, Equipment & Weapons
+## Phase 7 — Wealth, Gear & Weapons
 
 Status: In Progress
 
@@ -227,9 +227,14 @@ Status: Completed
 - Background → Possessions → Review flow and dedicated wealth UI
 - unchanged Character/CreationSession/Record/Dexie version 1 with no read-time writeback
 
-### Phase 7B — Standard Equipment Catalog & Selection
+### Phase 7B — Character Gear & Possessions
 
-Status: Not Started
+Status: Completed
+
+- free-form ordinary Character possessions with Store-owned UUID identity and optional notes
+- independent from wealth initialization, provenance, asset entries, Cash, and Spending Level
+- Possessions-step CRUD and separate Review presentation
+- no ordinary Standard equipment catalog or purchasing system
 
 ### Phase 7C — Standard Weapons Catalog & Character Weapons
 

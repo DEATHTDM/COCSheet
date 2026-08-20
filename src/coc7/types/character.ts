@@ -124,6 +124,30 @@ export const characterWealthSchema = z
     });
   });
 
+export const characterPossessionEntrySchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().trim().min(1, "随身物品名称不能为空"),
+    notes: z.string().trim().min(1, "随身物品备注不能为空").optional(),
+  })
+  .strict();
+
+export const characterPossessionsSchema = z
+  .array(characterPossessionEntrySchema)
+  .superRefine((entries, context) => {
+    const entryIds = new Set<string>();
+    entries.forEach((entry, index) => {
+      if (entryIds.has(entry.id)) {
+        context.addIssue({
+          code: "custom",
+          message: "随身物品 ID 必须唯一",
+          path: [index, "id"],
+        });
+      }
+      entryIds.add(entry.id);
+    });
+  });
+
 export const characterSchema = z
   .object({
     version: z.literal(1),
@@ -140,6 +164,7 @@ export const characterSchema = z
     luck: z.number().int().min(0).max(99).optional(),
     resources: characterResourcesSchema.optional(),
     wealth: characterWealthSchema.optional(),
+    possessions: characterPossessionsSchema.optional(),
     skills: characterSkillsSchema.optional(),
     occupation: characterOccupationSchema.optional(),
   })
@@ -149,6 +174,7 @@ export type Character = z.infer<typeof characterSchema>;
 export type CharacterResources = z.infer<typeof characterResourcesSchema>;
 export type CharacterAssetEntry = z.infer<typeof characterAssetEntrySchema>;
 export type CharacterWealth = z.infer<typeof characterWealthSchema>;
+export type CharacterPossessionEntry = z.infer<typeof characterPossessionEntrySchema>;
 export type CharacterOccupation = z.infer<typeof characterOccupationSchema>;
 export type BackstoryCategoryId = z.infer<typeof backstoryCategoryIdSchema>;
 export type BackstoryEntry = z.infer<typeof backstoryEntrySchema>;
