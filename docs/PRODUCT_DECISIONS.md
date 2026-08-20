@@ -46,6 +46,12 @@ Standard lifestyle、官方初始 cash/assets 与 spending level 由当前 `Char
 
 现有 `SettingPack.equipment` 与 `equipmentDefinitionSchema` 保留为尚未使用的 foundation hook；Standard 当前不向其填充普通商品数据。
 
+### W004 — Setting weapon definitions and source-faithful display cells
+
+`WeaponDefinition` 是独立的 Setting content，不复用普通 `Character.possessions` 或 generic `EquipmentDefinition`。武器与技能的关联使用 typed `SkillRef`，不得依赖显示名；stable skill association、impale、era availability 与 malfunction 结构化保存。
+
+在 combat engine 尚未建立前，damage、base range、attacks per round、capacity 与官方 reference prices 保留 source-faithful display text，不提前解析为骰式、射击模式或射程引擎。Reference price 只供查阅，不触发 Cash 自动扣款、购买或合法性判断。长期 `Character` weapon instance 留给 Phase 7C-2，本阶段不向 Character 或 CreationSession 增加武器状态。
+
 ## Settings
 
 ### S001 — Supported settings

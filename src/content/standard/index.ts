@@ -1,6 +1,7 @@
 import type { SettingPack } from "../../coc7/types/settingPack";
 import { standardOccupationDefinitions } from "./occupations";
 import { standardSkillDefinitions } from "./skills";
+import { standardWeaponDefinitions } from "./weapons";
 
 export const standardSettingPack: SettingPack = {
   version: 1,
@@ -9,4 +10,5 @@ export const standardSettingPack: SettingPack = {
   eras: ["classic-1920s", "modern"],
   occupations: [...standardOccupationDefinitions],
   skills: [...standardSkillDefinitions],
+  weapons: [...standardWeaponDefinitions],
 };

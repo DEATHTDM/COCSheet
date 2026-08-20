@@ -238,6 +238,20 @@ Status: Completed
 
 ### Phase 7C — Standard Weapons Catalog & Character Weapons
 
+Status: In Progress
+
+#### Phase 7C-1 — Weapon Domain, Registry & Pilot Catalog
+
+Status: Completed
+
+- independent WeaponDefinition and optional SettingPack weapon content
+- same-Setting SkillRegistry-backed WeaponRegistry validation
+- 8 source-verified Standard production pilot definitions
+- pure SkillRef formatting and era availability presentation helpers
+- no Character, persistence, UI, purchasing, ammunition, or combat automation changes
+
+#### Phase 7C-2 — Full Standard Weapon Catalog & Character Weapons
+
 Status: Not Started
 
 ## Later
