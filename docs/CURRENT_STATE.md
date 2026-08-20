@@ -6,11 +6,11 @@ Last updated: 2026-08-21
 
 Phase 7 — Wealth, Gear & Weapons (In Progress)
 
-Phase 7A — Standard Wealth & Possessions Foundation and Phase 7B — Character Gear & Possessions are completed. Phase 7C is In Progress: Phase 7C-1 — Weapon Domain, Registry & Pilot Catalog is completed with an independent `WeaponDefinition`, same-Setting skill-validated `WeaponRegistry`, pure presentation helpers, and 8 source-verified Standard pilot definitions. Phase 7C-2 — Full Standard Weapon Catalog & Character Weapons is Not Started. Ordinary possessions remain free-form Character data; weapon content does not add Character state, UI, persistence, purchasing, ammunition, or combat automation. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review.
+Phase 7A — Standard Wealth & Possessions Foundation and Phase 7B — Character Gear & Possessions are completed. Phase 7C is In Progress: Phase 7C-1 — Weapon Domain, Registry & Pilot Catalog and Phase 7C-2A — Full Standard Weapon Catalog are completed. The complete catalog contains 104 source-verified Standard definitions with a closed 104-row source inventory and `needs-review = 0`. Phase 7C-2B — Character Weapons is Not Started. Ordinary possessions remain free-form Character data; weapon content does not add Character state, UI, persistence, purchasing, ammunition, or combat automation. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review.
 
 ## Git baseline
 
-Phase 7C-1 Weapon Domain, Registry & Pilot Catalog branch was created from `main` at `4d450abc479b0af3c8fd0fcf57d3035456606fbc`.
+Phase 7C-2A Full Standard Weapon Catalog branch was created from `main` at `2410056cb51d16cd56c90898e3b1eddedd1a23ba`.
 
 ## Implemented
 
@@ -20,7 +20,8 @@ Phase 7C-1 Weapon Domain, Registry & Pilot Catalog branch was created from `main
 - five registered SettingPacks, with the complete core skill catalog only in Standard and empty content placeholders for the other settings
 - strict independent `WeaponDefinition` with stable ID, closed category, standard/predefined-only typed SkillRef, structured impale/era/malfunction/source metadata, and source-faithful display text for damage, range, attacks, capacity, and reference prices
 - optional `SettingPack.weapons` plus a cached same-Setting `WeaponRegistry` that rejects duplicate IDs, unknown skills, specialization-required parent standard refs, and missing predefined specializations without Standard fallback
-- exactly 8 source-verified Standard production pilot weapons spanning melee, thrown, shotgun, assault-rifle, submachine-gun, and machine-gun display pressure; all four non-Standard weapon registries remain empty
+- complete 104-row Standard production weapon catalog across all eight closed categories: 28 melee/other, 16 handguns, 12 rifles, 9 shotguns, 9 assault rifles, 6 submachine guns, 8 machine guns, and 16 explosive/heavy/other definitions; all four non-Standard weapon registries remain empty
+- complete Keeper table 17 plus Investigator tables 10-2～10-9 source inventory with 104 production mappings, zero duplicate mechanics mappings, `needs-review = 0`, explicit discrepancy resolution, all 8 Phase 7C-1 pilots reconciled in place, and an independently runnable full-catalog audit
 - pure weapon SkillRef formatting and classic/modern availability-status helpers, with no weapon browser or Vue integration
 - pure Standard 1920s/Modern wealth table for CR 0～99 with closed lifestyle IDs, integer US-cent amounts, exact/minimum asset semantics, and presentation-only dollar formatting
 - optional Character version-1 wealth containing mutable cash/assets totals and UUID-backed asset descriptions with optional estimates; no spending-level persistence or asset-entry sum invariant
@@ -176,7 +177,7 @@ Merged in the current enum:
 ## Not implemented
 
 - post-creation improvement-roll workflow
-- full Standard weapon catalog and Character weapon instances (Phase 7C-2)
+- Character weapon instances and ownership (Phase 7C-2B)
 - portrait upload
 - independent final character sheet UI/module
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
@@ -189,7 +190,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 7C-2 — Full Standard Weapon Catalog & Character Weapons. It remains Not Started and requires separate authorization.
+Phase 7C-2B — Character Weapons. It remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

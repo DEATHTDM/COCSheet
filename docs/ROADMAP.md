@@ -250,7 +250,16 @@ Status: Completed
 - pure SkillRef formatting and era availability presentation helpers
 - no Character, persistence, UI, purchasing, ammunition, or combat automation changes
 
-#### Phase 7C-2 — Full Standard Weapon Catalog & Character Weapons
+#### Phase 7C-2A — Full Standard Weapon Catalog
+
+Status: Completed
+
+- complete Keeper table 17 source inventory cross-checked against Investigator tables 10-2～10-9
+- 104 source rows mapped to 104 production definitions across all eight weapon categories
+- source discrepancy resolutions, 8 pilot reconciliations, Registry validation, and automated catalog audit with `needs-review = 0`
+- no Character weapon ownership, creation UI, persistence, ammunition, purchasing, or combat automation
+
+#### Phase 7C-2B — Character Weapons
 
 Status: Not Started
 
