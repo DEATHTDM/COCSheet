@@ -4,6 +4,7 @@ import { eraIdSchema, occupationSchema } from "./occupation";
 import { settingIdSchema } from "./setting";
 import { skillDefinitionSchema, type SkillDefinition } from "./skill";
 import { sourceReferenceSchema } from "./source";
+import { weaponDefinitionSchema, type WeaponDefinition } from "./weapon";
 
 export const characterExtensionIdSchema = z.enum(["regency-reputation"]);
 
@@ -34,6 +35,7 @@ export const settingPackSchema = z
     eras: z.array(eraIdSchema).optional(),
     occupations: z.array(occupationSchema),
     skills: z.array(skillDefinitionSchema).optional(),
+    weapons: z.array(weaponDefinitionSchema).optional(),
     equipment: z.array(equipmentDefinitionSchema).optional(),
     characterExtensions: z.array(characterExtensionIdSchema).optional(),
     ruleOptions: z.array(ruleOptionDefinitionSchema).optional(),
@@ -43,6 +45,7 @@ export const settingPackSchema = z
 
 export type CharacterExtensionId = z.infer<typeof characterExtensionIdSchema>;
 export type { SkillDefinition };
+export type { WeaponDefinition };
 export type EquipmentDefinition = z.infer<typeof equipmentDefinitionSchema>;
 export type RuleOptionDefinition = z.infer<typeof ruleOptionDefinitionSchema>;
 export type SettingPack = z.infer<typeof settingPackSchema>;

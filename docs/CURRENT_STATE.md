@@ -6,11 +6,11 @@ Last updated: 2026-08-21
 
 Phase 7 — Wealth, Gear & Weapons (In Progress)
 
-Phase 7A — Standard Wealth & Possessions Foundation and Phase 7B — Character Gear & Possessions are completed. Standard initial lifestyle, cash, assets, and spending level derive from era + finalized Credit Rating; current cash/assets and UUID-backed asset descriptions are long-term Character state, while creation provenance belongs to CreationSession. Ordinary gear is now free-form UUID-backed Character possessions, independent from wealth and creation provenance. Standard ordinary equipment catalog work is explicitly outside the product plan. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review. Phase 7C remains unimplemented.
+Phase 7A — Standard Wealth & Possessions Foundation and Phase 7B — Character Gear & Possessions are completed. Phase 7C is In Progress: Phase 7C-1 — Weapon Domain, Registry & Pilot Catalog is completed with an independent `WeaponDefinition`, same-Setting skill-validated `WeaponRegistry`, pure presentation helpers, and 8 source-verified Standard pilot definitions. Phase 7C-2 — Full Standard Weapon Catalog & Character Weapons is Not Started. Ordinary possessions remain free-form Character data; weapon content does not add Character state, UI, persistence, purchasing, ammunition, or combat automation. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review.
 
 ## Git baseline
 
-Phase 7B Character Gear & Possessions branch was created from `main` at `758390a8687124c856f7fee5e9db4fa48b354fdf`.
+Phase 7C-1 Weapon Domain, Registry & Pilot Catalog branch was created from `main` at `4d450abc479b0af3c8fd0fcf57d3035456606fbc`.
 
 ## Implemented
 
@@ -18,6 +18,10 @@ Phase 7B Character Gear & Possessions branch was created from `main` at `758390a
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
 - five registered SettingPacks, with the complete core skill catalog only in Standard and empty content placeholders for the other settings
+- strict independent `WeaponDefinition` with stable ID, closed category, standard/predefined-only typed SkillRef, structured impale/era/malfunction/source metadata, and source-faithful display text for damage, range, attacks, capacity, and reference prices
+- optional `SettingPack.weapons` plus a cached same-Setting `WeaponRegistry` that rejects duplicate IDs, unknown skills, specialization-required parent standard refs, and missing predefined specializations without Standard fallback
+- exactly 8 source-verified Standard production pilot weapons spanning melee, thrown, shotgun, assault-rifle, submachine-gun, and machine-gun display pressure; all four non-Standard weapon registries remain empty
+- pure weapon SkillRef formatting and classic/modern availability-status helpers, with no weapon browser or Vue integration
 - pure Standard 1920s/Modern wealth table for CR 0～99 with closed lifestyle IDs, integer US-cent amounts, exact/minimum asset semantics, and presentation-only dollar formatting
 - optional Character version-1 wealth containing mutable cash/assets totals and UUID-backed asset descriptions with optional estimates; no spending-level persistence or asset-entry sum invariant
 - Character Store cash/assets and asset CRUD APIs with Store-owned UUIDs, stable edit identity, refresh persistence, and no CreationSession side effects
@@ -172,7 +176,7 @@ Merged in the current enum:
 ## Not implemented
 
 - post-creation improvement-roll workflow
-- Standard weapon schema/catalog and Character weapons
+- full Standard weapon catalog and Character weapon instances (Phase 7C-2)
 - portrait upload
 - independent final character sheet UI/module
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
@@ -185,7 +189,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 7C — Standard Weapons Catalog & Character Weapons. It remains Not Started and requires separate authorization.
+Phase 7C-2 — Full Standard Weapon Catalog & Character Weapons. It remains Not Started and requires separate authorization.
 
 ## Known technical risks
 

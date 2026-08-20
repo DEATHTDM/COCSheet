@@ -102,9 +102,25 @@ regency
 
 避免在应用各处散布 `if (setting === "gaslight")`。`SettingPack` 是数据与扩展 ID 声明，不能注入或执行任意 JavaScript。特殊人物规则由应用内部 Extension Registry 提供，并随应用代码发布。
 
-当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition` 与必要的 canonical specializations；其余四个 SettingPack 仍是空内容占位包，不包含技能目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
+当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition`、必要的 canonical specializations，以及 Phase 7C-1 的 8 项 Standard weapon pilot；其余四个 SettingPack 仍是空内容占位包，不包含技能或武器目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
 
-Standard wealth table 是内建的纯规则，不是 mutable Setting catalog。普通 gear / possessions 是 Character 自由文本数据，Standard 不建立普通商品目录。`SettingPack.equipment` 与 `equipmentDefinitionSchema` 当前只是未使用的 foundation hook；weapons 因包含独立战斗 mechanics 而保持独立领域模型，不塞入普通 possession entry，并留待 Phase 7C。
+Standard wealth table 是内建的纯规则，不是 mutable Setting catalog。普通 gear / possessions 是 Character 自由文本数据，Standard 不建立普通商品目录。`SettingPack.equipment` 与 `equipmentDefinitionSchema` 当前只是未使用的 foundation hook；weapon definitions 因包含独立战斗 mechanics 而通过 `SettingPack.weapons` 保持独立，不塞入普通 possession entry，Character weapon instances 留待 Phase 7C-2。
+
+## Weapon architecture
+
+Phase 7C-1 建立以下只读内容链路：
+
+```text
+SettingPack.weapons
+        ↓
+WeaponRegistry + same-Setting SkillRegistry validation
+        ↓
+future Character weapon instances (Phase 7C-2)
+```
+
+`WeaponRegistry` 只读取对应 `SettingPack.weapons ?? []`，按 Setting 缓存，并在注册时验证 Weapon schema、重复 ID、standard skill ref 的非专业化约束与 predefined specialization 的真实存在；它不会回退读取 Standard catalog。Standard 当前只有 8 行 production pilot，其余四个 Setting 的 weapon registry 为空。
+
+这条链路与未使用的 `SettingPack.equipment` hook 及自由文本 `Character.possessions` 互相独立。Phase 7C-1 不建立 Character weapon instance、武器选择 UI、购买／弹药状态或 combat engine；异构 damage、range、attacks、capacity 与 reference price 单元格仍是来源显示文本。
 
 ## Skill architecture
 
@@ -163,4 +179,4 @@ Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还
 
 ## Schema evolution
 
-正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step；Phase 7A 只增加 optional Character wealth、optional CreationSession wealth provenance 与 `possessions` step；Phase 7B 只增加 optional Character possessions。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。
+正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step；Phase 7A 只增加 optional Character wealth、optional CreationSession wealth provenance 与 `possessions` step；Phase 7B 只增加 optional Character possessions；Phase 7C-1 只增加 static Setting weapon content，不改变持久化 schema。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。
