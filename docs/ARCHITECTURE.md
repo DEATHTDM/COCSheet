@@ -36,7 +36,7 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`skills` 和轻量 `occupation` 身份快照。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，可选人物信息 `sex`、`residence`、`birthplace`，可选 `backstory`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`skills` 和轻量 `occupation` 身份快照。背景条目使用 UUID 稳定 identity 与闭合类别；Key Connection 引用 entry ID。创建期 3～6 条和 Key Connection 完成条件属于纯 creation validation，不是 Character schema 的长期上限。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
@@ -52,7 +52,7 @@ Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Ch
 
 Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过现有 Schema 与 Repository 正常读取；读取或页面加载不会自动改写。UI 明确提示超出上限，并只在用户点击同步后调用 Store reconciliation action；该 action 仅在需要时通过一次 CharacterRepository update 修改 current SAN，不修改 Mythos、HP、MP、属性、Luck 或其他技能。
 
-创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。完成 attributes 时原子写入最终属性与推进 occupation；完成 skills 时同样通过 Creation Workflow Repository 在一个事务中原子写入 `Character.occupation`、重建后的 `Character.skills` 与 `CreationSession.currentStep = review`。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
+创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。完成 attributes 时原子写入最终属性与推进 occupation；完成 skills 时同样通过 Creation Workflow Repository 在一个事务中原子写入 `Character.occupation`、重建后的 `Character.skills` 与 `CreationSession.currentStep = background`。Background 完成 action 从持久化 Character 读取背景并通过纯 validator 检查后才推进 review。旧 session 若已经位于 review 会原样读取，不自动倒退或 writeback。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 
 ## Persistence
 
@@ -149,7 +149,7 @@ Phase 5A 已建立 Occupation Engine Foundation：
 - finalize 生成完整 `Character.skills` 后复用 Phase 4 领域校验，继续执行稳定 identity、重复实例与单实例专业化约束。
 - Character 存在 `eraId` 时，finalize 对职业 mechanics snapshot 以及 requirements、replacement、allocation 和最终选择中实际出现的去重 SkillRef 执行时代适用性校验；不兼容内容产生稳定错误码且不被静默丢弃。时代变化保留现有 catalog/custom 职业快照和技能草稿，由 UI 与 finalize 阻止继续。
 - finalize 在普通 requirement validation 前解析可选 replacement draft。合法 target 跳过 normal selection，且 normal target selection 若仍存在会 hard fail；replacement ref 进入同一 occupation eligibility、allocation、base、limit 与 CharacterSkill validation pipeline。批准 subject 绑定 occupation + policy + target，target 改变后旧批准自然失效。职业切换保留 draft 供 stale validation，显式 occupation allocation reset 才清除 replacement target。
-- 完成 skills 时，最终 Mythos 与必要的 current SAN 收紧、职业快照、最终技能和 review 会话推进在同一个 Creation Workflow Repository 事务中写入；降低 Mythos 不自动恢复 SAN，HP/MP 不受影响。
+- 完成 skills 时，最终 Mythos 与必要的 current SAN 收紧、职业快照、最终技能和 background 会话推进在同一个 Creation Workflow Repository 事务中写入；降低 Mythos 不自动恢复 SAN，HP/MP 不受影响。
 
 当前 Standard SettingPack 已从 `src/content/standard/occupations.ts` 接入 91 个 canonical family identity 与 119 个 production definition，完整映射 142 条官方 Standard source entry，并保留真实 source mechanics variants。Batch 2 的 `bounty-hunter`、`cowboy` 与 `tribe-member` 通过 `one-branch` 无损进入 production，Keeper Criminal 使用 top-level-only `choice-pool`，Deprogrammer 使用 occupation-level replacement policy；Clerk / Executive 通过既有 `one-of` 表达 Own Language 或 Other Language exactly-one。`src/coc7/testing/occupationFixtures.ts` 继续只用于 Engine 压力测试，生产内容不依赖 testing 目录。Phase 5B Standard occupation production 已完成；Phase 5C-1.5 已加入持久化时代上下文、浏览/选择守卫与 finalize 守卫，Phase 5C-2 已加入 catalog/custom/named-custom requirement selection、any-skill custom path，以及只持久化 policy/target 的 replacement interaction；Phase 5C-3 的独立 allocation/finalization UI 只通过 Creation Store 保存完整 SkillRef allocation rows、当前 pending Keeper approvals 与 occupation-scoped Credit Rating override，并以现有 `getSkillFinalizePlan()` 实时读取预算、final value、issues、warnings 与 approvals，完成时继续调用事务性 `completeSkills()`，不复制 Occupation Engine 规则；职业数据不得硬编码进 Vue 页面。
 
@@ -157,4 +157,4 @@ Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还
 
 ## Schema evolution
 
-正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`。旧 version-1 Character 缺少时代时继续解析且不自动补写，旧 session 也不增加时代字段；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。
+正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。

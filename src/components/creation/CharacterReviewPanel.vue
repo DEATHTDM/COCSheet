@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 
 import { characteristicIds } from "../../coc7/types/attribute";
-import type { Character } from "../../coc7/types/character";
+import { backstoryCategoryIds, type Character } from "../../coc7/types/character";
 import { getSkillRefKey } from "../../coc7/rules/skills";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
@@ -11,6 +11,7 @@ import {
   formatSkillRefForOccupation,
 } from "../../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../../creation/stores/creationStore";
+import { backstoryCategoryLabels } from "../../creation/presentation/backstoryPresentation";
 
 const props = defineProps<{ readonly character: Character }>();
 const creationStore = useCreationStore();
@@ -24,6 +25,13 @@ const skills = computed(() => [...(props.character.skills ?? [])]
     label: formatSkillRefForOccupation(skill.ref, skillRegistry.value),
   }))
   .sort((left, right) => left.label.localeCompare(right.label, "zh-CN")));
+const backstoryGroups = computed(() => backstoryCategoryIds
+  .map((category) => ({
+    category,
+    label: backstoryCategoryLabels[category],
+    entries: props.character.backstory?.entries.filter((entry) => entry.category === category) ?? [],
+  }))
+  .filter((group) => group.entries.length > 0));
 
 async function returnToSkills(): Promise<void> {
   actionError.value = "";
@@ -31,6 +39,15 @@ async function returnToSkills(): Promise<void> {
     await creationStore.setCurrentStep("skills");
   } catch (error: unknown) {
     actionError.value = error instanceof Error ? error.message : "返回技能调整失败。";
+  }
+}
+
+async function returnToBackground(): Promise<void> {
+  actionError.value = "";
+  try {
+    await creationStore.setCurrentStep("background");
+  } catch (error: unknown) {
+    actionError.value = error instanceof Error ? error.message : "返回背景修改失败。";
   }
 }
 </script>
@@ -43,7 +60,10 @@ async function returnToSkills(): Promise<void> {
         <h2>建卡检查</h2>
         <p class="success-message">建卡数据已保存到本地。</p>
       </div>
-      <button class="button" type="button" @click="returnToSkills">返回技能调整</button>
+      <div class="actions">
+        <button class="button" type="button" @click="returnToSkills">返回技能调整</button>
+        <button class="button" type="button" @click="returnToBackground">返回修改背景</button>
+      </div>
     </header>
 
     <p v-if="actionError" class="error-message" role="alert">{{ actionError }}</p>
@@ -55,9 +75,30 @@ async function returnToSkills(): Promise<void> {
         <div><dt>Setting</dt><dd>{{ settingName }}</dd></div>
         <div><dt>Era</dt><dd>{{ character.eraId ? formatOccupationEraId(character.eraId) : '未指定' }}</dd></div>
         <div><dt>年龄</dt><dd>{{ character.age ?? '—' }}</dd></div>
+        <div><dt>性别</dt><dd>{{ character.sex ?? '—' }}</dd></div>
+        <div><dt>住所</dt><dd>{{ character.residence ?? '—' }}</dd></div>
+        <div><dt>出身地</dt><dd>{{ character.birthplace ?? '—' }}</dd></div>
         <div><dt>最终职业</dt><dd>{{ character.occupation?.displayNameSnapshot.zh ?? '—' }}</dd></div>
         <div><dt>Luck</dt><dd>{{ character.luck ?? '—' }}</dd></div>
       </dl>
+    </section>
+
+    <section class="panel form-stack">
+      <h3>背景故事</h3>
+      <div v-if="backstoryGroups.length" class="review-backstory-groups">
+        <section v-for="group in backstoryGroups" :key="group.category" class="review-backstory-group">
+          <h4>{{ group.label }}</h4>
+          <ul>
+            <li v-for="entry in group.entries" :key="entry.id">
+              <strong v-if="entry.id === character.backstory?.keyConnectionEntryId" class="key-connection-mark">
+                ★ 关键连接
+              </strong>
+              <span>{{ entry.text }}</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+      <p v-else class="empty-state">尚无背景故事。</p>
     </section>
 
     <section class="panel form-stack">

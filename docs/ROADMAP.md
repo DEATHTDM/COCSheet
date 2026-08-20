@@ -201,9 +201,20 @@ Status: Completed
 - current-investigator custom occupation Builder with safe closed formula and skill-category controls
 - create/edit snapshot persistence, Preset policy handling, and full structured Skills → Finalize → Review integration
 
+## Phase 6 — Investigator Identity & Backstory
+
+Status: Completed
+
+- optional Character sex, residence, and birthplace identity details with legacy-compatible persistence
+- Character-owned backstory across six creation and four game-time categories
+- stable entry UUID identity and entry-ID Key Connection reference
+- pure creation validation for 3～6 creation entries and one initial Key Connection
+- Basic Info → Attributes → Occupation → Skills → Background → Review workflow
+- dedicated Background creation UI and expanded creation Review summary
+- unchanged Character/Record/Dexie version 1 with no new table or read-time migration
+
 ## Later
 
-- background
 - equipment
 - weapons
 - final character sheet UX

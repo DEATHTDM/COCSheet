@@ -226,6 +226,6 @@ async function complete(): Promise<void> {
       type="button"
       :disabled="!canComplete || busyAction !== ''"
       @click="complete"
-    >{{ busyAction === 'complete' ? '正在保存……' : '完成技能并进入检查' }}</button>
+    >{{ busyAction === 'complete' ? '正在保存……' : '完成技能并进入背景' }}</button>
   </section>
 </template>

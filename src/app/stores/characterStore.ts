@@ -14,12 +14,23 @@ import {
   validateCharacterSkills,
 } from "../../coc7/rules/skills";
 import type { CharacterSkill, SkillDefinition, SkillRef } from "../../coc7/types/skill";
-import type { CharacterResources } from "../../coc7/types/character";
+import type {
+  BackstoryCategoryId,
+  CharacterBackstory,
+  CharacterResources,
+} from "../../coc7/types/character";
 import type { EraId } from "../../coc7/types/occupation";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import type { CharacterRecord } from "../../db/records";
+import { isCreationBackstoryCategory } from "../../creation/rules/creationBackstory";
+
+export interface CharacterIdentityDetails {
+  readonly sex: string;
+  readonly residence: string;
+  readonly birthplace: string;
+}
 
 export const useCharacterStore = defineStore("characters", () => {
   const records = ref<CharacterRecord[]>([]);
@@ -114,6 +125,108 @@ export const useCharacterStore = defineStore("characters", () => {
     const eras = getSettingPackOrThrow(existing.settingId).eras ?? [];
     if (!eras.includes(eraId)) throw new Error(`当前设定不存在时代：${eraId}`);
     return synchronize(await characterRepository.update({ ...existing.data, eraId }));
+  }
+
+  async function setIdentityDetails(
+    id: string,
+    details: CharacterIdentityDetails,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const sex = details.sex.trim();
+    const residence = details.residence.trim();
+    const birthplace = details.birthplace.trim();
+    if (!sex || !residence || !birthplace) {
+      throw new Error("性别、住所与出身地均不能为空");
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      sex,
+      residence,
+      birthplace,
+    }));
+  }
+
+  async function addBackstoryEntry(
+    id: string,
+    category: BackstoryCategoryId,
+    text: string,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const normalizedText = text.trim();
+    if (!normalizedText) throw new Error("背景条目不能为空");
+    const backstory = existing.data.backstory ?? { entries: [] };
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      backstory: {
+        ...backstory,
+        entries: [
+          ...backstory.entries,
+          { id: crypto.randomUUID(), category, text: normalizedText },
+        ],
+      },
+    }));
+  }
+
+  async function updateBackstoryEntry(
+    id: string,
+    entryId: string,
+    text: string,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const normalizedText = text.trim();
+    if (!normalizedText) throw new Error("背景条目不能为空");
+    const backstory = existing.data.backstory;
+    if (!backstory?.entries.some((entry) => entry.id === entryId)) {
+      throw new Error(`找不到背景条目：${entryId}`);
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      backstory: {
+        ...backstory,
+        entries: backstory.entries.map((entry) =>
+          entry.id === entryId ? { ...entry, text: normalizedText } : entry,
+        ),
+      },
+    }));
+  }
+
+  async function removeBackstoryEntry(id: string, entryId: string): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const backstory = existing.data.backstory;
+    if (!backstory?.entries.some((entry) => entry.id === entryId)) {
+      throw new Error(`找不到背景条目：${entryId}`);
+    }
+    const entries = backstory.entries.filter((entry) => entry.id !== entryId);
+    const nextBackstory: CharacterBackstory = backstory.keyConnectionEntryId === entryId
+      ? { entries }
+      : { ...backstory, entries };
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      backstory: nextBackstory,
+    }));
+  }
+
+  async function setKeyConnection(
+    id: string,
+    entryId: string | undefined,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const backstory = existing.data.backstory ?? { entries: [] };
+    if (entryId === undefined) {
+      return synchronize(await characterRepository.update({
+        ...existing.data,
+        backstory: { entries: [...backstory.entries] },
+      }));
+    }
+    const entry = backstory.entries.find((candidate) => candidate.id === entryId);
+    if (!entry) throw new Error(`找不到背景条目：${entryId}`);
+    if (!isCreationBackstoryCategory(entry.category)) {
+      throw new Error("只有六个创建背景类别中的条目可以设为关键连接");
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      backstory: { ...backstory, keyConnectionEntryId: entryId },
+    }));
   }
 
   async function ensureResourcesInitialized(id: string): Promise<CharacterRecord> {
@@ -341,6 +454,11 @@ export const useCharacterStore = defineStore("characters", () => {
     loadById,
     updateName,
     setEra,
+    setIdentityDetails,
+    addBackstoryEntry,
+    updateBackstoryEntry,
+    removeBackstoryEntry,
+    setKeyConnection,
     ensureResourcesInitialized,
     reconcileSanityToMaximum,
     setCurrentHp,

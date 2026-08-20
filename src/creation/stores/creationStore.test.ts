@@ -738,7 +738,7 @@ describe("Phase 5A skills finalize foundation", () => {
     await expect(store.completeSkills(character.data)).rejects.toThrow("请先选择建卡时代");
   });
 
-  it("保留属性回退期间的职业/分配草稿，并原子写入 Character.skills + review", async () => {
+  it("保留属性回退期间的职业/分配草稿，并原子写入 Character.skills + background", async () => {
     const store = useCreationStore();
     const characterId = await prepareCompletableManual(store);
     const initialCharacter = await characterRepository.getById(characterId);
@@ -798,12 +798,12 @@ describe("Phase 5A skills finalize foundation", () => {
     expect(completed.data.skills?.find(
       (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "medicine",
     )?.currentValue).toBe(281);
-    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.currentStep).toBe("background");
 
     const refreshedCharacter = await characterRepository.getById(characterId);
     const refreshedSession = await creationSessionRepository.getByCharacterId(characterId);
     expect(refreshedCharacter?.data.skills).toEqual(completed.data.skills);
-    expect(refreshedSession?.data.currentStep).toBe("review");
+    expect(refreshedSession?.data.currentStep).toBe("background");
     expect(refreshedSession?.data.occupation?.definitionSnapshot.pointFormula).toEqual({
       type: "attribute",
       attribute: "EDU",
@@ -865,7 +865,7 @@ describe("Phase 5A skills finalize foundation", () => {
     });
     const refreshed = await characterRepository.getById(characterId);
     expect(refreshed?.data.resources?.san.current).toBe(59);
-    expect(store.current?.data.currentStep).toBe("review");
+    expect(store.current?.data.currentStep).toBe("background");
   });
 
   it("重建为较低 Mythos 不自动恢复 SAN", async () => {
@@ -988,5 +988,69 @@ describe("Phase 5C-4A manual skill conflict", () => {
     const updateSpy = vi.spyOn(creationSessionRepository, "update");
     await restored.confirmStructuredSkillRebuild(character.data);
     expect(updateSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("Phase 6 background workflow", () => {
+  it("skills 进入 background；不完整被阻断；往返 skills 后数据保留并可完成 review", async () => {
+    const store = useCreationStore();
+    const characterId = await prepareCompletableManual(store);
+    const initial = await characterRepository.getById(characterId);
+    if (!initial) throw new Error("调查员不存在");
+    const afterAttributes = await store.completeAttributes(initial.data);
+
+    const occupationId = crypto.randomUUID();
+    await store.selectCustomOccupation({
+      version: 1,
+      id: occupationId,
+      name: { zh: "背景测试员", en: "Backstory Tester" },
+      category: "academic",
+      sourceRefs: [{ sourceId: "custom", title: "Keeper Custom Occupation" }],
+      era: { type: "all" },
+      creditRating: { min: 0, max: 0 },
+      pointFormula: { type: "attribute", attribute: "EDU", multiplier: 4 },
+      skillRequirements: [],
+    });
+
+    const firstFinalize = await store.completeSkills(afterAttributes.data, true);
+    expect(store.current?.data.currentStep).toBe("background");
+    await expect(store.completeBackground()).rejects.toThrow("至少需要 3 条");
+    expect(store.current?.data.currentStep).toBe("background");
+
+    const characterStore = useCharacterStore();
+    await characterStore.loadById(characterId);
+    await characterStore.setIdentityDetails(characterId, {
+      sex: "男性",
+      residence: "阿卡姆",
+      birthplace: "波士顿",
+    });
+    const firstEntryRecord = await characterStore.addBackstoryEntry(
+      characterId,
+      "personal-description",
+      "总是穿着旧风衣",
+    );
+    const firstEntry = firstEntryRecord.data.backstory?.entries[0];
+    if (!firstEntry) throw new Error("背景条目未创建");
+    await characterStore.addBackstoryEntry(characterId, "traits", "面对危险时冷静");
+    await characterStore.addBackstoryEntry(characterId, "traits", "很难信任陌生人");
+    const withKey = await characterStore.setKeyConnection(characterId, firstEntry.id);
+
+    await store.setCurrentStep("skills");
+    const secondFinalize = await store.completeSkills(withKey.data, true);
+    expect(store.current?.data.currentStep).toBe("background");
+    expect(secondFinalize.data.backstory).toEqual(withKey.data.backstory);
+    expect(secondFinalize.data).toMatchObject({
+      sex: "男性",
+      residence: "阿卡姆",
+      birthplace: "波士顿",
+    });
+    expect(secondFinalize.data.skills).toEqual(firstFinalize.data.skills);
+
+    await store.completeBackground();
+    expect(store.current?.data.currentStep).toBe("review");
+    expect((await creationSessionRepository.getByCharacterId(characterId))?.data.currentStep)
+      .toBe("review");
+    expect((await characterRepository.getById(characterId))?.data.backstory)
+      .toEqual(withKey.data.backstory);
   });
 });
