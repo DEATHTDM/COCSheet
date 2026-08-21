@@ -37,6 +37,24 @@ async function prepareCompletableManual(store: ReturnType<typeof useCreationStor
   return characterId;
 }
 
+describe("creation session status listing", () => {
+  it("为 Home 提供现有 currentStep，而缺失会话保持未定义", async () => {
+    const store = useCreationStore();
+    const incompleteId = await store.start("standard");
+    const completeId = await store.start("standard");
+    await store.setCurrentStep("review");
+    const removedSessionId = await store.start("standard");
+    await creationSessionRepository.remove(removedSessionId);
+
+    await store.loadSessionSteps();
+
+    expect(store.sessionStepsLoaded).toBe(true);
+    expect(store.sessionSteps[incompleteId]).toBe("basic-info");
+    expect(store.sessionSteps[completeId]).toBe("review");
+    expect(store.sessionSteps[removedSessionId]).toBeUndefined();
+  });
+});
+
 describe("Manual 未完成状态", () => {
   it("从空输入开始，填满八项后才生成 Base", async () => {
     const store = useCreationStore();

@@ -4,16 +4,25 @@ Last updated: 2026-08-21
 
 ## Current phase
 
-Phase 7 — Wealth, Gear & Weapons (Completed)
+Phase 8 — Final Character Sheet UX (In Progress)
 
-Phase 7A — Standard Wealth & Possessions Foundation, Phase 7B — Character Gear & Possessions, and Phase 7C — Standard Weapons Catalog & Character Weapons are completed. Phase 7C-2B adds Character-owned catalog-backed weapon instances to the existing Possessions and Review steps. The complete catalog remains 104 source-verified Standard definitions with a closed 104-row source inventory and `needs-review = 0`. Ordinary possessions, wealth/assets, and weapons remain separate; there is no purchasing, ammunition, or combat automation. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review.
+Phase 8A — Final Character Sheet Foundation is completed. `/characters/:id/sheet` is now the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Home and Review provide explicit sheet/editor navigation. Existing HP/MP/SAN resources are editable through Character Store actions; all other game-time advancement, recovery, insanity, and combat systems remain unimplemented. Phase 8 as a whole remains in progress.
 
 ## Git baseline
 
-Phase 7C-2B Character Weapons branch was created from `main` at `6db9d18a0b03ba176187b149c59b39ec159f80a0`.
+Phase 8A Final Character Sheet branch was created from `main` at `be13c968758d2bad33d873224487651bba8c535f`.
 
 ## Implemented
 
+- independent `/characters/:id/sheet` Final Character Sheet route and responsive long-term sheet layout, separate from the seven-step creation editor and creation Review
+- Character-only final-sheet data loading: CreationSession is optional and used only for completion status/navigation; missing sessions, incomplete/legacy Character fields, and missing Character error states do not trigger automatic writeback
+- Home actions that distinguish Open Character Sheet from Continue/Modify Creation, with explicit completed, incomplete, and missing-session status derived from existing `CreationSession.currentStep`
+- Review-to-Final-Sheet completion entry plus Final-Sheet-to-Editor return for Characters that retain a CreationSession, without adding a workflow step or schema enum
+- priority final-sheet presentation for identity, final Characteristics with Half/Fifth, Standard derived values, Luck, current resources, and Maximum SAN, followed by stable sorted skills and secondary backstory/wealth/possessions/weapons regions
+- direct current HP, current MP, and current SAN editing through existing Character Store APIs, including existing HP/SAN maximum validation, unbounded nonnegative current MP semantics, refresh persistence, and explicit legacy SAN reconciliation without load-time mutation
+- final skill presentation using stable SkillRef and same-Setting SkillRegistry for standard/predefined/custom names, current/Half/Fifth values, improvementChecked state, deterministic sorting, and orphan-safe fallback
+- all ten Character backstory categories in existing order with Key Connection marking and empty-category suppression
+- Character wealth/assets with reliably derived Standard spending level, separate ordinary possessions, and same-Setting WeaponRegistry presentation covering source-faithful mechanics, era availability, notes, orphan fallback, and no Standard fallback for non-Standard Settings
 - Vue 3 / TypeScript / Vite project with strict type checking
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
@@ -182,8 +191,8 @@ Merged in the current enum:
 
 - post-creation improvement-roll workflow
 - portrait upload
-- independent final character sheet UI/module
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
+- post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, and improvement-roll workflows
 - guide overlay
 - import/export and printing/export
 - URL / Hash preset sharing
