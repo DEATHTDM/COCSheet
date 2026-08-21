@@ -52,11 +52,11 @@ Standard lifestyle、官方初始 cash/assets 与 spending level 由当前 `Char
 
 ### W004 — Setting weapon definitions and source-faithful display cells
 
-`WeaponDefinition` 是独立的 Setting content，不复用普通 `Character.possessions` 或 generic `EquipmentDefinition`。武器与技能的关联使用 typed `SkillRef`，不得依赖显示名；stable skill association、impale、era availability 与 malfunction 结构化保存。
+`WeaponDefinition` 是独立的 Setting content，不复用普通 `Character.possessions` 或 generic `EquipmentDefinition`。武器与技能的关联使用 typed `SkillRef`，不得依赖显示名；stable skill association、impale、era availability 与 malfunction 结构化保存。Availability 与 reference price 都只是供规则查阅的 presentation metadata；available、rare、unavailable 均不构成 Character weapon ownership 的资格限制。
 
-在 combat engine 尚未建立前，damage、base range、attacks per round、capacity 与官方 reference prices 保留 source-faithful display text，不提前解析为骰式、射击模式或射程引擎。Reference price 只供查阅，不触发 Cash 自动扣款、购买或合法性判断。
+在 combat engine 尚未建立前，damage、base range、attacks per round、capacity 与官方 reference prices 保留 source-faithful display text，不提前解析为骰式、射击模式或射程引擎。系统当前没有武器合法性、购买或 Keeper approval engine，不通过 availability 或 reference price 隐式实现这些判断。
 
-长期 `Character.weapons` 只保存 Store 创建的单件 UUID、WeaponDefinition stable ID 与可选人物级备注；同一 definition 可持有多件，单件 identity 始终是实例 UUID。静态 mechanics 不复制进 Character，而是从人物自身 Setting 的 WeaponRegistry 解析，且任何 Setting 都不回退 Standard。缺少 definition 的旧／orphan 实例保持可读取、可辨识和可删除。时代变化不删除或改写已有实例；available/rare/unavailable 复用目录的 availability，unavailable 只阻止当前时代正常新增，缺少 `Character.eraId` 时不猜测时代。
+长期 `Character.weapons` 只保存 Store 创建的单件 UUID、WeaponDefinition stable ID 与可选人物级备注；同一 definition 可持有多件，单件 identity 始终是实例 UUID。新增只要求 definition 存在于人物自身 Setting 的 WeaponRegistry，任何 Setting 都不回退 Standard；时代明确或缺失时，available、rare、unavailable 均可添加。静态 mechanics 不复制进 Character。缺少 definition 的旧／orphan 实例保持可读取、可辨识和可删除。时代变化只改变 availability presentation，不删除或改写已有实例。
 
 ## Settings
 

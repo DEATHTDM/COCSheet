@@ -35,14 +35,14 @@ describe("weapon presentation", () => {
 
   it("返回古典与现代时代状态，包括 unavailable 与 rare", () => {
     const bow = requireWeapon("bow");
+    const flintlockPistol = requireWeapon("flintlock-pistol");
     const fnFal = requireWeapon("fn-fal");
+    const bullwhip = requireWeapon("bullwhip");
     expect(isWeaponAvailableInEra(bow, "classic-1920s")).toBe("available");
     expect(isWeaponAvailableInEra(bow, "modern")).toBe("available");
+    expect(isWeaponAvailableInEra(flintlockPistol, "classic-1920s")).toBe("rare");
     expect(isWeaponAvailableInEra(fnFal, "classic-1920s")).toBe("unavailable");
-    expect(isWeaponAvailableInEra({
-      ...bow,
-      availability: { classic1920s: "rare", modern: "unavailable" },
-    }, "classic-1920s")).toBe("rare");
+    expect(isWeaponAvailableInEra(bullwhip, "modern")).toBe("unavailable");
   });
 
   it("解析 Character weapon，并在缺少时代时不猜测 availability", () => {

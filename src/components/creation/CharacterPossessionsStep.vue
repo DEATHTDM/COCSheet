@@ -293,7 +293,6 @@ function weaponCategoryLabel(definition: WeaponDefinition | undefined): string {
 }
 
 async function addWeapon(definition: WeaponDefinition): Promise<void> {
-  if (weaponAvailability(definition) === "unavailable") return;
   actionError.value = "";
   try {
     await characterStore.addWeapon(props.character.id, definition.id);
@@ -666,7 +665,6 @@ async function completePossessions(): Promise<void> {
                 <button
                   class="button"
                   type="button"
-                  :disabled="weaponAvailability(definition) === 'unavailable'"
                   @click="addWeapon(definition)"
                 >添加</button>
               </header>
@@ -689,7 +687,7 @@ async function completePossessions(): Promise<void> {
                 <div><dt>弹容量</dt><dd>{{ definition.capacity ?? '—' }}</dd></div>
               </dl>
               <p v-if="weaponAvailability(definition) === 'unavailable'" class="warning-message">
-                当前时代不可作为正常新增选项；已有实例不会被自动删除。
+                当前时代标记为不可用；该标记仅供规则查阅，不阻止记录到人物卡。
               </p>
             </article>
           </div>
