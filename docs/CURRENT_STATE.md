@@ -4,13 +4,13 @@ Last updated: 2026-08-21
 
 ## Current phase
 
-Phase 7 — Wealth, Gear & Weapons (In Progress)
+Phase 7 — Wealth, Gear & Weapons (Completed)
 
-Phase 7A — Standard Wealth & Possessions Foundation and Phase 7B — Character Gear & Possessions are completed. Phase 7C is In Progress: Phase 7C-1 — Weapon Domain, Registry & Pilot Catalog and Phase 7C-2A — Full Standard Weapon Catalog are completed. The complete catalog contains 104 source-verified Standard definitions with a closed 104-row source inventory and `needs-review = 0`. Phase 7C-2B — Character Weapons is Not Started. Ordinary possessions remain free-form Character data; weapon content does not add Character state, UI, persistence, purchasing, ammunition, or combat automation. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review.
+Phase 7A — Standard Wealth & Possessions Foundation, Phase 7B — Character Gear & Possessions, and Phase 7C — Standard Weapons Catalog & Character Weapons are completed. Phase 7C-2B adds Character-owned catalog-backed weapon instances to the existing Possessions and Review steps. The complete catalog remains 104 source-verified Standard definitions with a closed 104-row source inventory and `needs-review = 0`. Ordinary possessions, wealth/assets, and weapons remain separate; there is no purchasing, ammunition, or combat automation. The creation flow remains Basic Info → Attributes → Occupation → Skills → Background → Possessions → Review.
 
 ## Git baseline
 
-Phase 7C-2A Full Standard Weapon Catalog branch was created from `main` at `2410056cb51d16cd56c90898e3b1eddedd1a23ba`.
+Phase 7C-2B Character Weapons branch was created from `main` at `6db9d18a0b03ba176187b149c59b39ec159f80a0`.
 
 ## Implemented
 
@@ -22,7 +22,11 @@ Phase 7C-2A Full Standard Weapon Catalog branch was created from `main` at `2410
 - optional `SettingPack.weapons` plus a cached same-Setting `WeaponRegistry` that rejects duplicate IDs, unknown skills, specialization-required parent standard refs, and missing predefined specializations without Standard fallback
 - complete 104-row Standard production weapon catalog across all eight closed categories: 28 melee/other, 16 handguns, 12 rifles, 9 shotguns, 9 assault rifles, 6 submachine guns, 8 machine guns, and 16 explosive/heavy/other definitions; all four non-Standard weapon registries remain empty
 - complete Keeper table 17 plus Investigator tables 10-2～10-9 source inventory with 104 production mappings, zero duplicate mechanics mappings, `needs-review = 0`, explicit discrepancy resolution, all 8 Phase 7C-1 pilots reconciled in place, and an independently runnable full-catalog audit
-- pure weapon SkillRef formatting and classic/modern availability-status helpers, with no weapon browser or Vue integration
+- pure weapon SkillRef formatting, catalog filtering, reference-price formatting, classic/modern availability status, Character instance presentation, and orphan fallback helpers
+- optional Character version-1 weapon instances containing only Store-owned UUID, WeaponDefinition stable ID, and optional trimmed notes; duplicate definitions are legal while instance UUIDs stay unique
+- Character Store weapon add/notes/remove APIs through CharacterRepository, with same-Setting Registry validation, no Standard fallback, rare allowed, explicit-era unavailable add rejection, missing-era non-assumption, refresh persistence, and orphan-safe edit/delete
+- dedicated Weapons area inside Possessions with name/skill/ID search, eight-category filtering, useful catalog mechanics, rare/unavailable badges, duplicate add, instance notes and instance-specific delete; non-Standard empty registries remain empty
+- separate Review weapons summary resolving mechanics from the Character Setting Registry, preserving zero-weapon legality, unavailable owned weapons, orphan fallback, and Review ↔ Possessions persistence without adding an eighth workflow step
 - pure Standard 1920s/Modern wealth table for CR 0～99 with closed lifestyle IDs, integer US-cent amounts, exact/minimum asset semantics, and presentation-only dollar formatting
 - optional Character version-1 wealth containing mutable cash/assets totals and UUID-backed asset descriptions with optional estimates; no spending-level persistence or asset-entry sum invariant
 - Character Store cash/assets and asset CRUD APIs with Store-owned UUIDs, stable edit identity, refresh persistence, and no CreationSession side effects
@@ -177,7 +181,6 @@ Merged in the current enum:
 ## Not implemented
 
 - post-creation improvement-roll workflow
-- Character weapon instances and ownership (Phase 7C-2B)
 - portrait upload
 - independent final character sheet UI/module
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
@@ -190,7 +193,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 7C-2B — Character Weapons. It remains Not Started and requires separate authorization.
+No Later phase is authorized. Later-item ordering remains unfrozen.
 
 ## Known technical risks
 

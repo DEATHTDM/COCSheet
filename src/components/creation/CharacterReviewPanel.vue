@@ -6,6 +6,13 @@ import { backstoryCategoryIds, type Character } from "../../coc7/types/character
 import { getSkillRefKey } from "../../coc7/rules/skills";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
+import { getWeaponRegistry } from "../../content/weaponRegistry";
+import {
+  formatWeaponReferencePrice,
+  presentCharacterWeapon,
+  weaponAvailabilityLabels,
+  weaponCategoryLabels,
+} from "../../content/weaponPresentation";
 import {
   formatOccupationEraId,
   formatSkillRefForOccupation,
@@ -28,6 +35,15 @@ const creationStore = useCreationStore();
 const actionError = ref("");
 const settingName = computed(() => getSettingPackOrThrow(props.character.settingId).name);
 const skillRegistry = computed(() => getSkillRegistry(props.character.settingId));
+const weaponRegistry = computed(() => getWeaponRegistry(props.character.settingId));
+const weapons = computed(() => (props.character.weapons ?? []).map((instance) =>
+  presentCharacterWeapon(
+    instance,
+    weaponRegistry.value,
+    skillRegistry.value,
+    props.character.eraId,
+  ),
+));
 const skills = computed(() => [...(props.character.skills ?? [])]
   .map((skill) => ({
     skill,
@@ -162,6 +178,51 @@ async function returnToPossessions(): Promise<void> {
         </li>
       </ul>
       <p v-else class="empty-state">尚未记录普通随身物品。</p>
+    </section>
+
+    <section class="panel form-stack">
+      <h3>武器</h3>
+      <div v-if="weapons.length" class="weapon-owned-list">
+        <article
+          v-for="item in weapons"
+          :key="item.instance.id"
+          class="weapon-card owned"
+          :class="{ unavailable: item.eraAvailability === 'unavailable', orphaned: item.orphaned }"
+        >
+          <header>
+            <h4>{{ item.name }}</h4>
+            <div v-if="item.definition" class="weapon-badges">
+              <span class="occupation-badge">{{ weaponCategoryLabels[item.definition.category] }}</span>
+              <span
+                v-if="item.eraAvailability"
+                class="occupation-badge"
+                :class="{
+                  approval: item.eraAvailability === 'rare',
+                  banned: item.eraAvailability === 'unavailable',
+                }"
+              >{{ weaponAvailabilityLabels[item.eraAvailability] }}</span>
+              <span v-else class="occupation-badge">时代未指定</span>
+            </div>
+          </header>
+          <p v-if="item.orphaned" class="warning-message">
+            当前 Setting 的武器目录中找不到 definition：{{ item.instance.definitionId }}。
+          </p>
+          <dl v-else-if="item.definition" class="weapon-mechanics-grid">
+            <div><dt>技能</dt><dd>{{ item.skillLabel }}</dd></div>
+            <div><dt>伤害</dt><dd>{{ item.definition.damage }}</dd></div>
+            <div><dt>基础射程</dt><dd>{{ item.definition.baseRange }}</dd></div>
+            <div><dt>每轮攻击</dt><dd>{{ item.definition.attacksPerRound }}</dd></div>
+            <div><dt>弹容量</dt><dd>{{ item.definition.capacity ?? '—' }}</dd></div>
+            <div><dt>贯穿</dt><dd>{{ item.definition.impales ? '是' : '否' }}</dd></div>
+            <div><dt>故障值</dt><dd>{{ item.definition.malfunction ?? '—' }}</dd></div>
+            <div><dt>参考价格</dt><dd>{{ formatWeaponReferencePrice(item.definition, character.eraId) }}</dd></div>
+          </dl>
+          <p v-if="item.instance.notes" class="weapon-instance-notes">
+            <strong>备注：</strong>{{ item.instance.notes }}
+          </p>
+        </article>
+      </div>
+      <p v-else class="empty-state">尚未持有武器。</p>
     </section>
 
     <section class="panel form-stack">

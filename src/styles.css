@@ -925,6 +925,90 @@ h2 {
   background: #faf7f0;
 }
 
+.weapon-section {
+  border-color: #83745e;
+}
+
+.weapon-owned-list,
+.weapon-catalog-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.weapon-catalog-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.weapon-card {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.weapon-card h4,
+.weapon-card p,
+.weapon-card dl {
+  margin: 0;
+}
+
+.weapon-card.unavailable {
+  border-color: #b77a72;
+  background: #fff8f6;
+}
+
+.weapon-card.orphaned {
+  border-style: dashed;
+  border-color: #9c641c;
+  background: #fffaf0;
+}
+
+.weapon-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.weapon-mechanics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.55rem;
+}
+
+.weapon-mechanics-grid > div {
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid #e3dccf;
+  border-radius: 4px;
+  background: #fffdf8;
+}
+
+.weapon-mechanics-grid dt {
+  color: #695f52;
+  font-size: 0.78rem;
+}
+
+.weapon-mechanics-grid dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.weapon-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+  gap: 0.75rem;
+}
+
+.weapon-instance-notes {
+  padding-left: 0.75rem;
+  border-left: 3px solid #83745e;
+}
+
 .allocation-table-wrap {
   overflow-x: auto;
 }
@@ -1214,6 +1298,10 @@ textarea:disabled {
   }
 
   .background-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .weapon-filter-bar {
     grid-template-columns: 1fr;
   }
 

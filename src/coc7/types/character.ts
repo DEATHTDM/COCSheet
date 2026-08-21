@@ -148,6 +148,30 @@ export const characterPossessionsSchema = z
     });
   });
 
+export const characterWeaponInstanceSchema = z
+  .object({
+    id: z.string().uuid(),
+    definitionId: stableMachineIdSchema,
+    notes: z.string().trim().min(1, "武器备注不能为空").optional(),
+  })
+  .strict();
+
+export const characterWeaponsSchema = z
+  .array(characterWeaponInstanceSchema)
+  .superRefine((weapons, context) => {
+    const instanceIds = new Set<string>();
+    weapons.forEach((weapon, index) => {
+      if (instanceIds.has(weapon.id)) {
+        context.addIssue({
+          code: "custom",
+          message: "武器实例 ID 必须唯一",
+          path: [index, "id"],
+        });
+      }
+      instanceIds.add(weapon.id);
+    });
+  });
+
 export const characterSchema = z
   .object({
     version: z.literal(1),
@@ -165,6 +189,7 @@ export const characterSchema = z
     resources: characterResourcesSchema.optional(),
     wealth: characterWealthSchema.optional(),
     possessions: characterPossessionsSchema.optional(),
+    weapons: characterWeaponsSchema.optional(),
     skills: characterSkillsSchema.optional(),
     occupation: characterOccupationSchema.optional(),
   })
@@ -175,6 +200,7 @@ export type CharacterResources = z.infer<typeof characterResourcesSchema>;
 export type CharacterAssetEntry = z.infer<typeof characterAssetEntrySchema>;
 export type CharacterWealth = z.infer<typeof characterWealthSchema>;
 export type CharacterPossessionEntry = z.infer<typeof characterPossessionEntrySchema>;
+export type CharacterWeaponInstance = z.infer<typeof characterWeaponInstanceSchema>;
 export type CharacterOccupation = z.infer<typeof characterOccupationSchema>;
 export type BackstoryCategoryId = z.infer<typeof backstoryCategoryIdSchema>;
 export type BackstoryEntry = z.infer<typeof backstoryEntrySchema>;

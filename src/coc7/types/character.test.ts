@@ -175,3 +175,46 @@ describe("Character possessions schema", () => {
     expect(parsed.possessions?.map((entry) => entry.id)).toEqual([firstId, secondId]);
   });
 });
+
+describe("Character weapons schema", () => {
+  it("legacy Character 缺少 weapons 时仍正常解析且不补写", () => {
+    const legacy = makeCharacter();
+    expect(characterSchema.parse(legacy)).toEqual(legacy);
+    expect(characterSchema.parse(legacy)).not.toHaveProperty("weapons");
+  });
+
+  it("weapons 是 version 1 optional additive，只保存实例 identity、definition ID 与备注", () => {
+    const id = crypto.randomUUID();
+    const parsed = characterSchema.parse({
+      ...makeCharacter(),
+      weapons: [{ id, definitionId: "bow", notes: "  家族传承  " }],
+    });
+    expect(parsed.version).toBe(1);
+    expect(parsed.weapons).toEqual([{ id, definitionId: "bow", notes: "家族传承" }]);
+    expect(characterSchema.parse(JSON.parse(JSON.stringify(parsed)))).toEqual(parsed);
+  });
+
+  it("允许重复 definition、允许 orphan definition，并拒绝重复实例 UUID 与空备注", () => {
+    const firstId = crypto.randomUUID();
+    const secondId = crypto.randomUUID();
+    const parsed = characterSchema.parse({
+      ...makeCharacter(),
+      weapons: [
+        { id: firstId, definitionId: "missing-retired-weapon" },
+        { id: secondId, definitionId: "missing-retired-weapon" },
+      ],
+    });
+    expect(parsed.weapons?.map((weapon) => weapon.id)).toEqual([firstId, secondId]);
+    expect(characterSchema.safeParse({
+      ...makeCharacter(),
+      weapons: [
+        { id: firstId, definitionId: "bow" },
+        { id: firstId, definitionId: "large-knife" },
+      ],
+    }).success).toBe(false);
+    expect(characterSchema.safeParse({
+      ...makeCharacter(),
+      weapons: [{ id: firstId, definitionId: "bow", notes: "   " }],
+    }).success).toBe(false);
+  });
+});

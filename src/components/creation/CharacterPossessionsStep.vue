@@ -7,7 +7,13 @@ import type {
   Character,
   CharacterAssetEntry,
   CharacterPossessionEntry,
+  CharacterWeaponInstance,
 } from "../../coc7/types/character";
+import {
+  weaponCategoryIds,
+  type WeaponCategoryId,
+  type WeaponDefinition,
+} from "../../coc7/types/weapon";
 import type {
   CharacterAssetEntryInput,
   CharacterPossessionEntryInput,
@@ -26,6 +32,18 @@ import {
   validateCreationWealth,
 } from "../../creation/rules/creationWealth";
 import { useCreationStore } from "../../creation/stores/creationStore";
+import { getSkillRegistry } from "../../content/skillRegistry";
+import {
+  formatWeaponReferencePrice,
+  formatWeaponSkillRef,
+  filterWeaponDefinitions,
+  isWeaponAvailableInEra,
+  isWeaponEraId,
+  presentCharacterWeapon,
+  weaponAvailabilityLabels,
+  weaponCategoryLabels,
+} from "../../content/weaponPresentation";
+import { getWeaponRegistry } from "../../content/weaponRegistry";
 
 const props = defineProps<{ readonly character: Character }>();
 const characterStore = useCharacterStore();
@@ -42,7 +60,30 @@ const newPossessionNotes = ref("");
 const editingPossessionId = ref<string>();
 const editingPossessionName = ref("");
 const editingPossessionNotes = ref("");
+const weaponSearch = ref("");
+const weaponCategory = ref<WeaponCategoryId | "">("");
+const editingWeaponId = ref<string>();
+const editingWeaponNotes = ref("");
 const actionError = ref("");
+
+const weaponRegistry = computed(() => getWeaponRegistry(props.character.settingId));
+const weaponSkillRegistry = computed(() => getSkillRegistry(props.character.settingId));
+const ownedWeapons = computed(() => (props.character.weapons ?? []).map((instance) =>
+  presentCharacterWeapon(
+    instance,
+    weaponRegistry.value,
+    weaponSkillRegistry.value,
+    props.character.eraId,
+  ),
+));
+const filteredWeaponDefinitions = computed(() => {
+  return filterWeaponDefinitions(
+    weaponRegistry.value.definitions,
+    weaponSkillRegistry.value,
+    weaponSearch.value,
+    weaponCategory.value || undefined,
+  );
+});
 
 const initialization = computed(() => creationStore.current?.data.wealthInitialization);
 const creditRating = computed(() => getFinalCreditRating(props.character));
@@ -236,6 +277,67 @@ async function removePossessionEntry(entry: CharacterPossessionEntry): Promise<v
   }
 }
 
+function weaponAvailability(definition: WeaponDefinition) {
+  return isWeaponEraId(props.character.eraId)
+    ? isWeaponAvailableInEra(definition, props.character.eraId)
+    : undefined;
+}
+
+function weaponAvailabilityLabel(definition: WeaponDefinition): string {
+  const availability = weaponAvailability(definition);
+  return availability ? weaponAvailabilityLabels[availability] : "时代未指定";
+}
+
+function weaponCategoryLabel(definition: WeaponDefinition | undefined): string {
+  return definition ? weaponCategoryLabels[definition.category] : "未知类别";
+}
+
+async function addWeapon(definition: WeaponDefinition): Promise<void> {
+  if (weaponAvailability(definition) === "unavailable") return;
+  actionError.value = "";
+  try {
+    await characterStore.addWeapon(props.character.id, definition.id);
+  } catch (error: unknown) {
+    reportError(error, "添加武器失败。");
+  }
+}
+
+function beginEditingWeapon(instance: CharacterWeaponInstance): void {
+  editingWeaponId.value = instance.id;
+  editingWeaponNotes.value = instance.notes ?? "";
+  actionError.value = "";
+}
+
+function cancelEditingWeapon(): void {
+  editingWeaponId.value = undefined;
+  editingWeaponNotes.value = "";
+}
+
+async function saveWeaponNotes(instanceId: string): Promise<void> {
+  actionError.value = "";
+  try {
+    await characterStore.updateWeaponNotes(
+      props.character.id,
+      instanceId,
+      editingWeaponNotes.value,
+    );
+    cancelEditingWeapon();
+  } catch (error: unknown) {
+    reportError(error, "保存武器备注失败。");
+  }
+}
+
+async function removeWeapon(instance: CharacterWeaponInstance, name: string): Promise<void> {
+  if (!window.confirm(`删除武器“${name}”？`)) return;
+  actionError.value = "";
+  try {
+    await characterStore.removeWeapon(props.character.id, instance.id);
+    if (editingWeaponId.value === instance.id) cancelEditingWeapon();
+  } catch (error: unknown) {
+    reportError(error, "删除武器失败。");
+  }
+}
+
 async function returnToBackground(): Promise<void> {
   actionError.value = "";
   try {
@@ -262,7 +364,7 @@ async function completePossessions(): Promise<void> {
         <p class="eyebrow">Possessions</p>
         <h2>财富与物品</h2>
       </div>
-      <p>普通随身物品可自由填写；武器因具有独立规则数据，将在后续单独处理。</p>
+      <p>财富、普通随身物品与武器分别保存；武器规则数据始终来自当前 Setting 的目录。</p>
     </header>
 
     <p v-if="actionError" class="error-message" role="alert">{{ actionError }}</p>
@@ -447,6 +549,153 @@ async function completePossessions(): Promise<void> {
         :disabled="!newPossessionName.trim()"
         @click="addPossessionEntry"
       >添加随身物品</button>
+    </section>
+
+    <section class="panel form-stack weapon-section">
+      <header>
+        <h3>武器</h3>
+        <p class="muted">
+          武器不与普通随身物品或财富自动同步；参考价格只用于查阅，不会自动扣除现金。
+        </p>
+      </header>
+
+      <div v-if="ownedWeapons.length" class="weapon-owned-list">
+        <article
+          v-for="item in ownedWeapons"
+          :key="item.instance.id"
+          class="weapon-card owned"
+          :class="{ unavailable: item.eraAvailability === 'unavailable', orphaned: item.orphaned }"
+        >
+          <header class="section-heading">
+            <div>
+              <h4>{{ item.name }}</h4>
+              <p v-if="item.orphaned" class="warning-message">
+                当前 Setting 的武器目录中找不到 definition：{{ item.instance.definitionId }}。
+                实例仍被保留，可以编辑备注或删除。
+              </p>
+              <div v-else class="weapon-badges">
+                <span class="occupation-badge">{{ weaponCategoryLabel(item.definition) }}</span>
+                <span
+                  v-if="item.eraAvailability"
+                  class="occupation-badge"
+                  :class="{
+                    approval: item.eraAvailability === 'rare',
+                    banned: item.eraAvailability === 'unavailable',
+                  }"
+                >{{ weaponAvailabilityLabels[item.eraAvailability] }}</span>
+                <span v-else class="occupation-badge">时代未指定</span>
+              </div>
+            </div>
+            <div class="actions background-entry-actions">
+              <button class="button" type="button" @click="beginEditingWeapon(item.instance)">编辑备注</button>
+              <button class="button danger" type="button" @click="removeWeapon(item.instance, item.name)">删除</button>
+            </div>
+          </header>
+
+          <dl v-if="item.definition" class="weapon-mechanics-grid">
+            <div><dt>技能</dt><dd>{{ item.skillLabel }}</dd></div>
+            <div><dt>伤害</dt><dd>{{ item.definition.damage }}</dd></div>
+            <div><dt>基础射程</dt><dd>{{ item.definition.baseRange }}</dd></div>
+            <div><dt>每轮攻击</dt><dd>{{ item.definition.attacksPerRound }}</dd></div>
+            <div><dt>弹容量</dt><dd>{{ item.definition.capacity ?? '—' }}</dd></div>
+            <div><dt>贯穿</dt><dd>{{ item.definition.impales ? '是' : '否' }}</dd></div>
+            <div><dt>故障值</dt><dd>{{ item.definition.malfunction ?? '—' }}</dd></div>
+            <div><dt>参考价格</dt><dd>{{ formatWeaponReferencePrice(item.definition, character.eraId) }}</dd></div>
+          </dl>
+
+          <template v-if="editingWeaponId === item.instance.id">
+            <label class="field">
+              <span>人物级备注（可选）</span>
+              <textarea v-model="editingWeaponNotes" rows="2"></textarea>
+            </label>
+            <div class="actions">
+              <button class="button primary" type="button" @click="saveWeaponNotes(item.instance.id)">保存备注</button>
+              <button class="button" type="button" @click="cancelEditingWeapon">取消</button>
+            </div>
+          </template>
+          <p v-else-if="item.instance.notes" class="weapon-instance-notes">
+            <strong>备注：</strong>{{ item.instance.notes }}
+          </p>
+        </article>
+      </div>
+      <p v-else class="empty-state">尚未持有武器。零武器是合法状态。</p>
+
+      <section class="weapon-catalog form-stack" aria-label="武器目录">
+        <header>
+          <h4>从当前 Setting 目录添加</h4>
+          <p v-if="!weaponRegistry.definitions.length" class="empty-state">
+            当前 Setting 尚未提供武器目录，不会显示 Standard 武器。
+          </p>
+        </header>
+
+        <template v-if="weaponRegistry.definitions.length">
+          <div class="weapon-filter-bar">
+            <label class="field">
+              <span>名称搜索</span>
+              <input
+                v-model="weaponSearch"
+                type="search"
+                autocomplete="off"
+                placeholder="搜索中文名、英文名、技能或 ID"
+              />
+            </label>
+            <label class="field">
+              <span>Category</span>
+              <select v-model="weaponCategory">
+                <option value="">全部类别</option>
+                <option v-for="category in weaponCategoryIds" :key="category" :value="category">
+                  {{ weaponCategoryLabels[category] }}
+                </option>
+              </select>
+            </label>
+          </div>
+          <p class="muted">找到 {{ filteredWeaponDefinitions.length }} / {{ weaponRegistry.definitions.length }} 项。</p>
+
+          <div v-if="filteredWeaponDefinitions.length" class="weapon-catalog-grid">
+            <article
+              v-for="definition in filteredWeaponDefinitions"
+              :key="definition.id"
+              class="weapon-card catalog"
+              :class="{ unavailable: weaponAvailability(definition) === 'unavailable' }"
+            >
+              <header class="section-heading">
+                <div>
+                  <h4>{{ definition.name.zh }}</h4>
+                  <p v-if="definition.name.en" class="muted">{{ definition.name.en }}</p>
+                </div>
+                <button
+                  class="button"
+                  type="button"
+                  :disabled="weaponAvailability(definition) === 'unavailable'"
+                  @click="addWeapon(definition)"
+                >添加</button>
+              </header>
+              <div class="weapon-badges">
+                <span class="occupation-badge">{{ weaponCategoryLabels[definition.category] }}</span>
+                <span
+                  v-if="weaponAvailability(definition)"
+                  class="occupation-badge"
+                  :class="{
+                    approval: weaponAvailability(definition) === 'rare',
+                    banned: weaponAvailability(definition) === 'unavailable',
+                  }"
+                >{{ weaponAvailabilityLabel(definition) }}</span>
+                <span v-else class="occupation-badge">时代未指定</span>
+              </div>
+              <dl class="weapon-mechanics-grid compact">
+                <div><dt>技能</dt><dd>{{ formatWeaponSkillRef(definition, weaponSkillRegistry) }}</dd></div>
+                <div><dt>伤害</dt><dd>{{ definition.damage }}</dd></div>
+                <div><dt>射程</dt><dd>{{ definition.baseRange }}</dd></div>
+                <div><dt>弹容量</dt><dd>{{ definition.capacity ?? '—' }}</dd></div>
+              </dl>
+              <p v-if="weaponAvailability(definition) === 'unavailable'" class="warning-message">
+                当前时代不可作为正常新增选项；已有实例不会被自动删除。
+              </p>
+            </article>
+          </div>
+          <p v-else class="empty-state">没有符合当前搜索与类别筛选的武器。</p>
+        </template>
+      </section>
     </section>
 
     <footer class="panel form-stack compact-stack">
