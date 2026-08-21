@@ -20,11 +20,14 @@ import type {
   CharacterAssetEntry,
   CharacterPossessionEntry,
   CharacterResources,
+  CharacterWeaponInstance,
   CharacterWealth,
 } from "../../coc7/types/character";
 import type { EraId } from "../../coc7/types/occupation";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
+import { getWeaponRegistry } from "../../content/weaponRegistry";
+import { isWeaponAvailableInEra, isWeaponEraId } from "../../content/weaponPresentation";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import type { CharacterRecord } from "../../db/records";
 import { isCreationBackstoryCategory } from "../../creation/rules/creationBackstory";
@@ -109,6 +112,11 @@ export const useCharacterStore = defineStore("characters", () => {
       name,
       ...(notes ? { notes } : {}),
     };
+  }
+
+  function normalizeWeaponNotes(notes: string | undefined): string | undefined {
+    const normalized = notes?.trim();
+    return normalized || undefined;
   }
 
   function requireSkillDefinition(record: CharacterRecord, definitionId: string): SkillDefinition {
@@ -474,6 +482,67 @@ export const useCharacterStore = defineStore("characters", () => {
     }));
   }
 
+  async function addWeapon(
+    id: string,
+    definitionId: string,
+    notes?: string,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const definition = getWeaponRegistry(existing.settingId).get(definitionId);
+    if (!definition) {
+      throw new Error(`当前设定不存在武器：${definitionId}`);
+    }
+    if (isWeaponEraId(existing.data.eraId) &&
+      isWeaponAvailableInEra(definition, existing.data.eraId) === "unavailable") {
+      throw new Error(`当前时代不可新增武器：${definitionId}`);
+    }
+    const normalizedNotes = normalizeWeaponNotes(notes);
+    const instance: CharacterWeaponInstance = {
+      id: crypto.randomUUID(),
+      definitionId,
+      ...(normalizedNotes ? { notes: normalizedNotes } : {}),
+    };
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      weapons: [...(existing.data.weapons ?? []), instance],
+    }));
+  }
+
+  async function updateWeaponNotes(
+    id: string,
+    instanceId: string,
+    notes: string | undefined,
+  ): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const weapons = existing.data.weapons ?? [];
+    if (!weapons.some((weapon) => weapon.id === instanceId)) {
+      throw new Error(`找不到武器实例：${instanceId}`);
+    }
+    const normalizedNotes = normalizeWeaponNotes(notes);
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      weapons: weapons.map((weapon) => weapon.id === instanceId
+        ? {
+            id: weapon.id,
+            definitionId: weapon.definitionId,
+            ...(normalizedNotes ? { notes: normalizedNotes } : {}),
+          }
+        : weapon),
+    }));
+  }
+
+  async function removeWeapon(id: string, instanceId: string): Promise<CharacterRecord> {
+    const existing = await requireCharacter(id);
+    const weapons = existing.data.weapons ?? [];
+    if (!weapons.some((weapon) => weapon.id === instanceId)) {
+      throw new Error(`找不到武器实例：${instanceId}`);
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      weapons: weapons.filter((weapon) => weapon.id !== instanceId),
+    }));
+  }
+
   async function setSkillValue(
     id: string,
     ref: SkillRef,
@@ -634,6 +703,9 @@ export const useCharacterStore = defineStore("characters", () => {
     addPossessionEntry,
     updatePossessionEntry,
     removePossessionEntry,
+    addWeapon,
+    updateWeaponNotes,
+    removeWeapon,
     setSkillValue,
     setImprovementChecked,
     createCustomSpecialization,

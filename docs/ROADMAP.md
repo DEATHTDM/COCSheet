@@ -215,7 +215,7 @@ Status: Completed
 
 ## Phase 7 — Wealth, Gear & Weapons
 
-Status: In Progress
+Status: Completed
 
 ### Phase 7A — Standard Wealth & Possessions Foundation
 
@@ -238,7 +238,7 @@ Status: Completed
 
 ### Phase 7C — Standard Weapons Catalog & Character Weapons
 
-Status: In Progress
+Status: Completed
 
 #### Phase 7C-1 — Weapon Domain, Registry & Pilot Catalog
 
@@ -261,7 +261,13 @@ Status: Completed
 
 #### Phase 7C-2B — Character Weapons
 
-Status: Not Started
+Status: Completed
+
+- optional Character version-1 weapon instances with stable per-item UUID, WeaponDefinition ID, and optional notes
+- same-Setting Registry-validated add plus instance notes/delete persistence, duplicate definitions, legacy compatibility, and orphan-safe fallback
+- existing Possessions-step weapon browser with name search, category filter, era availability, duplicate add, notes, delete, and non-Standard empty state
+- separate Review weapon summary with resolved mechanics and unavailable/orphan status
+- unchanged seven-step workflow; no purchasing, ammunition, combat automation, custom weapon definitions, or automatic possessions/wealth synchronization
 
 ## Later
 

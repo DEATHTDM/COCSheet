@@ -36,7 +36,7 @@ src/pages            当前极简页面
 
 ## Character and CreationSession
 
-`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，可选人物信息 `sex`、`residence`、`birthplace`，可选 `backstory`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`wealth`、`possessions`、`skills` 和轻量 `occupation` 身份快照。背景条目使用 UUID 稳定 identity 与闭合类别；Key Connection 引用 entry ID。创建期 3～6 条和 Key Connection 完成条件属于纯 creation validation，不是 Character schema 的长期上限。`wealth` 只保存 integer minor-unit current cash/assets totals 与 UUID-backed 资产构成说明；spending level 不持久化。资产条目可选估值且不要求合计等于 assets total。`possessions` 保存 Store-owned UUID、非空名称与可选备注的普通随身物品自由文本，名称可以重复；它不属于 `wealth` 或 `CreationSession`，不因财富 provenance stale 而失效。`assetEntries` 表达财产构成，`possessions` 表达普通物品，后续 `weapons` 将使用独立 mechanics，三者不自动同步或去重。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
+`Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，可选人物信息 `sex`、`residence`、`birthplace`，可选 `backstory`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`wealth`、`possessions`、`weapons`、`skills` 和轻量 `occupation` 身份快照。背景条目使用 UUID 稳定 identity 与闭合类别；Key Connection 引用 entry ID。创建期 3～6 条和 Key Connection 完成条件属于纯 creation validation，不是 Character schema 的长期上限。`wealth` 只保存 integer minor-unit current cash/assets totals 与 UUID-backed 资产构成说明；spending level 不持久化。资产条目可选估值且不要求合计等于 assets total。`possessions` 保存 Store-owned UUID、非空名称与可选备注的普通随身物品自由文本，名称可以重复；它不属于 `wealth` 或 `CreationSession`，不因财富 provenance stale 而失效。`weapons` 保存 Store-owned 单件 UUID、WeaponDefinition stable ID 与可选人物级备注；同 definition 可重复，静态 mechanics 始终从人物自身 Setting 的 WeaponRegistry 解析。orphan definition 不阻断 Character 读取，也不触发补写。`assetEntries`、`possessions` 与 `weapons` 三者不自动同步或去重。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。
 
 `Character` 不保存当前向导步骤、随机候选、未完成分配、UI 状态或 KP 预设编辑状态。
 
@@ -86,6 +86,8 @@ Phase 7A 只为 Character version 1 新增 optional `wealth`，为 CreationSessi
 
 Phase 7B 只为 Character version 1 新增 optional `possessions` 自由文本数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段时正常读取且不补写。
 
+Phase 7C-2B 只为 Character version 1 新增 optional `weapons` 实例数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段以及 definition 已不在当前 Registry 的 orphan instance 都正常读取且不补写。
+
 可持久化状态通过结构校验后，完成属性前还会执行领域语义校验：Preset 必须数学可完成，EDU 成长历史必须逐项连续且与骰值一致，rolled Luck 必须符合当前年龄要求的 3D6×5 次数与取高结果。
 
 ## Setting architecture
@@ -104,23 +106,25 @@ regency
 
 当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition`、必要的 canonical specializations，以及 Phase 7C-2A 的 104 项完整 Standard weapon definitions；其余四个 SettingPack 仍是空内容占位包，不包含技能或武器目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
 
-Standard wealth table 是内建的纯规则，不是 mutable Setting catalog。普通 gear / possessions 是 Character 自由文本数据，Standard 不建立普通商品目录。`SettingPack.equipment` 与 `equipmentDefinitionSchema` 当前只是未使用的 foundation hook；weapon definitions 因包含独立战斗 mechanics 而通过 `SettingPack.weapons` 保持独立，不塞入普通 possession entry，Character weapon instances 留待 Phase 7C-2B。
+Standard wealth table 是内建的纯规则，不是 mutable Setting catalog。普通 gear / possessions 是 Character 自由文本数据，Standard 不建立普通商品目录。`SettingPack.equipment` 与 `equipmentDefinitionSchema` 当前只是未使用的 foundation hook；weapon definitions 因包含独立战斗 mechanics 而通过 `SettingPack.weapons` 保持独立，不塞入普通 possession entry。Character weapon instance 只保存 definition 引用与实例状态。
 
 ## Weapon architecture
 
-Phase 7C-1 建立、Phase 7C-2A 完整填充以下只读内容链路：
+Phase 7C 建立并完成以下内容与人物实例链路：
 
 ```text
 SettingPack.weapons
         ↓
 WeaponRegistry + same-Setting SkillRegistry validation
         ↓
-future Character weapon instances (Phase 7C-2B)
+Character weapon instances
+        ↓
+Possessions + Review presentation
 ```
 
 `WeaponRegistry` 只读取对应 `SettingPack.weapons ?? []`，按 Setting 缓存，并在注册时验证 Weapon schema、重复 ID、standard skill ref 的非专业化约束与 predefined specialization 的真实存在；它不会回退读取 Standard catalog。Standard 当前注册 104 行 production definitions，完整映射 Keeper 表 17 的 104 个 source rows；其余四个 Setting 的 weapon registry 为空。目录由 `src/content/standard/weapons.ts` 统一导出，并按八个 closed category 拆分到 `src/content/standard/weapons/`；这只是 production content 的维护性拆分，不改变 `standardSettingPack.weapons` 对外语义。
 
-这条链路与未使用的 `SettingPack.equipment` hook 及自由文本 `Character.possessions` 互相独立。Phase 7C-2A 仍不建立 Character weapon instance、武器选择 UI、购买／弹药状态或 combat engine；异构 damage、range、attacks、capacity 与 reference price 单元格仍是来源显示文本。`docs/STANDARD_WEAPON_SOURCES.md` 保存完整 source inventory，Vitest audit 与独立 validator 负责证明 inventory/production 双向闭环、schema/Registry 合法和 `needs-review = 0`。
+这条链路与未使用的 `SettingPack.equipment` hook 及自由文本 `Character.possessions` 互相独立。Character Store 新增时只接受人物自身 Setting Registry 的 definition，并复用 weapon availability helper 拒绝明确时代的 unavailable 新增；rare 合法，缺少时代时不默认。已有实例在时代变化后保持不变并由 presentation 标记。Possessions 使用名称搜索与 closed category 筛选，不把 104 项做成长下拉框；Review 单独汇总。异构 damage、range、attacks、capacity 与 reference price 单元格仍是来源显示文本；没有购买、弹药状态或 combat engine。`docs/STANDARD_WEAPON_SOURCES.md` 保存完整 source inventory，Vitest audit 与独立 validator 负责证明 inventory/production 双向闭环、schema/Registry 合法和 `needs-review = 0`。
 
 ## Skill architecture
 
@@ -179,4 +183,4 @@ Occupation Registry 在注册时除 schema、技能引用与 era 检查外，还
 
 ## Schema evolution
 
-正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step；Phase 7A 只增加 optional Character wealth、optional CreationSession wealth provenance 与 `possessions` step；Phase 7B 只增加 optional Character possessions；Phase 7C-1 与 7C-2A 只增加 static Setting weapon content，不改变持久化 schema。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。
+正式持久化 Schema 的变化必须考虑旧版本解析、数据迁移、IndexedDB version，以及未来导入/导出兼容。Phase 5A 只增加 optional Character/CreationSession/CreationPreset 字段与 `skills` step；Deprogrammer cleanup 只在 version-1 `OccupationDefinition` snapshot 与 `SkillCreationState` 增加 optional replacement policy/target 字段；Phase 5C-1.5 只为 Character version 1 增加 optional `eraId`；Phase 6 只为 Character version 1 增加 optional identity/backstory 字段并为 CreationSession version 1 增加 `background` step；Phase 7A 只增加 optional Character wealth、optional CreationSession wealth provenance 与 `possessions` step；Phase 7B 只增加 optional Character possessions；Phase 7C-1 与 7C-2A 只增加 static Setting weapon content，Phase 7C-2B 只增加 optional Character weapons。旧 version-1 Character 缺少这些字段时继续解析且不自动补写，旧 session 若已在 review 也不迁移；不增加表、索引、主键或 migration，Character、CreationSession、Record 与 IndexedDB version 均继续为 1。旧 `CreationPreset.skillCaps` 保持 deprecated 读取兼容，但因历史语义未冻结，不映射到新的最终值 `skillLimits`，也不参与 allocation validator；Preset 时代约束留待未来单独设计。Repository read 不做 normalize writeback。项目尚未正式发布，早期可以合理重构，但不得无说明破坏已有本地测试数据。

@@ -341,6 +341,105 @@ describe("Character possessions persistence", () => {
   });
 });
 
+describe("Character weapons persistence", () => {
+  it("允许重复添加同一 definition，并按实例 UUID 编辑 notes、删除与刷新恢复", async () => {
+    const character = makeLegacyCharacter({ eraId: "classic-1920s" });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    const firstAdd = await store.addWeapon(character.id, "bow", "  家传弓  ");
+    const first = firstAdd.data.weapons?.[0];
+    if (!first) throw new Error("第一件武器未创建");
+    const secondAdd = await store.addWeapon(character.id, "bow");
+    const second = secondAdd.data.weapons?.[1];
+    if (!second) throw new Error("第二件武器未创建");
+
+    expect(first.id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(second.id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(first.id).not.toBe(second.id);
+    expect(first).toEqual({ id: first.id, definitionId: "bow", notes: "家传弓" });
+    expect(second).toEqual({ id: second.id, definitionId: "bow" });
+
+    const edited = await store.updateWeaponNotes(character.id, second.id, "  备用弓  ");
+    expect(edited.data.weapons?.[1]).toEqual({
+      id: second.id,
+      definitionId: "bow",
+      notes: "备用弓",
+    });
+    await store.updateWeaponNotes(character.id, first.id, "   ");
+    const removed = await store.removeWeapon(character.id, first.id);
+    expect(removed.data.weapons).toEqual([{
+      id: second.id,
+      definitionId: "bow",
+      notes: "备用弓",
+    }]);
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.weapons).toEqual(removed.data.weapons);
+  });
+
+  it("新增只接受人物自身 Setting registry，且不会回退 Standard", async () => {
+    const standard = makeLegacyCharacter();
+    const gaslight = makeLegacyCharacter({ id: crypto.randomUUID(), settingId: "gaslight" });
+    await characterRepository.create(standard);
+    await characterRepository.create(gaslight);
+    const store = useCharacterStore();
+
+    await expect(store.addWeapon(standard.id, "missing-weapon"))
+      .rejects.toThrow("当前设定不存在武器");
+    await expect(store.addWeapon(gaslight.id, "bow"))
+      .rejects.toThrow("当前设定不存在武器：bow");
+  });
+
+  it("复用时代 availability：rare 可新增，unavailable 被拒绝，缺少时代不猜测", async () => {
+    const classic = makeLegacyCharacter({ eraId: "classic-1920s" });
+    const modern = makeLegacyCharacter({ id: crypto.randomUUID(), eraId: "modern" });
+    const legacy = makeLegacyCharacter({ id: crypto.randomUUID() });
+    await characterRepository.create(classic);
+    await characterRepository.create(modern);
+    await characterRepository.create(legacy);
+    const store = useCharacterStore();
+
+    await expect(store.addWeapon(classic.id, "fn-fal"))
+      .rejects.toThrow("当前时代不可新增武器");
+    await expect(store.addWeapon(classic.id, "flintlock-pistol"))
+      .resolves.toBeDefined();
+    await expect(store.addWeapon(legacy.id, "fn-fal")).resolves.toBeDefined();
+    const added = await store.addWeapon(modern.id, "fn-fal");
+    const instanceId = added.data.weapons?.[0]?.id;
+    const changedEra = await store.setEra(modern.id, "classic-1920s");
+    expect(changedEra.data.weapons?.[0]).toEqual({ id: instanceId, definitionId: "fn-fal" });
+  });
+
+  it("orphan definition 可读取、可编辑备注并可删除，不触发 read-time writeback", async () => {
+    const orphanId = crypto.randomUUID();
+    const character = makeLegacyCharacter({
+      weapons: [{ id: orphanId, definitionId: "retired-weapon", notes: "旧目录记录" }],
+    });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    expect((await store.loadById(character.id))?.data.weapons).toEqual(character.weapons);
+    expect(updateSpy).not.toHaveBeenCalled();
+    const edited = await store.updateWeaponNotes(character.id, orphanId, "  待 Keeper 确认  ");
+    expect(edited.data.weapons?.[0]?.notes).toBe("待 Keeper 确认");
+    expect((await store.removeWeapon(character.id, orphanId)).data.weapons).toEqual([]);
+  });
+
+  it("拒绝缺失的武器实例", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    const missingId = crypto.randomUUID();
+
+    await expect(store.updateWeaponNotes(character.id, missingId, "备注"))
+      .rejects.toThrow("找不到武器实例");
+    await expect(store.removeWeapon(character.id, missingId))
+      .rejects.toThrow("找不到武器实例");
+  });
+});
+
 describe("游戏中资源更新", () => {
   it("HP、MP、SAN 更新后可刷新恢复，SAN 可以高于 POW", async () => {
     const character = makeLegacyCharacter();
