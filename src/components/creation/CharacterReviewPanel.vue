@@ -107,6 +107,7 @@ async function returnToPossessions(): Promise<void> {
         <p class="success-message">建卡数据已保存到本地。</p>
       </div>
       <div class="actions">
+        <RouterLink class="button primary" :to="`/characters/${character.id}/sheet`">打开最终人物卡</RouterLink>
         <button class="button" type="button" @click="returnToSkills">返回技能调整</button>
         <button class="button" type="button" @click="returnToBackground">返回修改背景</button>
         <button class="button" type="button" @click="returnToPossessions">返回修改财富与物品</button>

@@ -269,9 +269,24 @@ Status: Completed
 - separate Review weapon summary with resolved mechanics and unavailable/orphan status
 - unchanged seven-step workflow; no purchasing, ammunition, combat automation, custom weapon definitions, or automatic possessions/wealth synchronization
 
+## Phase 8 — Final Character Sheet UX
+
+Status: In Progress
+
+### Phase 8A — Final Character Sheet Foundation
+
+Status: Completed
+
+- independent `/characters/:id/sheet` route and long-term sheet layout, separate from the creation editor and Review
+- Character-only loading with optional CreationSession status/navigation and safe legacy/incomplete/missing-session handling
+- Home and Review entry points plus return-to-editor navigation for retained creation sessions
+- identity, Characteristics with Half/Fifth, existing Standard derived values, Luck, skills, all backstory categories, wealth/assets, possessions, and same-Setting weapons presentation
+- existing current HP/MP/SAN editing through Character Store actions with explicit legacy Maximum SAN reconciliation
+- unchanged Character, CreationSession, Record, and Dexie version 1; no migration or read-time writeback
+- no advancement, recovery, insanity, combat, ammunition, purchasing, import/export, or printing systems
+
 ## Later
 
-- final character sheet UX
 - guide overlay
 - KP preset sharing
 - import / export

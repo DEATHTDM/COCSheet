@@ -26,13 +26,14 @@ src/coc7/types       领域类型与 Zod Schema
 src/coc7/extensions  内部扩展注册
 src/content          SettingPack 与 Setting Registry
 src/creation         建卡会话、预设与流程 Store
+src/character-sheet  最终人物卡的只读 presentation
 src/kp               KP 预设 Store
 src/db               Dexie、持久化记录与 Repository
 src/app              Router 与应用级 Store
 src/pages            当前极简页面
 ```
 
-规则、内容、UI 与存储必须继续分离。最终人物卡 UI 尚未形成独立的 `character-sheet` 模块；不得把该模块写成已实现。
+规则、内容、UI 与存储必须继续分离。Phase 8A 已建立独立的 `character-sheet` presentation 模块与 `/characters/:id/sheet` 页面；它复用现有 rules、Setting Registry 与 Store，不复制建卡 Engine 或静态 content。
 
 ## Character and CreationSession
 
@@ -53,6 +54,24 @@ Manual 的输入值以 Partial Characteristics 保存，八项完整且通过 Ch
 Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过现有 Schema 与 Repository 正常读取；读取或页面加载不会自动改写。UI 明确提示超出上限，并只在用户点击同步后调用 Store reconciliation action；该 action 仅在需要时通过一次 CharacterRepository update 修改 current SAN，不修改 Mythos、HP、MP、属性、Luck 或其他技能。
 
 创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。完成 attributes 时原子写入最终属性与推进 occupation；完成 skills 时同样通过 Creation Workflow Repository 在一个事务中原子写入 `Character.occupation`、重建后的 `Character.skills` 与 `CreationSession.currentStep = background`。Background 完成 action 从持久化 Character 读取背景并通过纯 validator 检查后推进 possessions。Standard wealth 只由显式 Creation Store action 初始化：该 action 读取最新持久化 Character，以当前 era + finalized Credit Rating 调用纯表格规则，并在同一个 Creation Workflow Repository transaction 写入 Character wealth 与 session provenance；mount、Repository read 和 stale 检测均不自动初始化或重算。Possessions completion 只在 wealth 已初始化、provenance current，并且正资产至少有一条资产说明时推进 review。旧 session 若已经位于 review 会原样读取，不自动倒退或 writeback。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
+
+## Final character sheet
+
+最终人物卡、建卡编辑器与创建期 Review 的边界是：
+
+```text
+CharacterEditorPage + CharacterReviewPanel
+        ↓ 创建流程控制与完成前检查
+CreationSession.currentStep
+
+FinalCharacterSheetPage
+        ↓ 长期显示与已有 mutable resource 编辑
+Character Store → CharacterRepository → Dexie
+```
+
+最终人物卡的所有数值、技能、背景、财富、物品与武器均直接读取 `Character`；CreationSession 只提供完成／未完成状态和返回编辑器入口，不是页面可用性的前置条件。页面加载不会调用 legacy resources 初始化，不会从会话重建最终状态，也不会对 optional 字段做 normalize writeback。HP、MP、SAN 编辑继续只调用 Character Store 的既有 action；legacy SAN 超过 Maximum SAN 时沿用显式 reconciliation，禁止加载时静默收紧。
+
+技能显示使用人物自身 Setting 的 SkillRegistry 与稳定 SkillRef；无法解析的未来引用使用只读 fallback。武器使用人物自身 Setting 的 WeaponRegistry 与现有 orphan-safe presentation，不回退 Standard。Standard derived values 与 wealth presentation 只在当前 Character 信息足以可靠派生时显示，Half/Fifth、Maximum HP、Initial MP、Maximum SAN、MOV、Damage Bonus、Build 与 spending level 继续不持久化。
 
 ## Persistence
 

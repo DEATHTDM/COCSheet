@@ -16,6 +16,10 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 零服务器是核心约束。除非产品方向重新决定，否则不引入账号、后端或云数据库。
 
+### P004 — Final sheet and creation workflow separation
+
+最终人物卡是独立于建卡编辑器与创建期 Review 的长期使用页面，并直接以 `Character` 为数据源。`CreationSession` 只用于判断建卡完成状态以及提供继续／修改建卡入口；不存在 CreationSession 时仍可打开人物卡，且页面加载不得从会话反推数值或自动补写缺失的 Character 字段。
+
 ## Backstory
 
 ### B001 — Character-owned backstory with stable entry identity

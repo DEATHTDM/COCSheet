@@ -181,6 +181,8 @@ function haveSameCreditRatingRange(
 export const useCreationStore = defineStore("creation", () => {
   const creating = ref(false);
   const current = ref<CreationSessionRecord>();
+  const sessionSteps = ref<Readonly<Record<string, CreationStepId>>>({});
+  const sessionStepsLoaded = ref(false);
   const randomSource = ref<RandomSource>(systemRandomSource);
   let skillAllocationWriteQueue: Promise<void> = Promise.resolve();
 
@@ -240,6 +242,18 @@ export const useCreationStore = defineStore("creation", () => {
     const record = await creationSessionRepository.getByCharacterId(characterId);
     current.value = record;
     return record;
+  }
+
+  async function loadSessionSteps(): Promise<void> {
+    sessionStepsLoaded.value = false;
+    try {
+      const records = await creationSessionRepository.list();
+      sessionSteps.value = Object.fromEntries(
+        records.map((record) => [record.characterId, record.data.currentStep]),
+      );
+    } finally {
+      sessionStepsLoaded.value = true;
+    }
   }
 
   async function setCurrentStep(step: CreationStepId): Promise<void> {
@@ -1201,9 +1215,12 @@ export const useCreationStore = defineStore("creation", () => {
   return {
     creating,
     current,
+    sessionSteps,
+    sessionStepsLoaded,
     config,
     start,
     loadByCharacterId,
+    loadSessionSteps,
     setCurrentStep,
     selectCatalogOccupation,
     selectCustomOccupation,
