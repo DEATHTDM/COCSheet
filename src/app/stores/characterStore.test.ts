@@ -391,7 +391,7 @@ describe("Character weapons persistence", () => {
       .rejects.toThrow("当前设定不存在武器：bow");
   });
 
-  it("复用时代 availability：rare 可新增，unavailable 被拒绝，缺少时代不猜测", async () => {
+  it("availability 只作展示：明确时代三态与缺失时代都可新增，时代变化不改写实例", async () => {
     const classic = makeLegacyCharacter({ eraId: "classic-1920s" });
     const modern = makeLegacyCharacter({ id: crypto.randomUUID(), eraId: "modern" });
     const legacy = makeLegacyCharacter({ id: crypto.randomUUID() });
@@ -400,15 +400,15 @@ describe("Character weapons persistence", () => {
     await characterRepository.create(legacy);
     const store = useCharacterStore();
 
-    await expect(store.addWeapon(classic.id, "fn-fal"))
-      .rejects.toThrow("当前时代不可新增武器");
-    await expect(store.addWeapon(classic.id, "flintlock-pistol"))
-      .resolves.toBeDefined();
+    await expect(store.addWeapon(classic.id, "bow")).resolves.toBeDefined();
+    await expect(store.addWeapon(classic.id, "flintlock-pistol")).resolves.toBeDefined();
+    const classicUnavailable = await store.addWeapon(classic.id, "fn-fal");
+    await expect(store.addWeapon(modern.id, "bullwhip")).resolves.toBeDefined();
     await expect(store.addWeapon(legacy.id, "fn-fal")).resolves.toBeDefined();
-    const added = await store.addWeapon(modern.id, "fn-fal");
-    const instanceId = added.data.weapons?.[0]?.id;
-    const changedEra = await store.setEra(modern.id, "classic-1920s");
-    expect(changedEra.data.weapons?.[0]).toEqual({ id: instanceId, definitionId: "fn-fal" });
+
+    const beforeEraChange = classicUnavailable.data.weapons;
+    const changedEra = await store.setEra(classic.id, "modern");
+    expect(changedEra.data.weapons).toEqual(beforeEraChange);
   });
 
   it("orphan definition 可读取、可编辑备注并可删除，不触发 read-time writeback", async () => {

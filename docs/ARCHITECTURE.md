@@ -143,7 +143,7 @@ Possessions + Review presentation
 
 `WeaponRegistry` 只读取对应 `SettingPack.weapons ?? []`，按 Setting 缓存，并在注册时验证 Weapon schema、重复 ID、standard skill ref 的非专业化约束与 predefined specialization 的真实存在；它不会回退读取 Standard catalog。Standard 当前注册 104 行 production definitions，完整映射 Keeper 表 17 的 104 个 source rows；其余四个 Setting 的 weapon registry 为空。目录由 `src/content/standard/weapons.ts` 统一导出，并按八个 closed category 拆分到 `src/content/standard/weapons/`；这只是 production content 的维护性拆分，不改变 `standardSettingPack.weapons` 对外语义。
 
-这条链路与未使用的 `SettingPack.equipment` hook 及自由文本 `Character.possessions` 互相独立。Character Store 新增时只接受人物自身 Setting Registry 的 definition，并复用 weapon availability helper 拒绝明确时代的 unavailable 新增；rare 合法，缺少时代时不默认。已有实例在时代变化后保持不变并由 presentation 标记。Possessions 使用名称搜索与 closed category 筛选，不把 104 项做成长下拉框；Review 单独汇总。异构 damage、range、attacks、capacity 与 reference price 单元格仍是来源显示文本；没有购买、弹药状态或 combat engine。`docs/STANDARD_WEAPON_SOURCES.md` 保存完整 source inventory，Vitest audit 与独立 validator 负责证明 inventory/production 双向闭环、schema/Registry 合法和 `needs-review = 0`。
+这条链路与未使用的 `SettingPack.equipment` hook 及自由文本 `Character.possessions` 互相独立。Character Store 的 add boundary 只要求 definition 存在于人物自身 Setting Registry，不回退 Standard；availability 只用于 presentation，available、rare、unavailable 在明确时代或缺少时代时均可新增。已有实例在时代变化后保持不变并由 presentation 重新标记。Possessions 使用名称搜索与 closed category 筛选，不把 104 项做成长下拉框；Review 单独汇总。异构 damage、range、attacks、capacity、availability 与 reference price 仍是来源显示信息；当前没有武器合法性、购买、Keeper approval、弹药状态或 combat engine。`docs/STANDARD_WEAPON_SOURCES.md` 保存完整 source inventory，Vitest audit 与独立 validator 负责证明 inventory/production 双向闭环、schema/Registry 合法和 `needs-review = 0`。
 
 ## Skill architecture
 
