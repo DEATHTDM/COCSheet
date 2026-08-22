@@ -26,7 +26,7 @@ src/coc7/types       领域类型与 Zod Schema
 src/coc7/extensions  内部扩展注册
 src/content          SettingPack 与 Setting Registry
 src/creation         建卡会话、预设与流程 Store
-src/character-sheet  最终人物卡的只读 presentation
+src/character-sheet  最终人物卡的 presentation 与 workspace metadata
 src/kp               KP 预设 Store
 src/db               Dexie、持久化记录与 Repository
 src/app              Router 与应用级 Store
@@ -64,12 +64,14 @@ CharacterEditorPage + CharacterReviewPanel
         ↓ 创建流程控制与完成前检查
 CreationSession.currentStep
 
-FinalCharacterSheetPage
-        ↓ 长期显示与已有 mutable resource 编辑
+FinalCharacterSheetPage + focused Final Sheet workspaces
+        ↓ 长期显示与已授权的 Character mutation
 Character Store → CharacterRepository → Dexie
 ```
 
 最终人物卡的所有数值、技能、背景、财富、物品与武器均直接读取 `Character`；CreationSession 只提供完成／未完成状态和返回编辑器入口，不是页面可用性的前置条件。页面加载不会调用 legacy resources 初始化，不会从会话重建最终状态，也不会对 optional 字段做 normalize writeback。HP、MP、SAN 编辑继续只调用 Character Store 的既有 action；legacy SAN 超过 Maximum SAN 时沿用显式 reconciliation，禁止加载时静默收紧。
+
+Phase 8C 将长期叙事 mutation 拆进 `FinalSheetIdentityEditor` 与 `FinalSheetBackstoryWorkspace`：组件只调用既有 Character Store identity/backstory actions，再经 CharacterRepository 持久化，不接触 CreationSession、Repository 或 Dexie。身份编辑只覆盖 name、sex、residence 与 birthplace，年龄、时代、Setting、职业、属性和 Luck 继续只读。背景 workspace 使用独立 presentation metadata 稳定呈现十个闭合类别；新增、编辑、按 ID 删除与 Key Connection 设置／清除均复用 Store-owned UUID 和既有 domain eligibility。创建期 3～6 条与必须 Key Connection 的 validator 不进入 Final Sheet mutation；四个游戏期类别只保存长期叙事文本，不触发 SAN、疯狂、伤势或其他自动规则。
 
 最终人物卡技能区通过独立纯 presentation boundary 合并人物自身 Setting 的 SkillRegistry 与稀疏 `Character.skills`。默认未持久化 baseline 只包含 `availability.sheet === "standard"` 且无需专业化的普通技能。由于 `PredefinedSkillSpecialization` 没有 sheet-level availability，required-specialization definition 不默认展开；预定义专业化只在独立浏览开关开启时形成只读 candidate，uncommon parent 还同时受非常规开关约束。custom-only definition 不生成 synthetic UUID。Persisted uncommon、predefined、时代不兼容、custom 与 orphan refs 始终合并回视图；orphan 使用 stored current/Half/Fifth/成长标记的只读 fallback。缺少 Characteristics 时可以省略无法可靠解析的 catalog baseline/candidate，但 persisted rows 继续显示。搜索、两个目录浏览开关和页面加载均不写入；current、成长标记及 custom specialization mutation 只调用 Character Store，首次 mutation 才实例化对应 CharacterSkill。任何 Setting 都不回退 Standard。
 
@@ -107,7 +109,7 @@ Phase 7A 只为 Character version 1 新增 optional `wealth`，为 CreationSessi
 
 Phase 7B 只为 Character version 1 新增 optional `possessions` 自由文本数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段时正常读取且不补写。
 
-Phase 7C-2B 只为 Character version 1 新增 optional `weapons` 实例数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段以及 definition 已不在当前 Registry 的 orphan instance 都正常读取且不补写。
+Phase 7C-2B 只为 Character version 1 新增 optional `weapons` 实例数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段以及 definition 已不在当前 Registry 的 orphan instance 都正常读取且不补写。Phase 8C 只增加复用既有 Character 字段与 Store actions 的 Final Sheet mutation UI；不增加 schema、记录字段、表、索引、migration 或 version。
 
 可持久化状态通过结构校验后，完成属性前还会执行领域语义校验：Preset 必须数学可完成，EDU 成长历史必须逐项连续且与骰值一致，rolled Luck 必须符合当前年龄要求的 3D6×5 次数与取高结果。
 

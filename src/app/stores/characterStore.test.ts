@@ -6,6 +6,7 @@ import { createPinia, setActivePinia } from "pinia";
 import type { Character } from "../../coc7/types/character";
 import { db } from "../../db/database";
 import { characterRepository } from "../../db/repositories/characterRepository";
+import { creationSessionRepository } from "../../db/repositories/creationSessionRepository";
 import { useCharacterStore } from "./characterStore";
 
 beforeEach(async () => {
@@ -131,6 +132,15 @@ describe("Character 建卡时代", () => {
 });
 
 describe("Character identity 与 backstory persistence", () => {
+  it("name 可通过 Store 长期更新并刷新恢复", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+
+    await useCharacterStore().updateName(character.id, "新的长期姓名");
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.name).toBe("新的长期姓名");
+  });
+
   it("identity details trim 后持久化并可刷新恢复", async () => {
     const character = makeLegacyCharacter();
     await characterRepository.create(character);
@@ -203,6 +213,61 @@ describe("Character identity 与 backstory persistence", () => {
     if (!encounter) throw new Error("游戏期背景未创建");
     await expect(store.setKeyConnection(character.id, encounter.id))
       .rejects.toThrow("只有六个创建背景类别");
+  });
+
+  it("长期背景不受创建期 3～6 条限制，且无 CreationSession 时十类均可 mutation", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    const categories = [
+      "personal-description",
+      "ideology-beliefs",
+      "significant-people",
+      "meaningful-locations",
+      "treasured-possessions",
+      "traits",
+      "injuries-scars",
+      "phobias-manias",
+      "arcane-tomes-spells-artifacts",
+      "encounters",
+      "traits",
+    ] as const;
+
+    for (const [index, category] of categories.entries()) {
+      await store.addBackstoryEntry(character.id, category, `长期背景 ${index + 1}`);
+    }
+
+    const persisted = await characterRepository.getById(character.id);
+    expect(persisted?.data.backstory?.entries).toHaveLength(11);
+    expect(new Set(persisted?.data.backstory?.entries.map((entry) => entry.id)).size).toBe(11);
+    expect(await creationSessionRepository.getByCharacterId(character.id)).toBeUndefined();
+  });
+
+  it("identity/backstory mutation 不改变既有 CreationSession.currentStep", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    await creationSessionRepository.create({
+      version: 1,
+      characterId: character.id,
+      settingId: character.settingId,
+      currentStep: "background",
+    });
+    const store = useCharacterStore();
+
+    await store.updateName(character.id, "长期姓名");
+    await store.setIdentityDetails(character.id, {
+      sex: "女性",
+      residence: "上海",
+      birthplace: "杭州",
+    });
+    const updated = await store.addBackstoryEntry(character.id, "traits", "谨慎");
+    const entryId = updated.data.backstory?.entries[0]?.id;
+    if (!entryId) throw new Error("背景条目未创建");
+    await store.setKeyConnection(character.id, entryId);
+    await store.setKeyConnection(character.id, undefined);
+
+    expect((await creationSessionRepository.getByCharacterId(character.id))?.data.currentStep)
+      .toBe("background");
   });
 });
 

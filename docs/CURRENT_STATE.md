@@ -6,11 +6,11 @@ Last updated: 2026-08-22
 
 Phase 8 — Final Character Sheet UX (In Progress)
 
-Phase 8A — Final Character Sheet Foundation and Phase 8B — Final Sheet Skills Workspace are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet skills now resolve the same-Setting catalog against sparse Character state and support direct current value, growth-mark, and custom-specialization editing through existing Store/domain boundaries. Existing HP/MP/SAN resources remain editable through Character Store actions; advancement rolls, recovery, insanity, and combat systems remain unimplemented. Phase 8 as a whole remains in progress.
+Phase 8A — Final Character Sheet Foundation, Phase 8B — Final Sheet Skills Workspace, and Phase 8C — Final Sheet Narrative Workspace are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet now supports existing resource mutation, same-Setting sparse skill editing, long-term name/identity editing, all-ten-category backstory CRUD, and Key Connection set/clear through existing Character Store/domain boundaries. CreationSession remains optional and is never mutated by long-term narrative actions. Advancement rolls, recovery, insanity, inventory Final Sheet CRUD, and combat systems remain unimplemented. Phase 8 as a whole remains in progress.
 
 ## Git baseline
 
-Phase 8B Final Sheet Skills branch was created from `main` at `ec25af7ed8e2825c12d01d229c2e20604007e22e`.
+Phase 8C Final Sheet Narrative branch was created from `main` at `6fa6e7d4622f1429cb030f469fdf2fd5b865662f`.
 
 ## Implemented
 
@@ -26,7 +26,10 @@ Phase 8B Final Sheet Skills branch was created from `main` at `ec25af7ed8e2825c1
 - compact responsive Final Sheet skill workspace with zh/en/alias/custom-name search, orthogonal uncommon and predefined-specialization catalog browsing, modern-only/missing-era/incompatible badges, prominent current plus derived Half/Fifth, growth controls, and orphan read-only presentation
 - direct game-time current value and improvementChecked editing with refresh persistence, not-eligible growth disabling, and existing atomic Mythos → Maximum SAN/current SAN confirmation semantics without creation budgets, finalization, caps, or advancement rolls
 - compact custom-specialization create/rename/remove interaction using Store-owned UUIDs, stable rename identity, explicit remove confirmation, and existing allowMultiple/domain validation
-- all ten Character backstory categories in existing order with Key Connection marking and empty-category suppression
+- compact Final Sheet identity editor for long-term name, sex, residence, and birthplace mutation through existing Character Store actions; age, era, Setting, occupation, Characteristics, and Luck remain read-only creation/domain-owned values
+- all ten closed Character backstory categories in stable compact sections with empty-category collapsing, long-term add/edit/cancel/stable-ID delete, Store-owned UUID persistence, and no creation-count gating or read-time aggregate creation
+- explicit Key Connection display, eligible creation-category set, clear, and key-safe delete using existing Store semantics; game-time categories never expose set-key controls
+- legacy/no-session narrative safety: missing identity details, missing/empty backstory, absent Key Connection, and absent CreationSession remain readable and receive no writeback until explicit user mutation
 - Character wealth/assets with reliably derived Standard spending level, separate ordinary possessions, and same-Setting WeaponRegistry presentation covering source-faithful mechanics, era availability, notes, orphan fallback, and no Standard fallback for non-Standard Settings
 - Vue 3 / TypeScript / Vite project with strict type checking
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
@@ -195,7 +198,8 @@ Merged in the current enum:
 ## Not implemented
 
 - portrait upload
-- Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
+- Key Connection SAN loss, self-help, Keeper locks, insanity/background automatic mutation, investigator development, and experience packages
+- inventory, asset, possession, and weapon CRUD on the Final Sheet
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, and improvement-roll workflows
 - guide overlay
 - import/export and printing/export
