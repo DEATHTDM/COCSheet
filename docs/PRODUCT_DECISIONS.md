@@ -194,7 +194,7 @@ Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴�
 
 `Character.skills` 继续保持稀疏，只保存已经实例化或变化的技能状态。最终人物卡的完整技能视图由人物自身 Setting 的 `SkillRegistry`、当前 Characteristics 与稀疏 `Character.skills` 实时解析；任何 Setting 都不回退 Standard 目录。
 
-`availability.sheet === "standard"` 的可具体实例化普通技能与 canonical predefined specialization 默认形成只读 catalog baseline；需要真实人物级 identity 的 custom specialization 不生成 synthetic UUID。未持久化 baseline 的 current 等于实时 resolved base，查看与搜索不产生写入；只有玩家明确修改 current value 或成长标记时，才通过 Character Store 实例化对应 `CharacterSkill`。已经持久化的 uncommon、时代不兼容、custom 与未来 orphan 引用始终保留显示，其中 orphan 保持只读。
+`availability.sheet === "standard"` 且不要求专业化的普通技能默认形成只读 catalog baseline。`PredefinedSkillSpecialization` 不承载 sheet availability，因此 required-specialization definition 的未持久化 predefined refs 不进入默认列表；用户可通过独立“显示专业化技能”开关浏览有效 predefined candidates，若其 parent 为 uncommon，则还必须同时打开“显示非常规技能”。需要真实人物级 identity 的 custom specialization 不生成 synthetic UUID。未持久化 baseline/candidate 的 current 等于实时 resolved base，查看、搜索与切换开关不产生写入；只有玩家明确修改 current value 或成长标记时，才通过 Character Store 以稳定 ref 实例化对应 `CharacterSkill`。已经持久化的 uncommon、predefined、时代不兼容、custom 与未来 orphan 引用始终保留显示，其中 orphan 保持只读。
 
 ## KP Preset
 

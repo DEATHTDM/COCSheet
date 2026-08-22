@@ -53,6 +53,12 @@ function skillRow(wrapper: VueWrapper, key: string): DOMWrapper<Element> {
   return wrapper.find(`[data-skill-key="${key}"]`);
 }
 
+function skillToggle(wrapper: VueWrapper, text: string): DOMWrapper<Element> {
+  const label = wrapper.findAll("label.final-skill-toggle").find((candidate) => candidate.text().includes(text));
+  if (!label) throw new Error(`找不到技能开关：${text}`);
+  return label.find('input[type="checkbox"]');
+}
+
 describe("Final Sheet skill workspace rendered interactions", () => {
   it("渲染未持久化 baseline 不写入，修改 current 后才实例化并刷新保持", async () => {
     const wrapper = await mountCharacter();
@@ -116,6 +122,49 @@ describe("Final Sheet skill workspace rendered interactions", () => {
     await wrapper.find('.final-skill-search input[type="search"]').setValue("魅惑");
     expect(skillRow(wrapper, "skill:charm").exists()).toBe(true);
     expect(skillRow(wrapper, "skill:library-use").exists()).toBe(false);
+  });
+
+  it("predefined 默认不展开；开关浏览零写入，修改后稳定持久化且关闭开关仍显示", async () => {
+    const wrapper = await mountCharacter();
+    const updateSpy = vi.spyOn(characterRepository, "update");
+    const brawlKey = "skill:fighting:predefined:brawl";
+
+    expect(skillRow(wrapper, brawlKey).exists()).toBe(false);
+    expect(wrapper.find('[data-skill-key^="skill:science:predefined:"]').exists()).toBe(false);
+
+    await skillToggle(wrapper, "显示专业化技能").setValue(true);
+    expect(skillRow(wrapper, brawlKey).text()).toContain("格斗（斗殴）");
+    expect(skillRow(wrapper, brawlKey).text()).toContain("目录基础值");
+    expect((await characterRepository.getById(baseCharacter.id))?.data.skills).toBeUndefined();
+    expect(updateSpy).not.toHaveBeenCalled();
+
+    await skillToggle(wrapper, "显示专业化技能").setValue(false);
+    expect(skillRow(wrapper, brawlKey).exists()).toBe(false);
+
+    await skillToggle(wrapper, "显示专业化技能").setValue(true);
+    const brawl = skillRow(wrapper, brawlKey);
+    await brawl.find('input[aria-label="格斗（斗殴） 当前值"]').setValue("41");
+    await brawl.find('input[aria-label="格斗（斗殴） 当前值"]').trigger("blur");
+    await flushPromises();
+    expect((await characterRepository.getById(baseCharacter.id))?.data.skills).toEqual([{
+      ref: { type: "predefined", definitionId: "fighting", specializationId: "brawl" },
+      currentValue: 41,
+      improvementChecked: false,
+    }]);
+
+    await skillRow(wrapper, brawlKey)
+      .find('input[aria-label="格斗（斗殴） 成长标记"]')
+      .setValue(true);
+    await flushPromises();
+    expect((await characterRepository.getById(baseCharacter.id))?.data.skills).toEqual([{
+      ref: { type: "predefined", definitionId: "fighting", specializationId: "brawl" },
+      currentValue: 41,
+      improvementChecked: true,
+    }]);
+
+    await skillToggle(wrapper, "显示专业化技能").setValue(false);
+    expect(skillRow(wrapper, brawlKey).text()).toContain("格斗（斗殴）");
+    expect(skillRow(wrapper, brawlKey).text()).not.toContain("目录基础值");
   });
 
   it("Mythos 提高先确认并同步 SAN；取消零写入，降低不恢复 SAN", async () => {

@@ -1563,6 +1563,14 @@ textarea:disabled {
   font-weight: 700;
 }
 
+.final-skill-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0 1rem;
+}
+
 .final-skill-toggle input {
   width: 1.1rem;
   height: 1.1rem;
@@ -1774,5 +1782,9 @@ textarea:disabled {
 
   .final-skill-toggle {
     min-height: auto;
+  }
+
+  .final-skill-toggles {
+    justify-content: flex-start;
   }
 }

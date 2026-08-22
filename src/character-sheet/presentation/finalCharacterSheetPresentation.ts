@@ -48,6 +48,7 @@ export interface FinalSheetSkillPresentation {
 
 export interface ResolveFinalSheetSkillOptions {
   readonly includeUncommon?: boolean;
+  readonly includePredefinedSpecializations?: boolean;
 }
 
 export interface FinalSheetBackstoryGroup {
@@ -63,10 +64,14 @@ export function getCharacterCreationStatus(
   return currentStep === "review" ? "complete" : "incomplete";
 }
 
-function getCatalogRefs(definition: SkillDefinition): readonly SkillRef[] {
+function getCatalogRefs(
+  definition: SkillDefinition,
+  options: ResolveFinalSheetSkillOptions,
+): readonly SkillRef[] {
   if (definition.specialization.type === "none") {
     return [{ type: "standard", definitionId: definition.id }];
   }
+  if (!options.includePredefinedSpecializations) return [];
   return definition.predefinedSpecializations.map((specialization) => ({
     type: "predefined" as const,
     definitionId: definition.id,
@@ -180,7 +185,7 @@ export function resolveFinalSheetSkillRows(
 
   for (const definition of registry.definitions) {
     if (definition.availability.sheet === "uncommon" && !options.includeUncommon) continue;
-    for (const ref of getCatalogRefs(definition)) {
+    for (const ref of getCatalogRefs(definition, options)) {
       const key = getSkillRefKey(ref);
       const resolved = resolveCatalogSkill(
         character,

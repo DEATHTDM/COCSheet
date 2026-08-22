@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Character } from "../../coc7/types/character";
-import { getSkillRegistry } from "../../content/skillRegistry";
+import { createSkillRegistry, getSkillRegistry } from "../../content/skillRegistry";
 import {
   deriveFinalSheetStandardValues,
   deriveFinalSheetStandardWealth,
@@ -84,7 +84,7 @@ describe("final character sheet presentation", () => {
     expect(character.skills).toEqual(before);
   });
 
-  it("persisted current 覆盖实时 base，canonical predefined specialization 生成稳定行", () => {
+  it("persisted current 覆盖实时 base，默认不展开 required specialization 目录", () => {
     const skills = resolveFinalSheetSkillRows({
       ...character,
       skills: [{
@@ -101,12 +101,45 @@ describe("final character sheet presentation", () => {
       improvementChecked: true,
       persisted: true,
     });
-    expect(skills.find((skill) => skill.key === "skill:fighting:predefined:brawl")).toMatchObject({
+    expect(skills.some((skill) => skill.ref.type === "predefined")).toBe(false);
+    expect(skills.some((skill) => skill.ref.definitionId === "science")).toBe(false);
+  });
+
+  it("专业化开关只读展示 valid predefined candidate，未持久化 Science 不在默认视图", () => {
+    const sparse = { ...character, skills: [] };
+    const before = structuredClone(sparse.skills);
+    const defaultRows = resolveFinalSheetSkillRows(sparse, getSkillRegistry("standard"));
+    expect(defaultRows.some((skill) => skill.ref.definitionId === "science")).toBe(false);
+
+    const expanded = resolveFinalSheetSkillRows(sparse, getSkillRegistry("standard"), {
+      includePredefinedSpecializations: true,
+    });
+    expect(expanded.find((skill) => skill.key === "skill:fighting:predefined:brawl")).toMatchObject({
       nameZh: "格斗（斗殴）",
       baseValue: 25,
       currentValue: 25,
       persisted: false,
     });
+    expect(expanded.filter((skill) => skill.ref.definitionId === "science")).toHaveLength(13);
+    expect(sparse.skills).toEqual(before);
+  });
+
+  it("persisted predefined specialization 无论开关状态都保留稳定 ref", () => {
+    const persisted = {
+      ...character,
+      skills: [{
+        ref: { type: "predefined" as const, definitionId: "fighting", specializationId: "brawl" },
+        currentValue: 47,
+        improvementChecked: true,
+      }],
+    };
+    expect(resolveFinalSheetSkillRows(persisted, getSkillRegistry("standard"))
+      .find((skill) => skill.key === "skill:fighting:predefined:brawl")).toMatchObject({
+        currentValue: 47,
+        improvementChecked: true,
+        persisted: true,
+        orphaned: false,
+      });
   });
 
   it("persisted custom 只出现一次，custom-only definition 不伪造 synthetic SkillRef", () => {
@@ -159,6 +192,45 @@ describe("final character sheet presentation", () => {
       .find((skill) => skill.key === "skill:hypnosis")).toMatchObject({ persisted: false });
   });
 
+  it("uncommon 与 predefined 开关正交，uncommon parent 需两个开关才出现候选", () => {
+    const fighting = getSkillRegistry("standard").get("fighting");
+    if (!fighting) throw new Error("测试目录缺少 Fighting");
+    const registry = createSkillRegistry([{
+      ...fighting,
+      availability: { sheet: "uncommon", era: "all" },
+    }]);
+    const sparse = { ...character, skills: [] };
+
+    expect(resolveFinalSheetSkillRows(sparse, registry)).toEqual([]);
+    expect(resolveFinalSheetSkillRows(sparse, registry, { includeUncommon: true })).toEqual([]);
+    expect(resolveFinalSheetSkillRows(sparse, registry, {
+      includePredefinedSpecializations: true,
+    })).toEqual([]);
+    expect(resolveFinalSheetSkillRows(sparse, registry, {
+      includeUncommon: true,
+      includePredefinedSpecializations: true,
+    }).some((skill) => skill.key === "skill:fighting:predefined:brawl")).toBe(true);
+  });
+
+  it("persisted uncommon predefined 不受两个浏览开关影响", () => {
+    const fighting = getSkillRegistry("standard").get("fighting");
+    if (!fighting) throw new Error("测试目录缺少 Fighting");
+    const registry = createSkillRegistry([{
+      ...fighting,
+      availability: { sheet: "uncommon", era: "all" },
+    }]);
+    const rows = resolveFinalSheetSkillRows({
+      ...character,
+      skills: [{
+        ref: { type: "predefined", definitionId: "fighting", specializationId: "brawl" },
+        currentValue: 39,
+        improvementChecked: false,
+      }],
+    }, registry);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ persisted: true, currentValue: 39, orphaned: false });
+  });
+
   it("modern-only metadata 标明兼容性，缺少 era 时不猜测", () => {
     const classic = resolveFinalSheetSkillRows(character, getSkillRegistry("standard"));
     expect(classic.find((skill) => skill.key === "skill:computer-use")).toMatchObject({
@@ -178,6 +250,26 @@ describe("final character sheet presentation", () => {
     expect(filterFinalSheetSkillRows(rows, "Library Use").map((row) => row.key)).toContain("skill:library-use");
     expect(filterFinalSheetSkillRows(rows, "外语").some((row) => row.ref.definitionId === "language-other")).toBe(true);
     expect(filterFinalSheetSkillRows(rows, "拉丁语").some((row) => row.key.includes("20000000"))).toBe(true);
+  });
+
+  it("专业化浏览视图可按 predefined 中文、英文与 alias 搜索", () => {
+    const fighting = getSkillRegistry("standard").get("fighting");
+    if (!fighting) throw new Error("测试目录缺少 Fighting");
+    const registry = createSkillRegistry([{
+      ...fighting,
+      predefinedSpecializations: fighting.predefinedSpecializations.map((specialization) =>
+        specialization.id === "brawl"
+          ? { ...specialization, aliases: { zh: ["近战别名"], en: ["Close Combat Alias"] } }
+          : specialization),
+    }]);
+    const rows = resolveFinalSheetSkillRows({ ...character, skills: [] }, registry, {
+      includePredefinedSpecializations: true,
+    });
+    const brawlKey = "skill:fighting:predefined:brawl";
+    expect(filterFinalSheetSkillRows(rows, "斗殴").map((row) => row.key)).toContain(brawlKey);
+    expect(filterFinalSheetSkillRows(rows, "Brawl").map((row) => row.key)).toContain(brawlKey);
+    expect(filterFinalSheetSkillRows(rows, "近战别名").map((row) => row.key)).toContain(brawlKey);
+    expect(filterFinalSheetSkillRows(rows, "Close Combat Alias").map((row) => row.key)).toContain(brawlKey);
   });
 
   it("未来无法解析的 SkillRef 使用安全 fallback", () => {

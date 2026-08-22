@@ -16,6 +16,7 @@ const props = defineProps<{ character: Character }>();
 const characterStore = useCharacterStore();
 const search = ref("");
 const showUncommon = ref(false);
+const showPredefinedSpecializations = ref(false);
 const errorMessage = ref("");
 const mutationPending = ref(false);
 const customDefinitionId = ref("");
@@ -26,7 +27,10 @@ const registry = computed(() => getSkillRegistry(props.character.settingId));
 const rows = computed(() => resolveFinalSheetSkillRows(
   props.character,
   registry.value,
-  { includeUncommon: showUncommon.value },
+  {
+    includeUncommon: showUncommon.value,
+    includePredefinedSpecializations: showPredefinedSpecializations.value,
+  },
 ));
 const filteredRows = computed(() => filterFinalSheetSkillRows(rows.value, search.value));
 const customDefinitions = computed(() => registry.value.definitions.filter(
@@ -150,10 +154,16 @@ function customDefinitionLabel(definition: SkillDefinition): string {
         <span>搜索技能</span>
         <input v-model="search" type="search" placeholder="中文、英文、别名或自定义名称" />
       </label>
-      <label class="final-skill-toggle">
-        <input v-model="showUncommon" type="checkbox" />
-        <span>显示非常规技能</span>
-      </label>
+      <div class="final-skill-toggles">
+        <label class="final-skill-toggle">
+          <input v-model="showUncommon" type="checkbox" />
+          <span>显示非常规技能</span>
+        </label>
+        <label class="final-skill-toggle">
+          <input v-model="showPredefinedSpecializations" type="checkbox" />
+          <span>显示专业化技能</span>
+        </label>
+      </div>
     </div>
 
     <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
