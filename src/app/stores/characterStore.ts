@@ -368,6 +368,17 @@ export const useCharacterStore = defineStore("characters", () => {
     }));
   }
 
+  async function setCurrentLuck(id: string, value: number): Promise<CharacterRecord> {
+    if (!Number.isInteger(value) || value < 0 || value > 99) {
+      throw new RangeError("Current Luck 必须为 0～99 的整数");
+    }
+    const existing = await requireCharacter(id);
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      luck: value,
+    }));
+  }
+
   async function setCurrentCash(id: string, cashMinorUnits: number): Promise<CharacterRecord> {
     requireNonNegativeInteger(cashMinorUnits, "当前现金");
     const existing = await requireCharacter(id);
@@ -710,6 +721,7 @@ export const useCharacterStore = defineStore("characters", () => {
     setCurrentHp,
     setCurrentMp,
     setCurrentSan,
+    setCurrentLuck,
     initializeCurrentWealth,
     setCurrentCash,
     setCurrentAssets,

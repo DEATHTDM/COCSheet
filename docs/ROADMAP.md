@@ -271,7 +271,7 @@ Status: Completed
 
 ## Phase 8 — Final Character Sheet UX
 
-Status: In Progress
+Status: Completed
 
 ### Phase 8A — Final Character Sheet Foundation
 
@@ -318,6 +318,19 @@ Status: Completed
 - no purchasing, automatic cash deduction, ordinary goods catalog, ammunition, or combat automation
 - unchanged Character, CreationSession, Record, and Dexie version 1; no migration or Final Sheet inventory draft
 
+### Phase 8E — Final Sheet Resource Workspace & Phase 8 Closure
+
+Status: Completed
+
+- focused `FinalSheetResourceWorkspace` for HP, MP, SAN and Current Luck drafts, validation, saving, error state and external/route synchronization
+- unchanged current HP Maximum HP boundary, nonnegative current MP without an Initial MP cap, and current SAN Maximum SAN/Mythos/reconciliation semantics
+- direct explicit Current Luck 0～99 long-term maintenance through Character Store, including legacy missing-Luck creation and refresh persistence
+- complete CreationSession separation: current-state mutation does not modify attribute/Luck provenance and works for no-session Characters
+- legacy missing resources/Luck combinations, missing Characteristics and non-Standard Characters remain safe with no load-time writeback
+- no Optional Luck spending, roll modification, history, recovery or session-end improvement automation
+- unchanged Character, CreationSession, Record, table, index and Dexie version 1; no schema migration
+- Phase 8 Final Character Sheet UX closure without claiming recovery, insanity, combat, advancement, import/export or printing
+
 ## Later
 
 - guide overlay
@@ -329,4 +342,4 @@ Status: Completed
 - Dark Ages
 - Regency
 
-Later-item ordering after Phase 7 is not frozen.
+Later-item ordering after Phase 8 is not frozen.
