@@ -10,8 +10,8 @@ import {
   getFinalSheetCthulhuMythos,
   getFinalSheetMaximumSanity,
   presentFinalSheetBackstory,
-  presentFinalSheetSkills,
 } from "../character-sheet/presentation/finalCharacterSheetPresentation";
+import FinalSheetSkillWorkspace from "../components/FinalSheetSkillWorkspace.vue";
 import { getFifthValue, getHalfValue } from "../coc7/rules/attributes";
 import { formatDamageBonus } from "../coc7/rules/derived";
 import { characteristicIds } from "../coc7/types/attribute";
@@ -67,9 +67,6 @@ const sanityNeedsReconciliation = computed(() => {
   const currentSan = character.value?.resources?.san.current;
   return currentSan !== undefined && currentSan > maximumSanity.value;
 });
-const skills = computed(() => character.value
-  ? presentFinalSheetSkills(character.value, getSkillRegistry(character.value.settingId))
-  : []);
 const backstoryGroups = computed(() => character.value
   ? presentFinalSheetBackstory(character.value)
   : []);
@@ -120,6 +117,11 @@ async function loadCharacterSheet(id: string): Promise<void> {
 }
 
 watch(characterId, (id) => void loadCharacterSheet(id), { immediate: true });
+watch(
+  () => character.value?.resources,
+  () => synchronizeResourceDrafts(),
+  { deep: true },
+);
 
 async function saveResource(resource: ResourceId): Promise<void> {
   const draft = String(resourceDrafts[resource]).trim();
@@ -263,27 +265,7 @@ async function reconcileSanity(): Promise<void> {
         <p v-else-if="character.characteristics" class="muted">当前资料不足，或此 Setting 尚无可可靠派生的 Standard 数值。</p>
       </section>
 
-      <section class="panel">
-        <div class="section-heading">
-          <div><p class="eyebrow">Skills</p><h2>技能</h2></div>
-          <span>{{ skills.length }} 项</span>
-        </div>
-        <div v-if="skills.length" class="sheet-skill-list">
-          <article v-for="skill in skills" :key="skill.key" class="sheet-skill-row" :class="{ orphaned: skill.orphaned }">
-            <div>
-              <strong>{{ skill.label }}</strong>
-              <small v-if="skill.improvementChecked">✓ 已标记成长</small>
-              <small v-if="skill.orphaned">无法从当前 Setting 的 SkillRegistry 解析</small>
-            </div>
-            <dl>
-              <div><dt>Current</dt><dd>{{ skill.currentValue }}</dd></div>
-              <div><dt>Half</dt><dd>{{ skill.halfValue }}</dd></div>
-              <div><dt>Fifth</dt><dd>{{ skill.fifthValue }}</dd></div>
-            </dl>
-          </article>
-        </div>
-        <p v-else class="empty-state">尚无最终技能。</p>
-      </section>
+      <FinalSheetSkillWorkspace :character="character" />
 
       <section class="sheet-secondary-grid">
         <section class="panel">

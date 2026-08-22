@@ -190,6 +190,12 @@ Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴�
 
 技能是否出现在标准调查员卡以及是否现代限定，使用 `availability.sheet` 与 `availability.era` 的闭合枚举表达，不使用自由字符串 flags。`aliases` 是可选的本地化显示与搜索元数据，不参与 `SkillRef` identity、规则逻辑或持久化 key。
 
+### SK005 — Final sheet resolves sparse skill state
+
+`Character.skills` 继续保持稀疏，只保存已经实例化或变化的技能状态。最终人物卡的完整技能视图由人物自身 Setting 的 `SkillRegistry`、当前 Characteristics 与稀疏 `Character.skills` 实时解析；任何 Setting 都不回退 Standard 目录。
+
+`availability.sheet === "standard"` 的可具体实例化普通技能与 canonical predefined specialization 默认形成只读 catalog baseline；需要真实人物级 identity 的 custom specialization 不生成 synthetic UUID。未持久化 baseline 的 current 等于实时 resolved base，查看与搜索不产生写入；只有玩家明确修改 current value 或成长标记时，才通过 Character Store 实例化对应 `CharacterSkill`。已经持久化的 uncommon、时代不兼容、custom 与未来 orphan 引用始终保留显示，其中 orphan 保持只读。
+
 ## KP Preset
 
 ### K001 — Preset scope

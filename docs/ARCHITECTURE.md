@@ -71,7 +71,9 @@ Character Store → CharacterRepository → Dexie
 
 最终人物卡的所有数值、技能、背景、财富、物品与武器均直接读取 `Character`；CreationSession 只提供完成／未完成状态和返回编辑器入口，不是页面可用性的前置条件。页面加载不会调用 legacy resources 初始化，不会从会话重建最终状态，也不会对 optional 字段做 normalize writeback。HP、MP、SAN 编辑继续只调用 Character Store 的既有 action；legacy SAN 超过 Maximum SAN 时沿用显式 reconciliation，禁止加载时静默收紧。
 
-技能显示使用人物自身 Setting 的 SkillRegistry 与稳定 SkillRef；无法解析的未来引用使用只读 fallback。武器使用人物自身 Setting 的 WeaponRegistry 与现有 orphan-safe presentation，不回退 Standard。Standard derived values 与 wealth presentation 只在当前 Character 信息足以可靠派生时显示，Half/Fifth、Maximum HP、Initial MP、Maximum SAN、MOV、Damage Bonus、Build 与 spending level 继续不持久化。
+最终人物卡技能区通过独立纯 presentation boundary 合并人物自身 Setting 的 SkillRegistry 与稀疏 `Character.skills`。可具体实例化的 Standard-sheet catalog refs 形成未持久化 baseline；canonical predefined specialization 可以形成稳定行，custom-only definition 不生成 synthetic UUID。Persisted uncommon、时代不兼容、custom 与 orphan refs 始终合并回视图；orphan 使用 stored current/Half/Fifth/成长标记的只读 fallback。缺少 Characteristics 时可以省略无法可靠解析的 catalog baseline，但 persisted rows 继续显示。搜索、非常规目录浏览和页面加载均不写入；current、成长标记及 custom specialization mutation 只调用 Character Store，首次 mutation 才实例化对应 CharacterSkill。任何 Setting 都不回退 Standard。
+
+武器使用人物自身 Setting 的 WeaponRegistry 与现有 orphan-safe presentation，不回退 Standard。Standard derived values 与 wealth presentation 只在当前 Character 信息足以可靠派生时显示，Half/Fifth、Maximum HP、Initial MP、Maximum SAN、MOV、Damage Bonus、Build 与 spending level 继续不持久化。
 
 ## Persistence
 
@@ -162,6 +164,8 @@ Character.skills（实例化或变化的 CharacterSkill）
 `Language (Own)` 使用 `required + allowMultiple: false + allowCustom: true` 的专业化政策，具体母语名称和稳定 UUID 保存在 CharacterSkill 的 custom SkillRef 中；`Language (Other)` 则允许多个 custom 实例。
 
 Phase 4 在 `Character.version = 1` 中新增 optional `skills`，但不改变 CharacterRecord、CreationSessionRecord 或 IndexedDB version。静态目录、availability、aliases、基础值、名称、来源、点数分配和验证错误不持久化，旧 Character 读取也不会触发隐式写回。
+
+Phase 8B 的 Final Sheet resolver 是 presentation-only 合并层，不是新的 skill engine：它读取 same-Setting Registry 与稀疏 Character state，实时生成 current/Half/Fifth、搜索文本及 availability/era 状态。目录 baseline 不进入 Character；明确 mutation 继续由既有 Store/domain validation 处理，Mythos → SAN clamp 也继续保留在同一次 CharacterRepository update 中。
 
 Phase 5C-1.5 在同一个 `Character.version = 1` 中新增 optional `eraId`。Character Store 验证该值属于人物当前 SettingPack 后经 CharacterRepository 保存；CharacterRecord、CreationSession、Dexie 表、索引和 IndexedDB version 均不改变。SettingPack 声明 eras 时，创建 UI 与 Creation Store 要求明确时代；纯 finalizer 对缺少时代的 legacy Character 保持兼容。
 

@@ -1,16 +1,16 @@
 # Current State
 
-Last updated: 2026-08-21
+Last updated: 2026-08-22
 
 ## Current phase
 
 Phase 8 — Final Character Sheet UX (In Progress)
 
-Phase 8A — Final Character Sheet Foundation is completed. `/characters/:id/sheet` is now the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Home and Review provide explicit sheet/editor navigation. Existing HP/MP/SAN resources are editable through Character Store actions; all other game-time advancement, recovery, insanity, and combat systems remain unimplemented. Phase 8 as a whole remains in progress.
+Phase 8A — Final Character Sheet Foundation and Phase 8B — Final Sheet Skills Workspace are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet skills now resolve the same-Setting catalog against sparse Character state and support direct current value, growth-mark, and custom-specialization editing through existing Store/domain boundaries. Existing HP/MP/SAN resources remain editable through Character Store actions; advancement rolls, recovery, insanity, and combat systems remain unimplemented. Phase 8 as a whole remains in progress.
 
 ## Git baseline
 
-Phase 8A Final Character Sheet branch was created from `main` at `be13c968758d2bad33d873224487651bba8c535f`.
+Phase 8B Final Sheet Skills branch was created from `main` at `ec25af7ed8e2825c12d01d229c2e20604007e22e`.
 
 ## Implemented
 
@@ -21,6 +21,11 @@ Phase 8A Final Character Sheet branch was created from `main` at `be13c968758d2b
 - priority final-sheet presentation for identity, final Characteristics with Half/Fifth, Standard derived values, Luck, current resources, and Maximum SAN, followed by stable sorted skills and secondary backstory/wealth/possessions/weapons regions
 - direct current HP, current MP, and current SAN editing through existing Character Store APIs, including existing HP/SAN maximum validation, unbounded nonnegative current MP semantics, refresh persistence, and explicit legacy SAN reconciliation without load-time mutation
 - final skill presentation using stable SkillRef and same-Setting SkillRegistry for standard/predefined/custom names, current/Half/Fifth values, improvementChecked state, deterministic sorting, and orphan-safe fallback
+- pure Final Sheet skill resolver that combines same-Setting `availability.sheet === standard` catalog refs with sparse Character skills, generates canonical predefined rows without synthetic custom UUIDs, preserves persisted uncommon/incompatible/custom/orphan rows, and never falls back Standard
+- read-only unpersisted catalog baselines resolved from current Characteristics, with no load/view/search/toggle writeback; first explicit current or growth-mark mutation alone instantiates the target CharacterSkill through existing Store validation
+- compact responsive Final Sheet skill workspace with zh/en/alias/custom-name search, optional uncommon catalog browsing, modern-only/missing-era/incompatible badges, prominent current plus derived Half/Fifth, growth controls, and orphan read-only presentation
+- direct game-time current value and improvementChecked editing with refresh persistence, not-eligible growth disabling, and existing atomic Mythos → Maximum SAN/current SAN confirmation semantics without creation budgets, finalization, caps, or advancement rolls
+- compact custom-specialization create/rename/remove interaction using Store-owned UUIDs, stable rename identity, explicit remove confirmation, and existing allowMultiple/domain validation
 - all ten Character backstory categories in existing order with Key Connection marking and empty-category suppression
 - Character wealth/assets with reliably derived Standard spending level, separate ordinary possessions, and same-Setting WeaponRegistry presentation covering source-faithful mechanics, era availability, notes, orphan fallback, and no Standard fallback for non-Standard Settings
 - Vue 3 / TypeScript / Vite project with strict type checking
@@ -189,7 +194,6 @@ Merged in the current enum:
 
 ## Not implemented
 
-- post-creation improvement-roll workflow
 - portrait upload
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background mutation, investigator development, and experience packages
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, and improvement-roll workflows
