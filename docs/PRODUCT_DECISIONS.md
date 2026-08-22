@@ -114,6 +114,12 @@ Maximum HP、Initial MP、Initial SAN、MOV、Damage Bonus 与 Build 是由当�
 
 Phase 4A 已有 Character 即使 current SAN 高于后来加入的 Maximum SAN 规则上限，也必须保持可解析和可读取；Character Schema 不以跨字段 hard rejection 阻断旧数据，Repository read 不自动写回。UI 负责显示超限提示，只有用户触发显式 reconciliation 时才将 current SAN 同步到当前上限。
 
+### A005 — Current Luck and creation provenance
+
+完成创建后，`Character.luck` 表示人物当前持有的长期 Current Luck；Final Sheet 允许玩家显式维护 0～99 的整数，包括为缺少 Luck 的 legacy Character 首次创建该字段。该长期 mutation 只修改 `Character.luck`，不重新掷骰，不修改年龄、Characteristics 或任何 `CreationSession` 状态。
+
+创建期 Luck 的 rolled/manual 来源、骰值和年龄相关生成过程继续只属于 `CreationSession.attributes.luck`；完成属性时仅将最终值写入 Character。当前基础人物卡不自动启用“花费 Luck 改变掷骰结果”或 session-end Luck improvement Optional Rule；未来若产品明确采用这些规则，应作为独立规则工作流设计，而不是从 Current Luck editor 反推。
+
 ## Occupations
 
 ### O001 — Source, category, and tags

@@ -4,13 +4,13 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 8 — Final Character Sheet UX (In Progress)
+Phase 8 — Final Character Sheet UX (Completed)
 
-Phase 8A — Final Character Sheet Foundation, Phase 8B — Final Sheet Skills Workspace, Phase 8C — Final Sheet Narrative Workspace, and Phase 8D — Final Sheet Inventory Workspace are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet now supports resources, same-Setting sparse skills, long-term identity/backstory narrative, and inventory workspaces through existing Character Store/domain boundaries. CreationSession remains optional and is never mutated by long-term Final Sheet actions. Purchasing, automatic cash deduction, ammunition, combat, recovery, insanity, improvement rolls, Luck game-time workflow, import/export, and print remain unimplemented. Phase 8 as a whole remains in progress.
+Phase 8A — Final Character Sheet Foundation, Phase 8B — Final Sheet Skills Workspace, Phase 8C — Final Sheet Narrative Workspace, Phase 8D — Final Sheet Inventory Workspace, and Phase 8E — Final Sheet Resource Workspace & Phase 8 Closure are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet now supports focused HP/MP/SAN/Current Luck, same-Setting sparse skills, long-term identity/backstory narrative, and inventory workspaces through existing Character Store/domain boundaries. CreationSession remains optional and is never mutated by long-term Final Sheet actions. Optional Luck spending/improvement, purchasing, automatic cash deduction, ammunition, combat, recovery, insanity, advancement rolls, import/export, and print remain unimplemented. Phase 8 is completed without treating those later systems as part of the Final Sheet UX closure.
 
 ## Git baseline
 
-Phase 8D Final Sheet Inventory branch was created from `main` at `f7515cb2d2b3c383da90842760aa69ec22540567`.
+Phase 8E Final Sheet Resource Workspace branch was created from `main` at `efbb1a6b17f893f614baed26d508d79fb54c4442`.
 
 ## Implemented
 
@@ -20,13 +20,16 @@ Phase 8D Final Sheet Inventory branch was created from `main` at `f7515cb2d2b3c3
 - Review-to-Final-Sheet completion entry plus Final-Sheet-to-Editor return for Characters that retain a CreationSession, without adding a workflow step or schema enum
 - priority final-sheet presentation for identity, final Characteristics with Half/Fifth, Standard derived values, Luck, current resources, and Maximum SAN, followed by stable sorted skills and secondary backstory/wealth/possessions/weapons regions
 - direct current HP, current MP, and current SAN editing through existing Character Store APIs, including existing HP/SAN maximum validation, unbounded nonnegative current MP semantics, refresh persistence, and explicit legacy SAN reconciliation without load-time mutation
+- focused `FinalSheetResourceWorkspace` owning HP/MP/SAN/Current Luck drafts, validation, busy/error state and prop/route synchronization while `FinalCharacterSheetPage` remains responsible for loading, routing, optional session status and page composition
+- direct long-term Current Luck 0～99 maintenance through `CharacterStore.setCurrentLuck → CharacterRepository → Dexie`, including explicit creation of a legacy missing field, refresh persistence, zero read-time writeback and strict isolation from resources, age, Characteristics, skills and CreationSession Luck provenance
+- Current Luck maintenance intentionally does not call creation Luck generation/validation or enable Optional Luck spending, roll modification, history, recovery or session-end improvement workflows
 - final skill presentation using stable SkillRef and same-Setting SkillRegistry for standard/predefined/custom names, current/Half/Fifth values, improvementChecked state, deterministic sorting, and orphan-safe fallback
 - pure Final Sheet skill resolver that combines same-Setting standard unspecialized baselines with sparse Character skills, exposes valid predefined candidates only behind an independent specialization browser, preserves persisted uncommon/predefined/incompatible/custom/orphan rows without synthetic custom UUIDs, and never falls back Standard
 - read-only unpersisted catalog baselines resolved from current Characteristics, with no load/view/search/toggle writeback; first explicit current or growth-mark mutation alone instantiates the target CharacterSkill through existing Store validation
 - compact responsive Final Sheet skill workspace with zh/en/alias/custom-name search, orthogonal uncommon and predefined-specialization catalog browsing, modern-only/missing-era/incompatible badges, prominent current plus derived Half/Fifth, growth controls, and orphan read-only presentation
 - direct game-time current value and improvementChecked editing with refresh persistence, not-eligible growth disabling, and existing atomic Mythos → Maximum SAN/current SAN confirmation semantics without creation budgets, finalization, caps, or advancement rolls
 - compact custom-specialization create/rename/remove interaction using Store-owned UUIDs, stable rename identity, explicit remove confirmation, and existing allowMultiple/domain validation
-- compact Final Sheet identity editor for long-term name, sex, residence, and birthplace mutation through existing Character Store actions; age, era, Setting, occupation, Characteristics, and Luck remain read-only creation/domain-owned values
+- compact Final Sheet identity editor for long-term name, sex, residence, and birthplace mutation through existing Character Store actions; age, era, Setting, occupation, Characteristics, and Luck remain read-only within that identity editor, while Current Luck has its independent resource-workspace boundary
 - all ten closed Character backstory categories in stable compact sections with empty-category collapsing, long-term add/edit/cancel/stable-ID delete, Store-owned UUID persistence, and no creation-count gating or read-time aggregate creation
 - explicit Key Connection display, eligible creation-category set, clear, and key-safe delete using existing Store semantics; game-time categories never expose set-key controls
 - legacy/no-session narrative safety: missing identity details, missing/empty backstory, absent Key Connection, and absent CreationSession remain readable and receive no writeback until explicit user mutation
@@ -204,7 +207,7 @@ Merged in the current enum:
 - portrait upload
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background automatic mutation, investigator development, and experience packages
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, automatic cash deduction, and improvement-roll workflows
-- Luck game-time workflow
+- Optional Luck spending/roll-modification and session-end Luck improvement workflows
 - guide overlay
 - import/export and printing/export
 - URL / Hash preset sharing

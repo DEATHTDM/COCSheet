@@ -596,6 +596,96 @@ describe("游戏中资源更新", () => {
   });
 });
 
+describe("长期 Current Luck 更新", () => {
+  it("允许边界值 0 与 99，并在刷新后保持", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    expect((await store.setCurrentLuck(character.id, 0)).data.luck).toBe(0);
+    expect((await store.setCurrentLuck(character.id, 99)).data.luck).toBe(99);
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.luck).toBe(99);
+  });
+
+  it("拒绝负数、大于 99 与小数", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    await expect(store.setCurrentLuck(character.id, -1)).rejects.toThrow("0～99");
+    await expect(store.setCurrentLuck(character.id, 100)).rejects.toThrow("0～99");
+    await expect(store.setCurrentLuck(character.id, 1.5)).rejects.toThrow("0～99");
+    expect((await characterRepository.getById(character.id))?.data.luck).toBe(60);
+  });
+
+  it("legacy missing Luck 只在显式保存后创建字段", async () => {
+    const character = makeLegacyCharacter({ luck: undefined });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    expect((await store.loadById(character.id))?.data.luck).toBeUndefined();
+    expect(updateSpy).not.toHaveBeenCalled();
+
+    const updated = await store.setCurrentLuck(character.id, 37);
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updated.data.luck).toBe(37);
+    expect((await characterRepository.getById(character.id))?.data.luck).toBe(37);
+  });
+
+  it("只修改 Character.luck，不改变资源、属性、年龄、技能或 CreationSession provenance", async () => {
+    const resources = { hp: { current: 8 }, mp: { current: 17 }, san: { current: 52 } };
+    const skills = [{
+      ref: { type: "standard" as const, definitionId: "library-use" },
+      currentValue: 63,
+      improvementChecked: true,
+    }];
+    const character = makeLegacyCharacter({ resources, skills });
+    const characteristics = character.characteristics;
+    const age = character.age;
+    if (!characteristics || age === undefined) throw new Error("测试人物缺少属性或年龄");
+    await characterRepository.create(character);
+    await creationSessionRepository.create({
+      version: 1,
+      characterId: character.id,
+      settingId: "standard",
+      currentStep: "review",
+      draftAge: age,
+      attributes: {
+        generationMethod: "manual",
+        generation: {
+          method: "manual",
+          values: characteristics,
+          baseCharacteristics: characteristics,
+        },
+        ageAdjustment: {
+          age,
+          reductionAllocation: {},
+          eduImprovements: [],
+        },
+        luck: {
+          source: "rolled",
+          rolls: [{ dice: [2, 3, 4], modifier: 0, total: 45 }],
+          value: 45,
+        },
+      },
+    });
+    const sessionBefore = await creationSessionRepository.getByCharacterId(character.id);
+    const store = useCharacterStore();
+
+    const updated = await store.setCurrentLuck(character.id, 12);
+
+    expect(updated.data).toEqual({ ...character, luck: 12 });
+    expect(updated.data.resources).toEqual(resources);
+    expect(updated.data.characteristics).toEqual(character.characteristics);
+    expect(updated.data.age).toBe(character.age);
+    expect(updated.data.skills).toEqual(skills);
+    expect(await creationSessionRepository.getByCharacterId(character.id)).toEqual(sessionBefore);
+  });
+});
+
 describe("游戏期技能编辑", () => {
   it("首次勾选未持久化的基础技能时只以 resolved base 实例化目标行", async () => {
     const character = makeLegacyCharacter();

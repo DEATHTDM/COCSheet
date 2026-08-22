@@ -1551,25 +1551,14 @@ textarea:disabled {
   gap: 0.65rem;
 }
 
-.luck-value {
-  display: grid;
-  min-width: 76px;
-  text-align: right;
-}
-
-.luck-value span,
 .resource-editor small {
   color: #695f52;
   font-size: 0.8rem;
 }
 
-.luck-value strong {
-  font-size: 2rem;
-}
-
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -1596,6 +1585,15 @@ textarea:disabled {
   border-radius: 4px;
   font-size: 1.35rem;
   font-weight: 800;
+}
+
+.resource-missing-note {
+  grid-column: 1 / -1;
+}
+
+.current-luck-guidance,
+.final-resource-message {
+  margin-bottom: 0;
 }
 
 .resource-panel .legacy-warning {

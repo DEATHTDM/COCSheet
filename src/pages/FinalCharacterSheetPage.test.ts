@@ -64,6 +64,13 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
 
     const wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
     await vi.waitFor(() => expect(wrapper.text()).toContain("建立当前财富记录"));
+    expect(wrapper.find(".final-resource-workspace").exists()).toBe(true);
+    expect(wrapper.text()).toContain("尚未记录 Current Luck");
+    expect(wrapper.text()).toContain("尚未初始化 HP、MP 与 SAN");
+    expect(wrapper.find(".final-skill-workspace").exists()).toBe(true);
+    expect(wrapper.find(".sheet-backstory-workspace").exists()).toBe(true);
+    expect(wrapper.find(".final-possessions-workspace").exists()).toBe(true);
+    expect(wrapper.find(".final-weapon-workspace").exists()).toBe(true);
     expect(wrapper.text()).toContain("打开页面不会自动生成空数组");
     expect(wrapper.text()).toContain("缺失字段不会在打开页面时自动生成");
     expect(updateSpy).not.toHaveBeenCalled();
@@ -106,6 +113,24 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     const wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
     await vi.waitFor(() => expect(wrapper.find('input[name="current-cash"]').exists()).toBe(true));
 
+    for (const [inputId, value] of [
+      ["sheet-current-hp", "6"],
+      ["sheet-current-mp", "30"],
+      ["sheet-current-san", "75"],
+      ["sheet-current-luck", "0"],
+    ] as const) {
+      const input = wrapper.get(inputId.startsWith("#") ? inputId : `#${inputId}`);
+      await input.setValue(value);
+      const editor = wrapper.findAll(".resource-editor").find(
+        (candidate) => candidate.find("input").attributes("id") === inputId,
+      );
+      if (!editor) throw new Error(`找不到资源编辑器：${inputId}`);
+      const saveButton = editor.get("button");
+      await saveButton.trigger("click");
+      await flushPromises();
+      await vi.waitFor(() => expect(saveButton.attributes("disabled")).toBeUndefined());
+    }
+
     await wrapper.get('input[name="current-cash"]').setValue("40.00");
     await wrapper.findAll(".final-money-editor")[0]!.trigger("submit");
     await flushPromises();
@@ -141,6 +166,12 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     });
 
     const persisted = await characterRepository.getById(inventoryCharacter.id);
+    expect(persisted?.data.resources).toEqual({
+      hp: { current: 6 },
+      mp: { current: 30 },
+      san: { current: 75 },
+    });
+    expect(persisted?.data.luck).toBe(0);
     expect(persisted?.data.wealth).toMatchObject({
       cashMinorUnits: 4_000,
       assetsMinorUnits: 100_000,
@@ -247,5 +278,43 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     await vi.waitFor(() => expect(wrapper.get("h1").text()).toBe("长期叙事调查员"));
     expect(wrapper.text()).toContain("左眉留下了一道旧疤");
     expect(wrapper.text()).toContain("此人物没有建卡会话");
+  });
+
+  it("route A → B 复用页面时重新载入人物并同步 HP/MP/SAN/Luck drafts", async () => {
+    const first: Character = { ...character, luck: 60 };
+    const second: Character = {
+      ...character,
+      id: "89600000-0000-4000-8000-000000000008",
+      name: "Route B",
+      luck: 9,
+      resources: { hp: { current: 3 }, mp: { current: 40 }, san: { current: 22 } },
+    };
+    await characterRepository.create(first);
+    await characterRepository.create(second);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        { path: "/characters/:id", component: { template: "<div />" } },
+        { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+      ],
+    });
+    await router.push(`/characters/${first.id}/sheet`);
+    await router.isReady();
+    const wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
+    await vi.waitFor(() => expect(wrapper.get<HTMLInputElement>("#sheet-current-luck").element.value).toBe("60"));
+
+    await wrapper.get("#sheet-current-hp").setValue("12");
+    await router.push(`/characters/${second.id}/sheet`);
+    await flushPromises();
+    await vi.waitFor(() => expect(wrapper.get("h1").text()).toBe("Route B"));
+
+    expect(wrapper.get<HTMLInputElement>("#sheet-current-hp").element.value).toBe("3");
+    expect(wrapper.get<HTMLInputElement>("#sheet-current-mp").element.value).toBe("40");
+    expect(wrapper.get<HTMLInputElement>("#sheet-current-san").element.value).toBe("22");
+    expect(wrapper.get<HTMLInputElement>("#sheet-current-luck").element.value).toBe("9");
+    expect((await characterRepository.getById(first.id))?.data.resources?.hp.current).toBe(10);
   });
 });
