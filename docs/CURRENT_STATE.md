@@ -1,16 +1,16 @@
 # Current State
 
-Last updated: 2026-08-22
+Last updated: 2026-08-23
 
 ## Current phase
 
 Phase 8 — Final Character Sheet UX (In Progress)
 
-Phase 8A — Final Character Sheet Foundation, Phase 8B — Final Sheet Skills Workspace, and Phase 8C — Final Sheet Narrative Workspace are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet now supports existing resource mutation, same-Setting sparse skill editing, long-term name/identity editing, all-ten-category backstory CRUD, and Key Connection set/clear through existing Character Store/domain boundaries. CreationSession remains optional and is never mutated by long-term narrative actions. Advancement rolls, recovery, insanity, inventory Final Sheet CRUD, and combat systems remain unimplemented. Phase 8 as a whole remains in progress.
+Phase 8A — Final Character Sheet Foundation, Phase 8B — Final Sheet Skills Workspace, Phase 8C — Final Sheet Narrative Workspace, and Phase 8D — Final Sheet Inventory Workspace are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet now supports resources, same-Setting sparse skills, long-term identity/backstory narrative, and inventory workspaces through existing Character Store/domain boundaries. CreationSession remains optional and is never mutated by long-term Final Sheet actions. Purchasing, automatic cash deduction, ammunition, combat, recovery, insanity, improvement rolls, Luck game-time workflow, import/export, and print remain unimplemented. Phase 8 as a whole remains in progress.
 
 ## Git baseline
 
-Phase 8C Final Sheet Narrative branch was created from `main` at `6fa6e7d4622f1429cb030f469fdf2fd5b865662f`.
+Phase 8D Final Sheet Inventory branch was created from `main` at `f7515cb2d2b3c383da90842760aa69ec22540567`.
 
 ## Implemented
 
@@ -30,7 +30,11 @@ Phase 8C Final Sheet Narrative branch was created from `main` at `6fa6e7d4622f14
 - all ten closed Character backstory categories in stable compact sections with empty-category collapsing, long-term add/edit/cancel/stable-ID delete, Store-owned UUID persistence, and no creation-count gating or read-time aggregate creation
 - explicit Key Connection display, eligible creation-category set, clear, and key-safe delete using existing Store semantics; game-time categories never expose set-key controls
 - legacy/no-session narrative safety: missing identity details, missing/empty backstory, absent Key Connection, and absent CreationSession remain readable and receive no writeback until explicit user mutation
-- Character wealth/assets with reliably derived Standard spending level, separate ordinary possessions, and same-Setting WeaponRegistry presentation covering source-faithful mechanics, era availability, notes, orphan fallback, and no Standard fallback for non-Standard Settings
+- focused Final Sheet wealth, possessions, and weapon workspaces that mutate only `Character.wealth`, `Character.possessions`, and `Character.weapons` through Character Store → CharacterRepository → Dexie, with no CreationSession dependency or second inventory draft
+- explicit legacy/no-session Standard current-wealth creation from user-entered Cash/Assets only, rejecting overwrite and creating empty asset entries without CR/era defaults or creation provenance; non-Standard missing wealth remains absent and existing legacy amounts are safe raw minor-unit read-only values
+- direct Standard Current Cash/Assets editing plus stable-ID asset add/edit/cancel/confirmed-delete, with optional estimates and no estimate-total equality, Spending Level persistence, or automatic assets-total synchronization
+- ordinary possession add/edit/cancel/confirmed-delete with Store-owned UUIDs, legal duplicate names, optional notes, refresh persistence, and no catalog, purchasing, pricing, quantity, or cash/assets synchronization
+- compact collapsed same-Setting weapon catalog with zh/en/skill/stable-ID search and closed category filter, source-faithful mechanics, availability/reference-price presentation, available/rare/unavailable add eligibility even without era, duplicate instances, stable-ID notes edit/clear, confirmed remove, orphan-safe mutation, and no Standard fallback
 - Vue 3 / TypeScript / Vite project with strict type checking
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
@@ -199,8 +203,8 @@ Merged in the current enum:
 
 - portrait upload
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background automatic mutation, investigator development, and experience packages
-- inventory, asset, possession, and weapon CRUD on the Final Sheet
-- post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, and improvement-roll workflows
+- post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, automatic cash deduction, and improvement-roll workflows
+- Luck game-time workflow
 - guide overlay
 - import/export and printing/export
 - URL / Hash preset sharing

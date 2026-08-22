@@ -42,6 +42,8 @@ Standard lifestyle、官方初始 cash/assets 与 spending level 由当前 `Char
 
 创建期财富初始化所依据的 era 与 Credit Rating snapshot 属于 `CreationSession` provenance，不进入长期 Character wealth。CR 或 era 改变不会静默重算或覆盖已有财富；不匹配时财富进入 stale 状态，必须由玩家显式重新初始化。重新初始化重置 cash/assets totals，但保留已有资产构成说明供玩家复核。
 
+legacy 或没有 CreationSession 的 Standard Character 若缺少 `wealth`，Final Sheet 可在用户明确输入 current cash 与 current assets 后创建现有 `Character.wealth` 长期状态，初始 `assetEntries` 为空。该操作不是创建期 Standard wealth initialization，不读取 CR / era 推导默认金额，不创建或修改 CreationSession，也不产生 `wealthInitialization` provenance；已有 wealth 时必须拒绝覆盖。
+
 ### W003 — Free-form gear and separate weapons
 
 普通 gear / possessions 是 `Character` 的自由文本长期数据；每条物品使用 Character Store 创建的 UUID 作为稳定 identity，名称允许重复，数组顺序就是展示顺序。Standard 不建立普通商品目录，也不通过 Cash 或 Spending Level 自动扣款、购买或判断物品是否合法；物品是否符合时代、职业与叙事由玩家和 Keeper 判断。

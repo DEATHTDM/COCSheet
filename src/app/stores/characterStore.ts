@@ -378,6 +378,26 @@ export const useCharacterStore = defineStore("characters", () => {
     }));
   }
 
+  async function initializeCurrentWealth(
+    id: string,
+    cashMinorUnits: number,
+    assetsMinorUnits: number,
+  ): Promise<CharacterRecord> {
+    requireNonNegativeInteger(cashMinorUnits, "当前现金");
+    requireNonNegativeInteger(assetsMinorUnits, "当前资产总额");
+    const existing = await requireCharacter(id);
+    if (existing.settingId !== "standard") {
+      throw new Error("当前 Setting 尚未实现长期财富金额编辑规则");
+    }
+    if (existing.data.wealth) {
+      throw new Error("调查员财富已经存在，不能覆盖");
+    }
+    return synchronize(await characterRepository.update({
+      ...existing.data,
+      wealth: { cashMinorUnits, assetsMinorUnits, assetEntries: [] },
+    }));
+  }
+
   async function setCurrentAssets(id: string, assetsMinorUnits: number): Promise<CharacterRecord> {
     requireNonNegativeInteger(assetsMinorUnits, "当前资产总额");
     const existing = await requireCharacter(id);
@@ -690,6 +710,7 @@ export const useCharacterStore = defineStore("characters", () => {
     setCurrentHp,
     setCurrentMp,
     setCurrentSan,
+    initializeCurrentWealth,
     setCurrentCash,
     setCurrentAssets,
     addAssetEntry,
