@@ -272,6 +272,63 @@ describe("Character identity 与 backstory persistence", () => {
 });
 
 describe("Character wealth persistence", () => {
+  it("显式建立 legacy/no-session 长期 wealth，拒绝覆盖且不创建 CreationSession", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    const initialized = await store.initializeCurrentWealth(character.id, 4_250, 125_000);
+    expect(initialized.data.wealth).toEqual({
+      cashMinorUnits: 4_250,
+      assetsMinorUnits: 125_000,
+      assetEntries: [],
+    });
+    expect(await creationSessionRepository.getByCharacterId(character.id)).toBeUndefined();
+
+    await expect(store.initializeCurrentWealth(character.id, 0, 0))
+      .rejects.toThrow("财富已经存在");
+    expect((await characterRepository.getById(character.id))?.data.wealth).toEqual(
+      initialized.data.wealth,
+    );
+
+    setActivePinia(createPinia());
+    expect((await useCharacterStore().loadById(character.id))?.data.wealth)
+      .toEqual(initialized.data.wealth);
+  });
+
+  it("长期 wealth 初始化验证两个 minor-unit 输入且不修改既有 session/provenance", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    await creationSessionRepository.create({
+      version: 1,
+      characterId: character.id,
+      settingId: character.settingId,
+      currentStep: "possessions",
+      wealthInitialization: { eraId: "classic-1920s", creditRating: 40 },
+    });
+    const beforeSession = await creationSessionRepository.getByCharacterId(character.id);
+    const store = useCharacterStore();
+
+    await expect(store.initializeCurrentWealth(character.id, -1, 0))
+      .rejects.toThrow("当前现金");
+    await expect(store.initializeCurrentWealth(character.id, 0, 1.5))
+      .rejects.toThrow("当前资产总额");
+    expect((await characterRepository.getById(character.id))?.data.wealth).toBeUndefined();
+
+    await store.initializeCurrentWealth(character.id, 1_000, 2_000);
+    expect(await creationSessionRepository.getByCharacterId(character.id)).toEqual(beforeSession);
+  });
+
+  it("non-Standard 缺失 wealth 拒绝套用 Standard 长期金额初始化", async () => {
+    const character = makeLegacyCharacter({ settingId: "gaslight" });
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+
+    await expect(store.initializeCurrentWealth(character.id, 100, 200))
+      .rejects.toThrow("当前 Setting 尚未实现长期财富金额编辑规则");
+    expect((await characterRepository.getById(character.id))?.data.wealth).toBeUndefined();
+  });
+
   it("cash/assets 与 asset CRUD 刷新持久化，编辑保持 Store-owned UUID", async () => {
     const character = makeLegacyCharacter({
       wealth: { cashMinorUnits: 5_000, assetsMinorUnits: 100_000, assetEntries: [] },

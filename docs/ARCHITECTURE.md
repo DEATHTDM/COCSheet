@@ -73,6 +73,8 @@ Character Store → CharacterRepository → Dexie
 
 Phase 8C 将长期叙事 mutation 拆进 `FinalSheetIdentityEditor` 与 `FinalSheetBackstoryWorkspace`：组件只调用既有 Character Store identity/backstory actions，再经 CharacterRepository 持久化，不接触 CreationSession、Repository 或 Dexie。身份编辑只覆盖 name、sex、residence 与 birthplace，年龄、时代、Setting、职业、属性和 Luck 继续只读。背景 workspace 使用独立 presentation metadata 稳定呈现十个闭合类别；新增、编辑、按 ID 删除与 Key Connection 设置／清除均复用 Store-owned UUID 和既有 domain eligibility。创建期 3～6 条与必须 Key Connection 的 validator 不进入 Final Sheet mutation；四个游戏期类别只保存长期叙事文本，不触发 SAN、疯狂、伤势或其他自动规则。
 
+Phase 8D 将长期 inventory mutation 拆进 `FinalSheetWealthWorkspace`、`FinalSheetPossessionsWorkspace` 与 `FinalSheetWeaponWorkspace`。三者只调用 Character Store，再经 `CharacterRepository → Dexie` 更新现有 `Character.wealth`、`Character.possessions` 与 `Character.weapons`，不维护 Final Sheet draft，也不经过 CreationStore 或 CreationWorkflowRepository。Standard 缺失 wealth 时，用户可显式提供 current cash/assets minor units，由 Character Store 仅在 wealth 不存在时创建 `{ cashMinorUnits, assetsMinorUnits, assetEntries: [] }`；该 action 不读取时代/CR 初始表、不创建或修改 CreationSession，也不写 creation provenance。已有 Standard wealth 可编辑 current totals 与 asset entries；non-Standard 缺失 wealth 不创建，已有 legacy wealth 只以 raw minor-unit 形式安全读取。普通物品与 same-Setting 武器实例 CRUD 继续使用 Store-owned UUID；武器 availability/reference price 只作展示，catalog 不回退 Standard，orphan instance 仍可编辑备注和删除。三类 inventory mutation 互不联动，也不调整 cash/assets totals。
+
 最终人物卡技能区通过独立纯 presentation boundary 合并人物自身 Setting 的 SkillRegistry 与稀疏 `Character.skills`。默认未持久化 baseline 只包含 `availability.sheet === "standard"` 且无需专业化的普通技能。由于 `PredefinedSkillSpecialization` 没有 sheet-level availability，required-specialization definition 不默认展开；预定义专业化只在独立浏览开关开启时形成只读 candidate，uncommon parent 还同时受非常规开关约束。custom-only definition 不生成 synthetic UUID。Persisted uncommon、predefined、时代不兼容、custom 与 orphan refs 始终合并回视图；orphan 使用 stored current/Half/Fifth/成长标记的只读 fallback。缺少 Characteristics 时可以省略无法可靠解析的 catalog baseline/candidate，但 persisted rows 继续显示。搜索、两个目录浏览开关和页面加载均不写入；current、成长标记及 custom specialization mutation 只调用 Character Store，首次 mutation 才实例化对应 CharacterSkill。任何 Setting 都不回退 Standard。
 
 武器使用人物自身 Setting 的 WeaponRegistry 与现有 orphan-safe presentation，不回退 Standard。Standard derived values 与 wealth presentation 只在当前 Character 信息足以可靠派生时显示，Half/Fifth、Maximum HP、Initial MP、Maximum SAN、MOV、Damage Bonus、Build 与 spending level 继续不持久化。
@@ -109,7 +111,7 @@ Phase 7A 只为 Character version 1 新增 optional `wealth`，为 CreationSessi
 
 Phase 7B 只为 Character version 1 新增 optional `possessions` 自由文本数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段时正常读取且不补写。
 
-Phase 7C-2B 只为 Character version 1 新增 optional `weapons` 实例数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段以及 definition 已不在当前 Registry 的 orphan instance 都正常读取且不补写。Phase 8C 只增加复用既有 Character 字段与 Store actions 的 Final Sheet mutation UI；不增加 schema、记录字段、表、索引、migration 或 version。
+Phase 7C-2B 只为 Character version 1 新增 optional `weapons` 实例数组。CharacterRecord、CreationSessionRecord、Dexie table/index 与 IndexedDB version 继续保持 1；旧 Character 缺少该字段以及 definition 已不在当前 Registry 的 orphan instance 都正常读取且不补写。Phase 8C 与 8D 只增加复用既有 Character 字段与 Store actions 的 Final Sheet mutation UI；不增加 schema、记录字段、表、索引、migration 或 version。
 
 可持久化状态通过结构校验后，完成属性前还会执行领域语义校验：Preset 必须数学可完成，EDU 成长历史必须逐项连续且与骰值一致，rolled Luck 必须符合当前年龄要求的 3D6×5 次数与取高结果。
 

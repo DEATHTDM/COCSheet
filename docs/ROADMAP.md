@@ -307,6 +307,17 @@ Status: Completed
 - no insanity, SAN loss, injury, phobia/mania, tome/spell/artifact, encounter, or other narrative automation
 - unchanged Character, CreationSession, Record, and Dexie version 1; no migration or duplicate narrative draft
 
+### Phase 8D — Final Sheet Inventory Workspace
+
+Status: Completed
+
+- explicit long-term Standard Current Cash/Assets editing and legacy/no-session wealth-state creation from user-entered amounts only, without creation provenance or CR/era defaults
+- stable-ID asset CRUD with optional estimates independent from Current Assets total, plus ordinary possession CRUD independent from wealth and weapons
+- compact same-Setting weapon catalog search/filter, duplicate add, instance notes/remove, and orphan-safe handling with no Standard fallback
+- availability and reference price remain presentation-only; available, rare, unavailable, and missing-era definitions may all be added without purchasing or Cash deduction
+- no purchasing, automatic cash deduction, ordinary goods catalog, ammunition, or combat automation
+- unchanged Character, CreationSession, Record, and Dexie version 1; no migration or Final Sheet inventory draft
+
 ## Later
 
 - guide overlay

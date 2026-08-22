@@ -5,31 +5,20 @@ import { useRoute } from "vue-router";
 import { useCharacterStore } from "../app/stores/characterStore";
 import {
   deriveFinalSheetStandardValues,
-  deriveFinalSheetStandardWealth,
   getCharacterCreationStatus,
   getFinalSheetCthulhuMythos,
   getFinalSheetMaximumSanity,
 } from "../character-sheet/presentation/finalCharacterSheetPresentation";
 import FinalSheetBackstoryWorkspace from "../components/FinalSheetBackstoryWorkspace.vue";
 import FinalSheetIdentityEditor from "../components/FinalSheetIdentityEditor.vue";
+import FinalSheetPossessionsWorkspace from "../components/FinalSheetPossessionsWorkspace.vue";
 import FinalSheetSkillWorkspace from "../components/FinalSheetSkillWorkspace.vue";
+import FinalSheetWeaponWorkspace from "../components/FinalSheetWeaponWorkspace.vue";
+import FinalSheetWealthWorkspace from "../components/FinalSheetWealthWorkspace.vue";
 import { getFifthValue, getHalfValue } from "../coc7/rules/attributes";
 import { formatDamageBonus } from "../coc7/rules/derived";
 import { characteristicIds } from "../coc7/types/attribute";
 import { getSettingPackOrThrow } from "../content/registry";
-import { getSkillRegistry } from "../content/skillRegistry";
-import { getWeaponRegistry } from "../content/weaponRegistry";
-import {
-  formatWeaponReferencePrice,
-  presentCharacterWeapon,
-  weaponAvailabilityLabels,
-  weaponCategoryLabels,
-} from "../content/weaponPresentation";
-import {
-  formatStandardMoney,
-  standardLifestyleLabels,
-} from "../creation/presentation/wealthPresentation";
-import { getFinalCreditRating } from "../creation/rules/creationWealth";
 import { useCreationStore } from "../creation/stores/creationStore";
 
 type ResourceId = "hp" | "mp" | "san";
@@ -66,20 +55,6 @@ const maximumSanity = computed(() => character.value
 const sanityNeedsReconciliation = computed(() => {
   const currentSan = character.value?.resources?.san.current;
   return currentSan !== undefined && currentSan > maximumSanity.value;
-});
-const creditRating = computed(() => character.value
-  ? getFinalCreditRating(character.value)
-  : undefined);
-const wealthRule = computed(() => character.value
-  ? deriveFinalSheetStandardWealth(character.value)
-  : undefined);
-const weapons = computed(() => {
-  if (!character.value) return [];
-  const skillRegistry = getSkillRegistry(character.value.settingId);
-  const weaponRegistry = getWeaponRegistry(character.value.settingId);
-  return (character.value.weapons ?? []).map((instance) =>
-    presentCharacterWeapon(instance, weaponRegistry, skillRegistry, character.value?.eraId),
-  );
 });
 
 function synchronizeResourceDrafts(): void {
@@ -255,65 +230,9 @@ async function reconcileSanity(): Promise<void> {
 
       <section class="sheet-secondary-grid">
         <FinalSheetBackstoryWorkspace class="sheet-backstory-workspace" :character="character" />
-
-        <section class="panel">
-          <p class="eyebrow">Wealth</p>
-          <h2>财富与资产</h2>
-          <dl class="sheet-fact-grid">
-            <div><dt>Credit Rating</dt><dd>{{ creditRating ?? '—' }}</dd></div>
-            <div><dt>Lifestyle</dt><dd>{{ wealthRule ? standardLifestyleLabels[wealthRule.lifestyle] : '—' }}</dd></div>
-            <div><dt>Current Cash</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.cashMinorUnits) : '—' }}</dd></div>
-            <div><dt>Current Assets</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.assetsMinorUnits) : '—' }}</dd></div>
-            <div><dt>Spending Level</dt><dd>{{ wealthRule ? formatStandardMoney(wealthRule.spendingLevelMinorUnits) : '—' }}</dd></div>
-          </dl>
-          <ul v-if="character.wealth?.assetEntries.length" class="sheet-entry-list">
-            <li v-for="entry in character.wealth.assetEntries" :key="entry.id">
-              <strong>{{ entry.description }}</strong>
-              <span>{{ entry.valueMinorUnits === undefined ? '未精确估价' : formatStandardMoney(entry.valueMinorUnits) }}</span>
-            </li>
-          </ul>
-          <p v-else class="empty-state">尚无资产构成说明。</p>
-        </section>
-
-        <section class="panel">
-          <p class="eyebrow">Possessions</p>
-          <h2>随身物品</h2>
-          <ul v-if="character.possessions?.length" class="sheet-entry-list">
-            <li v-for="entry in character.possessions" :key="entry.id">
-              <strong>{{ entry.name }}</strong><span v-if="entry.notes">{{ entry.notes }}</span>
-            </li>
-          </ul>
-          <p v-else class="empty-state">尚未记录普通随身物品。</p>
-        </section>
-
-        <section class="panel sheet-weapons-section">
-          <p class="eyebrow">Weapons</p>
-          <h2>武器</h2>
-          <div v-if="weapons.length" class="weapon-owned-list">
-            <article v-for="item in weapons" :key="item.instance.id" class="weapon-card owned" :class="{ unavailable: item.eraAvailability === 'unavailable', orphaned: item.orphaned }">
-              <header>
-                <h3>{{ item.name }}</h3>
-                <div v-if="item.definition" class="weapon-badges">
-                  <span class="occupation-badge">{{ weaponCategoryLabels[item.definition.category] }}</span>
-                  <span v-if="item.eraAvailability" class="occupation-badge" :class="{ approval: item.eraAvailability === 'rare', banned: item.eraAvailability === 'unavailable' }">{{ weaponAvailabilityLabels[item.eraAvailability] }}</span>
-                  <span v-else class="occupation-badge">时代未指定</span>
-                </div>
-              </header>
-              <p v-if="item.orphaned" class="warning-message">当前 Setting 的武器目录中找不到 definition：{{ item.instance.definitionId }}。</p>
-              <dl v-else-if="item.definition" class="weapon-mechanics-grid">
-                <div><dt>技能</dt><dd>{{ item.skillLabel }}</dd></div>
-                <div><dt>伤害</dt><dd>{{ item.definition.damage }}</dd></div>
-                <div><dt>射程</dt><dd>{{ item.definition.baseRange }}</dd></div>
-                <div><dt>每轮攻击</dt><dd>{{ item.definition.attacksPerRound }}</dd></div>
-                <div><dt>弹容量</dt><dd>{{ item.definition.capacity ?? '—' }}</dd></div>
-                <div><dt>故障值</dt><dd>{{ item.definition.malfunction ?? '—' }}</dd></div>
-                <div><dt>参考价格</dt><dd>{{ formatWeaponReferencePrice(item.definition, character.eraId) }}</dd></div>
-              </dl>
-              <p v-if="item.instance.notes" class="weapon-instance-notes"><strong>备注：</strong>{{ item.instance.notes }}</p>
-            </article>
-          </div>
-          <p v-else class="empty-state">尚未持有武器；当前 Setting 不会回退 Standard 武器目录。</p>
-        </section>
+        <FinalSheetWealthWorkspace :character="character" />
+        <FinalSheetPossessionsWorkspace :character="character" />
+        <FinalSheetWeaponWorkspace :character="character" />
       </section>
     </template>
   </section>

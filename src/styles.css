@@ -1308,6 +1308,119 @@ textarea:disabled {
   grid-column: 1 / -1;
 }
 
+.final-inventory-workspace {
+  min-width: 0;
+}
+
+.final-inventory-workspace h2,
+.final-inventory-workspace h3,
+.final-inventory-workspace p {
+  overflow-wrap: anywhere;
+}
+
+.final-inventory-workspace .section-heading h2,
+.final-inventory-workspace .section-heading p,
+.final-inventory-subsection header p,
+.final-weapon-catalog-body > p {
+  margin-bottom: 0;
+}
+
+.final-wealth-rules,
+.final-current-wealth-editors,
+.final-inventory-form,
+.final-inventory-subsection,
+.final-weapon-catalog {
+  margin-top: 1rem;
+}
+
+.final-inventory-form,
+.final-inventory-subsection,
+.final-money-editor,
+.final-weapon-catalog-body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.final-money-editor {
+  align-content: start;
+  padding: 0.85rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.final-money-editor .button,
+.final-inventory-form > .button,
+.final-inventory-subsection > .button {
+  justify-self: start;
+}
+
+.final-inventory-entry-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.final-inventory-entry-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.final-inventory-entry-list.readonly > li {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.final-inventory-entry-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.final-inventory-entry-copy span {
+  color: #695f52;
+}
+
+.final-inventory-actions {
+  align-items: center;
+  align-self: start;
+  flex-wrap: wrap;
+}
+
+.final-inventory-entry-list .wealth-edit-grid,
+.final-inventory-entry-list .final-inventory-actions {
+  grid-column: 1 / -1;
+}
+
+.final-weapon-catalog {
+  min-width: 0;
+  border: 1px solid #cfc4b2;
+  border-radius: 4px;
+  background: #fffdf8;
+}
+
+.final-weapon-catalog > summary {
+  padding: 0.9rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.final-weapon-catalog[open] > summary {
+  border-bottom: 1px solid #ded6c7;
+}
+
+.final-weapon-catalog-body {
+  padding: 0.9rem;
+}
+
 .final-narrative-heading h2,
 .final-backstory-region h3,
 .final-key-connection p,
@@ -1902,6 +2015,17 @@ textarea:disabled {
   .final-key-connection {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .final-inventory-entry-list > li {
+    grid-template-columns: 1fr;
+  }
+
+  .final-inventory-actions,
+  .final-money-editor .button,
+  .final-inventory-form > .button,
+  .final-inventory-subsection > .button {
+    width: 100%;
   }
 
   .resource-grid {

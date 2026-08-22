@@ -10,6 +10,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import type { Character } from "../coc7/types/character";
 import { db } from "../db/database";
 import { characterRepository } from "../db/repositories/characterRepository";
+import { creationSessionRepository } from "../db/repositories/creationSessionRepository";
 import FinalCharacterSheetPage from "./FinalCharacterSheetPage.vue";
 
 const character: Character = {
@@ -39,6 +40,117 @@ afterEach(async () => {
 });
 
 describe("FinalCharacterSheetPage rendered integrations", () => {
+  it("缺失 wealth/possessions/weapons 的页面加载零写入并安全显示长期编辑入口", async () => {
+    const legacy: Character = {
+      version: 1,
+      id: "8b000000-0000-4000-8000-000000000008",
+      name: "Legacy Inventory",
+      settingId: "standard",
+    };
+    await characterRepository.create(legacy);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        { path: "/characters/:id", component: { template: "<div />" } },
+        { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+      ],
+    });
+    await router.push(`/characters/${legacy.id}/sheet`);
+    await router.isReady();
+    const updateSpy = vi.spyOn(characterRepository, "update");
+
+    const wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
+    await vi.waitFor(() => expect(wrapper.text()).toContain("建立当前财富记录"));
+    expect(wrapper.text()).toContain("打开页面不会自动生成空数组");
+    expect(wrapper.text()).toContain("缺失字段不会在打开页面时自动生成");
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect((await characterRepository.getById(legacy.id))?.data).toEqual(legacy);
+  });
+
+  it("Final Sheet inventory mutation 只更新 Character，不改变 session step/provenance 或隐式联动 totals", async () => {
+    const inventoryCharacter: Character = {
+      ...character,
+      id: "8c000000-0000-4000-8000-000000000008",
+      eraId: "classic-1920s",
+      wealth: { cashMinorUnits: 5_000, assetsMinorUnits: 100_000, assetEntries: [] },
+      skills: [{
+        ref: { type: "standard", definitionId: "credit-rating" },
+        currentValue: 40,
+        improvementChecked: false,
+      }],
+    };
+    await characterRepository.create(inventoryCharacter);
+    await creationSessionRepository.create({
+      version: 1,
+      characterId: inventoryCharacter.id,
+      settingId: "standard",
+      currentStep: "review",
+      wealthInitialization: { eraId: "classic-1920s", creditRating: 40 },
+    });
+    const sessionBefore = await creationSessionRepository.getByCharacterId(inventoryCharacter.id);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        { path: "/characters/:id", component: { template: "<div />" } },
+        { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+      ],
+    });
+    await router.push(`/characters/${inventoryCharacter.id}/sheet`);
+    await router.isReady();
+    const wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
+    await vi.waitFor(() => expect(wrapper.find('input[name="current-cash"]').exists()).toBe(true));
+
+    await wrapper.get('input[name="current-cash"]').setValue("40.00");
+    await wrapper.findAll(".final-money-editor")[0]!.trigger("submit");
+    await flushPromises();
+    await vi.waitFor(async () => {
+      expect((await characterRepository.getById(inventoryCharacter.id))?.data.wealth?.cashMinorUnits)
+        .toBe(4_000);
+    });
+
+    await wrapper.get('input[placeholder="例如：波士顿公寓"]').setValue("公寓");
+    const addAsset = wrapper.findAll("button").find((button) => button.text() === "添加资产");
+    if (!addAsset) throw new Error("找不到资产添加按钮");
+    await addAsset.trigger("click");
+    await flushPromises();
+    await vi.waitFor(async () => {
+      expect((await characterRepository.getById(inventoryCharacter.id))?.data.wealth?.assetEntries)
+        .toHaveLength(1);
+    });
+
+    await wrapper.get('input[name="possession-name"]').setValue("绳索");
+    await wrapper.get(".final-possessions-workspace form").trigger("submit");
+    await flushPromises();
+    await vi.waitFor(async () => {
+      expect((await characterRepository.getById(inventoryCharacter.id))?.data.possessions)
+        .toHaveLength(1);
+    });
+
+    const bow = wrapper.get('[data-weapon-definition-id="bow"]');
+    await bow.get("button").trigger("click");
+    await flushPromises();
+    await vi.waitFor(async () => {
+      expect((await characterRepository.getById(inventoryCharacter.id))?.data.weapons)
+        .toHaveLength(1);
+    });
+
+    const persisted = await characterRepository.getById(inventoryCharacter.id);
+    expect(persisted?.data.wealth).toMatchObject({
+      cashMinorUnits: 4_000,
+      assetsMinorUnits: 100_000,
+    });
+    expect(persisted?.data.wealth?.assetEntries).toHaveLength(1);
+    expect(persisted?.data.possessions?.[0]?.name).toBe("绳索");
+    expect(persisted?.data.weapons?.[0]?.definitionId).toBe("bow");
+    expect(await creationSessionRepository.getByCharacterId(inventoryCharacter.id)).toEqual(sessionBefore);
+  });
+
   it("确认 Mythos 提高后，Store 的原子 SAN clamp 立即同步回资源输入", async () => {
     await characterRepository.create(character);
     const pinia = createPinia();
