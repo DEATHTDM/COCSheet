@@ -1304,6 +1304,140 @@ textarea:disabled {
   grid-column: 1 / -1;
 }
 
+.sheet-backstory-workspace {
+  grid-column: 1 / -1;
+}
+
+.final-narrative-heading h2,
+.final-backstory-region h3,
+.final-key-connection p,
+.final-backstory-entry-text p,
+.final-narrative-message {
+  margin-bottom: 0;
+}
+
+.final-identity-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.final-identity-actions {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+}
+
+.final-identity-summary,
+.final-identity-form,
+.final-narrative-message {
+  margin-top: 1rem;
+}
+
+.final-key-connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #b99a66;
+  border-left: 4px solid #9c641c;
+  border-radius: 4px;
+  background: #fff6df;
+}
+
+.final-key-connection.empty {
+  border-color: #ded6c7;
+  background: #faf7f0;
+}
+
+.final-key-connection p {
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.final-backstory-region {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.final-backstory-region > header p {
+  margin-bottom: 0;
+}
+
+.final-backstory-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.final-backstory-category {
+  min-width: 0;
+  border: 1px solid #ded6c7;
+  border-radius: 4px;
+  background: #faf7f0;
+}
+
+.final-backstory-category > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.final-backstory-category[open] > summary {
+  border-bottom: 1px solid #ded6c7;
+}
+
+.final-backstory-description,
+.compact-empty-state,
+.final-backstory-entry-list,
+.final-backstory-add-row {
+  margin: 0.75rem;
+}
+
+.final-backstory-entry-list {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  list-style: none;
+}
+
+.final-backstory-entry {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid #e3dccf;
+  border-radius: 4px;
+  background: #fffdf8;
+}
+
+.final-backstory-entry-text {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.compact-empty-state {
+  padding: 0.75rem;
+  border: 1px dashed #9f9583;
+  text-align: center;
+}
+
+.final-backstory-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.65rem;
+}
+
 .luck-value {
   display: grid;
   min-width: 76px;
@@ -1753,6 +1887,21 @@ textarea:disabled {
 
   .sheet-weapons-section {
     grid-column: auto;
+  }
+
+  .sheet-backstory-workspace {
+    grid-column: auto;
+  }
+
+  .final-identity-form,
+  .final-backstory-category-grid,
+  .final-backstory-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .final-key-connection {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .resource-grid {

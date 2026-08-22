@@ -9,8 +9,9 @@ import {
   getCharacterCreationStatus,
   getFinalSheetCthulhuMythos,
   getFinalSheetMaximumSanity,
-  presentFinalSheetBackstory,
 } from "../character-sheet/presentation/finalCharacterSheetPresentation";
+import FinalSheetBackstoryWorkspace from "../components/FinalSheetBackstoryWorkspace.vue";
+import FinalSheetIdentityEditor from "../components/FinalSheetIdentityEditor.vue";
 import FinalSheetSkillWorkspace from "../components/FinalSheetSkillWorkspace.vue";
 import { getFifthValue, getHalfValue } from "../coc7/rules/attributes";
 import { formatDamageBonus } from "../coc7/rules/derived";
@@ -24,7 +25,6 @@ import {
   weaponAvailabilityLabels,
   weaponCategoryLabels,
 } from "../content/weaponPresentation";
-import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
 import {
   formatStandardMoney,
   standardLifestyleLabels,
@@ -67,9 +67,6 @@ const sanityNeedsReconciliation = computed(() => {
   const currentSan = character.value?.resources?.san.current;
   return currentSan !== undefined && currentSan > maximumSanity.value;
 });
-const backstoryGroups = computed(() => character.value
-  ? presentFinalSheetBackstory(character.value)
-  : []);
 const creditRating = computed(() => character.value
   ? getFinalCreditRating(character.value)
   : undefined);
@@ -228,18 +225,7 @@ async function reconcileSanity(): Promise<void> {
           </aside>
         </section>
 
-        <section class="panel">
-          <p class="eyebrow">Investigator</p>
-          <h2>身份</h2>
-          <dl class="sheet-fact-grid">
-            <div><dt>年龄</dt><dd>{{ character.age ?? '—' }}</dd></div>
-            <div><dt>性别</dt><dd>{{ character.sex ?? '—' }}</dd></div>
-            <div><dt>Era</dt><dd>{{ character.eraId ? formatOccupationEraId(character.eraId) : '—' }}</dd></div>
-            <div><dt>住所</dt><dd>{{ character.residence ?? '—' }}</dd></div>
-            <div><dt>出身地</dt><dd>{{ character.birthplace ?? '—' }}</dd></div>
-            <div><dt>职业</dt><dd>{{ character.occupation?.displayNameSnapshot.zh ?? '—' }}</dd></div>
-          </dl>
-        </section>
+        <FinalSheetIdentityEditor :character="character" />
       </section>
 
       <section class="panel">
@@ -268,22 +254,7 @@ async function reconcileSanity(): Promise<void> {
       <FinalSheetSkillWorkspace :character="character" />
 
       <section class="sheet-secondary-grid">
-        <section class="panel">
-          <p class="eyebrow">Backstory</p>
-          <h2>背景故事</h2>
-          <div v-if="backstoryGroups.length" class="sheet-backstory-groups">
-            <section v-for="group in backstoryGroups" :key="group.category">
-              <h3>{{ group.label }}</h3>
-              <ul>
-                <li v-for="entry in group.entries" :key="entry.id">
-                  <strong v-if="entry.id === character.backstory?.keyConnectionEntryId" class="key-connection-mark">★ 关键连接</strong>
-                  <span>{{ entry.text }}</span>
-                </li>
-              </ul>
-            </section>
-          </div>
-          <p v-else class="empty-state">尚无背景故事。</p>
-        </section>
+        <FinalSheetBackstoryWorkspace class="sheet-backstory-workspace" :character="character" />
 
         <section class="panel">
           <p class="eyebrow">Wealth</p>

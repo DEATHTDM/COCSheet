@@ -295,6 +295,18 @@ Status: Completed
 - existing Mythos → Maximum SAN/current SAN confirmation and atomic Store update semantics
 - unchanged Character, CreationSession, Record, and Dexie version 1; no migration, catalog baseline persistence, creation-budget replay, or advancement rolls
 
+### Phase 8C — Final Sheet Narrative Workspace
+
+Status: Completed
+
+- compact long-term name, sex, residence, and birthplace editing through existing Character Store APIs; age, era, Setting, occupation, Characteristics, and Luck remain read-only
+- all-ten-category Character backstory add/edit/cancel/stable-ID delete with Store-owned UUIDs, including the four game-time narrative categories
+- explicit Key Connection display, eligible creation-category set, clear, and key-safe delete using existing domain rules
+- Final Sheet mutation is not constrained by creation 3～6 entry or required Key Connection completion validation and never mutates CreationSession
+- legacy/no-session safe reads without aggregate creation, default identity, repair validation, or read-time writeback
+- no insanity, SAN loss, injury, phobia/mania, tome/spell/artifact, encounter, or other narrative automation
+- unchanged Character, CreationSession, Record, and Dexie version 1; no migration or duplicate narrative draft
+
 ## Later
 
 - guide overlay
