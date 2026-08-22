@@ -475,6 +475,26 @@ describe("游戏中资源更新", () => {
 });
 
 describe("游戏期技能编辑", () => {
+  it("首次勾选未持久化的基础技能时只以 resolved base 实例化目标行", async () => {
+    const character = makeLegacyCharacter();
+    await characterRepository.create(character);
+    const store = useCharacterStore();
+    await store.loadById(character.id);
+
+    const updated = await store.setImprovementChecked(
+      character.id,
+      { type: "standard", definitionId: "dodge" },
+      true,
+    );
+
+    expect(updated.data.skills).toEqual([{
+      ref: { type: "standard", definitionId: "dodge" },
+      currentValue: 30,
+      improvementChecked: true,
+    }]);
+    expect((await characterRepository.getById(character.id))?.data.skills).toEqual(updated.data.skills);
+  });
+
   it("编辑普通技能、100+ 数值与成长标记后可刷新恢复，且资源不变", async () => {
     const resources = { hp: { current: 8 }, mp: { current: 7 }, san: { current: 61 } };
     const character = makeLegacyCharacter({ resources });

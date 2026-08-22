@@ -285,6 +285,16 @@ Status: Completed
 - unchanged Character, CreationSession, Record, and Dexie version 1; no migration or read-time writeback
 - no advancement, recovery, insanity, combat, ammunition, purchasing, import/export, or printing systems
 
+### Phase 8B — Final Sheet Skills Workspace
+
+Status: Completed
+
+- same-Setting SkillRegistry + sparse Character.skills resolved Final Sheet rows with no Standard fallback
+- read-only standard unspecialized catalog baselines, opt-in predefined candidates, and persisted uncommon/predefined/custom/incompatible/orphan preservation without synthetic custom identity or view-time writeback
+- compact search, orthogonal uncommon/specialization browsing, era metadata, direct current/improvement editing, and custom specialization management through existing Character Store APIs
+- existing Mythos → Maximum SAN/current SAN confirmation and atomic Store update semantics
+- unchanged Character, CreationSession, Record, and Dexie version 1; no migration, catalog baseline persistence, creation-budget replay, or advancement rolls
+
 ## Later
 
 - guide overlay
