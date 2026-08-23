@@ -88,7 +88,10 @@ async function mountExistingPage(
   await router.push(`/characters/${id}`);
   await router.isReady();
   const wrapper = mount(CharacterEditorPage, { global: { plugins: [pinia, router] } });
-  await vi.waitFor(() => expect(wrapper.find(".creation-step-focus").exists()).toBe(true));
+  await vi.waitFor(() => expect(
+    wrapper.find(".creation-step-focus").exists() ||
+    wrapper.text().includes("当前不支持继续该建卡环境"),
+  ).toBe(true));
   return { wrapper, router };
 }
 
@@ -234,16 +237,25 @@ describe("CharacterEditorPage guided creation integration", () => {
     }
   });
 
-  it("shows non-Standard-safe guidance without Standard-specific wealth instructions", async () => {
-    const { wrapper } = await mountPage(
-      makeCharacter("gaslight"),
-      makeSession("gaslight", "possessions"),
-    );
+  it("blocks an unsupported legacy workflow without writes or Standard rule components", async () => {
+    const legacyCharacterId = "a0000000-0000-4000-8000-000000000099";
+    const character = makeCharacter("gaslight", legacyCharacterId);
+    const session = makeSession("gaslight", "possessions", legacyCharacterId);
+    await characterRepository.create(character);
+    await creationSessionRepository.create(session);
+    const characterUpdate = vi.spyOn(characterRepository, "update");
+    const sessionUpdate = vi.spyOn(creationSessionRepository, "update");
+    const { wrapper } = await mountExistingPage(legacyCharacterId);
 
-    const guide = wrapper.get(".creation-guide-panel");
-    expect(guide.text()).toContain("当前建卡环境的财富与装备内容尚未实现");
-    expect(guide.text()).toContain("不会回退到 Standard 规则");
-    expect(guide.text()).not.toContain("正资产需要至少一条资产构成说明");
-    expect(wrapper.find(".possessions-step").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Cthulhu by Gaslight");
+    expect(wrapper.text()).toContain("当前不支持继续该建卡环境");
+    expect(wrapper.text()).toContain("不会用 Standard 的属性、职业、技能、财富或武器规则");
+    expect(wrapper.find(".creation-workspace").exists()).toBe(false);
+    expect(wrapper.find(".possessions-step").exists()).toBe(false);
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
+    expect(characterUpdate.mock.calls.some(([updated]) => updated.id === legacyCharacterId)).toBe(false);
+    expect(sessionUpdate.mock.calls.some(([updated]) => updated.characterId === legacyCharacterId)).toBe(false);
+    expect((await characterRepository.getById(character.id))?.data).toEqual(character);
+    expect((await creationSessionRepository.getByCharacterId(character.id))?.data).toEqual(session);
   });
 });

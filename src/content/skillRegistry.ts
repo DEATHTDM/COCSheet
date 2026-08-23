@@ -1,6 +1,6 @@
 import { skillDefinitionSchema, type PredefinedSkillSpecialization, type SkillDefinition } from "../coc7/types/skill";
 import type { SettingId } from "../coc7/types/setting";
-import { getSettingPackOrThrow } from "./registry";
+import { getSettingPack } from "./registry";
 
 export interface SkillRegistry {
   readonly definitions: readonly SkillDefinition[];
@@ -36,7 +36,7 @@ export function getSkillRegistry(settingId: SettingId): SkillRegistry {
   const cached = skillRegistries.get(settingId);
   if (cached) return cached;
 
-  const registry = createSkillRegistry(getSettingPackOrThrow(settingId).skills ?? []);
+  const registry = createSkillRegistry(getSettingPack(settingId)?.skills ?? []);
   skillRegistries.set(settingId, registry);
   return registry;
 }

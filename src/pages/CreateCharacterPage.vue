@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { useSettingStore } from "../app/stores/settingStore";
 import { useUiPreferenceStore } from "../app/stores/uiPreferenceStore";
-import type { SettingId } from "../coc7/types/setting";
-import { getSettingPackOrThrow } from "../content/registry";
+import { isSupportedSetting, type SettingId } from "../coc7/types/setting";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { useCreationStore } from "../creation/stores/creationStore";
 import {
   type AttributeGenerationMethod,
@@ -16,7 +15,6 @@ import { usePresetStore } from "../kp/presets/presetStore";
 
 const route = useRoute();
 const router = useRouter();
-const settingStore = useSettingStore();
 const uiPreferenceStore = useUiPreferenceStore();
 const creationStore = useCreationStore();
 const presetStore = usePresetStore();
@@ -26,7 +24,10 @@ type SharedPresetState =
   | { readonly status: "valid"; readonly preset: CreationPreset }
   | { readonly status: "error"; readonly message: string };
 const sharedPresetState = ref<SharedPresetState>({ status: "idle" });
+const creationError = ref("");
 let sharedPresetRequestSequence = 0;
+const sharedPresetSupported = computed(() => sharedPresetState.value.status === "valid" &&
+  isSupportedSetting(sharedPresetState.value.preset.settingId));
 const methodLabels: Readonly<Record<AttributeGenerationMethod, string>> = {
   "standard-roll": "标准掷骰",
   "low-roll-boost": "低骰补强",
@@ -74,8 +75,13 @@ onBeforeUnmount(() => {
 });
 
 async function chooseSetting(settingId: SettingId, preset?: CreationPreset): Promise<void> {
-  const characterId = await creationStore.start(settingId, preset);
-  await router.push(`/characters/${characterId}`);
+  creationError.value = "";
+  try {
+    const characterId = await creationStore.start(settingId, preset);
+    await router.push(`/characters/${characterId}`);
+  } catch (error: unknown) {
+    creationError.value = error instanceof Error ? error.message : "创建调查员失败。";
+  }
 }
 
 async function useSharedPreset(): Promise<void> {
@@ -96,7 +102,7 @@ async function removeSharedPreset(): Promise<void> {
     <div>
       <p class="eyebrow">第一步</p>
       <h1>创建调查员</h1>
-      <p>选择建卡环境；未选择 KP 预设时使用 Standard COC7 默认属性配置。</p>
+      <p>当前正式支持 Standard CoC 7E；未选择 KP 预设时使用默认属性配置。</p>
     </div>
 
     <fieldset class="panel creation-experience-selector">
@@ -142,15 +148,19 @@ async function removeSharedPreset(): Promise<void> {
       <template v-else-if="sharedPresetState.status === 'valid'">
         <dl class="shared-preset-facts">
           <div><dt>预设名称</dt><dd>{{ sharedPresetState.preset.name }}</dd></div>
-          <div><dt>建卡环境</dt><dd>{{ getSettingPackOrThrow(sharedPresetState.preset.settingId).name }}</dd></div>
+          <div><dt>建卡环境</dt><dd>{{ getHistoricalSettingLabel(sharedPresetState.preset.settingId) }}</dd></div>
           <div>
             <dt>属性生成方式</dt>
             <dd>{{ sharedPresetState.preset.attributeGeneration.allowedMethods.map((method) => methodLabels[method]).join("、") }}</dd>
           </div>
         </dl>
         <p>此预设来自分享链接，不会自动保存到你的 KP 预设库。</p>
+        <p v-if="!sharedPresetSupported" class="warning-message" role="alert">
+          该分享链接使用的建卡环境当前版本不支持，不能用于新建调查员。
+        </p>
         <div class="actions">
           <button
+            v-if="sharedPresetSupported"
             class="button primary"
             type="button"
             :disabled="creationStore.creating"
@@ -165,15 +175,15 @@ async function removeSharedPreset(): Promise<void> {
       </template>
     </section>
 
+    <p v-if="creationError" class="error-message" role="alert">{{ creationError }}</p>
+
     <div class="setting-grid">
       <button
-        v-for="setting in settingStore.settings"
-        :key="setting.id"
         class="setting-card"
         type="button"
         :disabled="creationStore.creating"
-        @click="chooseSetting(setting.id)"
-      ><strong>{{ setting.name }}</strong></button>
+        @click="chooseSetting('standard')"
+      ><strong>开始创建 Standard CoC 7E 调查员</strong></button>
     </div>
 
     <section v-if="presetStore.records.length" class="form-stack">
@@ -183,11 +193,15 @@ async function removeSharedPreset(): Promise<void> {
         :key="record.id"
         class="setting-card preset-choice"
         type="button"
-        :disabled="creationStore.creating"
+        :disabled="creationStore.creating || !isSupportedSetting(record.data.settingId)"
         @click="chooseSetting(record.data.settingId, record.data)"
       >
         <strong>{{ record.name }}</strong>
+        <small>{{ getHistoricalSettingLabel(record.data.settingId) }}</small>
         <small>{{ record.data.attributeGeneration.allowedMethods.length }} 种属性生成方式</small>
+        <small v-if="!isSupportedSetting(record.data.settingId)" class="warning-message">
+          该建卡环境当前不再支持新建
+        </small>
       </button>
     </section>
   </section>

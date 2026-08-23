@@ -32,7 +32,7 @@ Printable presentation 只做纸面分组与格式化，并复用现有 Final Sh
 
 创建引导以真实 `CreationSession.currentStep` 作为当前步骤的唯一来源，不保存独立 workflow state，也不进入 `Character`、`CreationSession`、`CreationPreset` 或其他 domain / portability schema。Guide metadata 只提供当前步骤的目标、建议操作与完成提示，不复制 completion validator，不判断是否可以继续，也不调用流程推进 mutation；真实的继续、返回与完成仍由各 step UI 和现有 workflow 负责。
 
-Guide 可以在当前建卡页面实例内收起，但 Phase 10A 不把该 UI 偏好写入 IndexedDB、Web Storage 或 Pinia persistence，刷新后重新默认展开。任何 non-Standard Guide 都只说明当前 Setting 已实际实现的内容，不回退 Standard 特有的属性、财富、职业、技能或武器规则。未来若需要更细粒度引导或持久化 UI preference，应另行设计，同时保持 domain 数据与业务 validator 的单一来源。
+Guide 可以在当前建卡页面实例内收起，但 Phase 10A 不把该 UI 偏好写入 IndexedDB、Web Storage 或 Pinia persistence，刷新后重新默认展开。当前 Guide 只服务正式支持的 Standard 创建流程；unsupported historical Setting 的 Creation Editor 在进入 Guide 或规则工作区前显示安全阻断状态。未来若需要更细粒度引导或持久化 UI preference，应另行设计，同时保持 domain 数据与业务 validator 的单一来源。
 
 ### G002 — Guided / Quick is a browser UI preference
 
@@ -102,9 +102,11 @@ legacy 或没有 CreationSession 的 Standard Character 若缺少 `wealth`，Fin
 
 ## Settings
 
-### S001 — Supported settings
+### S001 — Standard is the only currently supported Setting
 
-计划支持 Standard、Gaslight、Down Darker Trails、Dark Ages 与 Regency。
+当前 production creation 只支持 Standard CoC 7E。Character、CreationSession、CreationPreset 与三个 version-1 portability/share formats 为 backward compatibility 可以继续解析历史 Setting ID；可解析的 domain/file identity 不等于当前受支持的产品环境。
+
+新建 Character + CreationSession、创建/保存 KP Preset，以及从共享 Preset 显式开始建卡都必须经过独立的 supported Setting 边界。unsupported Setting 不得自动转换为 Standard，也不得获得 Standard 规则或目录 fallback。未来若重新增加正式 Setting，必须另行授权并有明确规则资料。
 
 ### S002 — No Pulp
 
@@ -113,10 +115,6 @@ legacy 或没有 CreationSession 的 Standard Character 若缺少 `wealth`，Fin
 ### S003 — No Japanese expansion
 
 当前不做日本职业或日系扩展。
-
-### S004 — Settings are primary environments
-
-五个历史 Setting 是独立的主要建卡环境，不把 UX 设计成让普通玩家同时勾选五个时代包。
 
 ### S005 — Character owns persistent era context
 
@@ -248,7 +246,7 @@ Credit Rating 继续是基础值 0 的普通 SkillDefinition；职业点与兴�
 
 ### K001 — Preset scope
 
-KP 可以创建建卡规则预设，目标包括 Setting、允许的属性生成方式、Skill caps、职业限制、年龄限制与自定义职业策略。
+KP 可以创建 Standard 建卡规则预设，目标包括允许的属性生成方式、Skill caps、职业限制、年龄限制与自定义职业策略。`CreationPreset.settingId` 继续保留为 version-1 identity 与历史兼容字段；当前新建/保存边界固定为 Standard，不提供 Setting 选择器。
 
 ### K002 — Serverless sharing
 
@@ -266,7 +264,7 @@ Preset 计划通过纯前端 URL / Hash 分享，不为分享功能引入服务�
 
 KP Preset 分享使用纯前端、版本化的压缩 payload：完整且经 `creationPresetSchema` 规范化的 `CreationPreset` 进入独立 strict envelope，再以 gzip 与无 padding 的 base64url 编码为 token，并放在 Hash Router 的 `/create` route query。分享数据不包含 KPPresetRecord、timestamps、Guided / Quick preference、Character、CreationSession 或 portability metadata；服务器不参与生成、传输或解析。
 
-打开链接只执行有 token／解压大小上限的严格解析与 transient preview，不创建或修改 Character、CreationSession、global KPPreset、IndexedDB 或 browser preference。只有接收者明确点击创建时，URL 中的共享 Preset 才原样传给 `creationStore.start` 并进入新 `CreationSession.presetSnapshot`；它不自动导入 global KPPreset，同 ID 的接收方本地 Preset 即使内容不同也不冲突、不覆盖、不替代共享内容。
+打开链接只执行有 token／解压大小上限的严格解析与 transient preview，不创建或修改 Character、CreationSession、global KPPreset、IndexedDB 或 browser preference。只有接收者明确点击创建且 Preset Setting 当前受支持时，URL 中的共享 Preset 才原样传给 `creationStore.start` 并进入新 `CreationSession.presetSnapshot`；unsupported historical Setting 仍可被 v1 decoder 安全识别，但页面只显示不可创建状态并允许移除 query。共享 Preset 不自动导入 global KPPreset，同 ID 的接收方本地 Preset 即使内容不同也不冲突、不覆盖、不替代共享内容。
 
 当前不支持把共享 Preset 保存到本地、overwrite、import-as-copy、QR、short link、hosted share ID、analytics、加密或过期语义；这些能力若需要必须另行设计。
 

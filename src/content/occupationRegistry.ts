@@ -10,7 +10,7 @@ import type { SettingId } from "../coc7/types/setting";
 import type { SettingPack } from "../coc7/types/settingPack";
 import { stableMachineIdSchema, type SkillRef } from "../coc7/types/skill";
 import { getSkillBaseValueRule } from "../coc7/rules/skills";
-import { getSettingPackOrThrow } from "./registry";
+import { getSettingPack } from "./registry";
 import { getSkillRegistry, type SkillRegistry } from "./skillRegistry";
 
 export interface OccupationFilters {
@@ -308,12 +308,20 @@ export function createOccupationRegistry(
 }
 
 const occupationRegistries = new Map<SettingId, OccupationRegistry>();
+const emptyOccupationRegistry: OccupationRegistry = {
+  definitions: [],
+  get: () => undefined,
+  list: () => [],
+  search: () => [],
+};
 
 export function getOccupationRegistry(settingId: SettingId): OccupationRegistry {
   const cached = occupationRegistries.get(settingId);
   if (cached) return cached;
-  const pack = getSettingPackOrThrow(settingId);
-  const registry = createOccupationRegistry(pack, getSkillRegistry(settingId));
+  const pack = getSettingPack(settingId);
+  const registry = pack
+    ? createOccupationRegistry(pack, getSkillRegistry(settingId))
+    : emptyOccupationRegistry;
   occupationRegistries.set(settingId, registry);
   return registry;
 }

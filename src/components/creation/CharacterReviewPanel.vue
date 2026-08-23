@@ -4,7 +4,7 @@ import { computed, ref } from "vue";
 import { characteristicIds } from "../../coc7/types/attribute";
 import { backstoryCategoryIds, type Character } from "../../coc7/types/character";
 import { getSkillRefKey } from "../../coc7/rules/skills";
-import { getSettingPackOrThrow } from "../../content/registry";
+import { getHistoricalSettingLabel } from "../../content/settingCompatibility";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import { getWeaponRegistry } from "../../content/weaponRegistry";
 import {
@@ -33,7 +33,7 @@ import {
 const props = defineProps<{ readonly character: Character }>();
 const creationStore = useCreationStore();
 const actionError = ref("");
-const settingName = computed(() => getSettingPackOrThrow(props.character.settingId).name);
+const settingName = computed(() => getHistoricalSettingLabel(props.character.settingId));
 const skillRegistry = computed(() => getSkillRegistry(props.character.settingId));
 const weaponRegistry = computed(() => getWeaponRegistry(props.character.settingId));
 const weapons = computed(() => (props.character.weapons ?? []).map((instance) =>

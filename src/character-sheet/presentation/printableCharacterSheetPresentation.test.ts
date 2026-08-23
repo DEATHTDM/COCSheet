@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { Character } from "../../coc7/types/character";
-import { getSettingPackOrThrow } from "../../content/registry";
+import { getSettingPack } from "../../content/registry";
+import { getHistoricalSettingLabel } from "../../content/settingCompatibility";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import { getWeaponRegistry } from "../../content/weaponRegistry";
 import { presentPrintableCharacterSheet } from "./printableCharacterSheetPresentation";
@@ -102,9 +103,13 @@ const fullCharacter: Character = {
 };
 
 function present(character: Character) {
+  const eras = getSettingPack(character.settingId)?.eras;
   return presentPrintableCharacterSheet(
     character,
-    getSettingPackOrThrow(character.settingId),
+    {
+      name: getHistoricalSettingLabel(character.settingId),
+      ...(eras ? { eras } : {}),
+    },
     getSkillRegistry(character.settingId),
     getWeaponRegistry(character.settingId),
   );
@@ -118,7 +123,7 @@ describe("printable character sheet presentation", () => {
     expect(result.identity).toEqual({
       name: "林默",
       occupation: "私人侦探（历史快照）",
-      setting: "Standard COC7",
+      setting: "Standard CoC 7E",
       era: "古典（1920年代）",
       age: "31",
       sex: "女性",

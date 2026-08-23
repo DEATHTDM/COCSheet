@@ -71,7 +71,7 @@ describe("weapon registry", () => {
     });
   });
 
-  it("只从各 SettingPack 自身 weapons 构建并缓存", () => {
+  it("只从 supported SettingPack 自身 weapons 构建，历史 Setting 保持空 Registry", () => {
     for (const pack of getAvailableSettings()) {
       const registry = getWeaponRegistry(pack.id);
       expect(registry.definitions.map((definition) => definition.id)).toEqual(

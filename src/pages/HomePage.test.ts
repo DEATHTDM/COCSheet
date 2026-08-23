@@ -85,6 +85,37 @@ async function selectFile(
 }
 
 describe("HomePage portable Character integration", () => {
+  it("keeps a historical non-Standard Character identifiable, exportable, and deletable without a continue action", async () => {
+    const historical: Character = {
+      version: 1,
+      id: "b6000000-0000-4000-8000-00000000000b",
+      name: "Gaslight Legacy",
+      settingId: "gaslight",
+    };
+    await creationWorkflowRepository.createCharacterWithSession(
+      historical,
+      makeSession(historical, "occupation"),
+    );
+    const { wrapper } = await mountHome();
+    const card = wrapper.get(".record-card");
+
+    expect(card.text()).toContain("Cthulhu by Gaslight");
+    expect(card.text()).toContain("历史建卡环境（当前不支持继续建卡）");
+    expect(card.find(`a[href="/characters/${historical.id}"]`).exists()).toBe(false);
+    expect(card.find(`a[href="/characters/${historical.id}/sheet"]`).exists()).toBe(true);
+
+    const exportButton = card.findAll("button").find((button) => button.text() === "导出");
+    await exportButton?.trigger("click");
+    await vi.waitFor(() => expect(downloadJsonFile).toHaveBeenCalledOnce());
+    expect(JSON.parse(vi.mocked(downloadJsonFile).mock.calls[0]?.[0].text ?? "{}")
+      .character.settingId).toBe("gaslight");
+
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await card.get("button.danger").trigger("click");
+    await vi.waitFor(() => expect(wrapper.find(".record-card").exists()).toBe(false));
+    expect(await characterRepository.getById(historical.id)).toBeUndefined();
+  });
+
   it("导入 complete Session 后立即刷新人物列表与建卡完成 badge", async () => {
     const importedCharacter = makeCharacter(
       "b0000000-0000-4000-8000-00000000000b",

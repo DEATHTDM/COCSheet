@@ -3,7 +3,7 @@ import {
   weaponDefinitionSchema,
   type WeaponDefinition,
 } from "../coc7/types/weapon";
-import { getSettingPackOrThrow } from "./registry";
+import { getSettingPack } from "./registry";
 import { getSkillRegistry, type SkillRegistry } from "./skillRegistry";
 
 export interface WeaponRegistry {
@@ -62,8 +62,8 @@ export function getWeaponRegistry(settingId: SettingId): WeaponRegistry {
   const cached = weaponRegistries.get(settingId);
   if (cached) return cached;
 
-  const pack = getSettingPackOrThrow(settingId);
-  const registry = createWeaponRegistry(pack.weapons ?? [], getSkillRegistry(settingId));
+  const pack = getSettingPack(settingId);
+  const registry = createWeaponRegistry(pack?.weapons ?? [], getSkillRegistry(settingId));
   weaponRegistries.set(settingId, registry);
   return registry;
 }

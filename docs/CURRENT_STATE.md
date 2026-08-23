@@ -1,23 +1,29 @@
 # Current State
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ## Current phase
 
-Phase 13 — Production Delivery (Completed)
+Phase 14 — Standard-Only Product Scope Cleanup (Completed)
 
-Phase 13A — CI & GitHub Pages Pipeline: Completed
-
-Phase 13B — Production Verification & Phase Closure: Completed
-
-The production `main` push workflow completed validation, built the GitHub Pages artifact from `dist/`, and deployed through the `github-pages` environment. The live endpoint at <https://deathtdm.github.io/COCSheet/> was verified under the nested project path with the Hash Router home, `/create`, and missing-Character routes working without server-side rewrites.
+当前 production creation 与 KP Preset workflow 只支持 Standard CoC 7E；历史 non-Standard Setting identity 继续由 version-1 domain/file schemas 解析并安全展示、备份、导入和删除，但不再作为 available SettingPack 或可继续建卡的产品环境。
 
 ## Git baseline
 
-Phase 13B production closure documentation was created from the validated production `main` baseline at `e9f0f65e2c7dc35d9f42fc9ec3cc68071a2efa4f`. This documentation branch is not yet merged, so no future closure-PR squash SHA is recorded.
+Phase 14 was created from exact `main@fdb495ae49e6fcac69277df857943e913b9c6607`, the merged Phase 13B closure baseline.
 
 ## Implemented
 
+- independent supported Setting boundary with `supportedSettingIds = ["standard"]` and `isSupportedSetting(...)`, while `settingIdSchema` deliberately retains all five historical IDs as a backward-compatible domain/file identity enum
+- production Setting Registry and `getAvailableSettings()` containing only `standardSettingPack`; four empty non-Standard placeholder packs removed, with a separate display-only historical label map that does not expose content or imply support
+- same-Setting Skill / Occupation / Weapon registries returning empty content for historical unsupported IDs, preserving orphan presentation and proving no Standard catalog or rules fallback
+- one explicit Standard CoC 7E Create entry with Guided / Quick unchanged, supported local KP Presets available, and historical local Presets visibly disabled for creation
+- Creation Store `start` boundary rejecting programmatic unsupported Setting creation before Character or CreationSession writes, without normalization or fallback
+- new KP Presets fixed to Standard, Standard editor identity shown read-only instead of a single-option select, Store save boundary rejecting unsupported IDs, and historical global Presets remaining identifiable, read-only, exportable through Library backup, and deletable
+- valid historical non-Standard `cocsheet-kp-preset-share v1` tokens still decoding to a transient preview, with an explicit unsupported message, removable `kp` query, no create action, and zero Character / Session / global Preset writes
+- historical non-Standard Character and CreationSession schemas, single-Character export/import, full-library backup, Home listing/export/delete, Final Sheet, and printable presentation preserved without conversion or load-time writeback
+- unsupported historical Creation Editor safe state before Guide or rule-workspace mount, with direct Final Sheet/Home navigation and no claim that the incomplete legacy creation flow remains supported
+- unchanged Character / CreationSession / CreationPreset and Record version 1, unchanged Dexie version/tables/indexes, unchanged `cocsheet-character` / `cocsheet-library` / `cocsheet-kp-preset-share` v1 envelopes, and no migration or user-data deletion
 - Phase 13A `CI & Pages` GitHub Actions workflow for Pull Requests, `main` pushes, and manual validation runs, with no production deployment path for Pull Requests or arbitrary feature branches
 - isolated `validate` job on Node.js 22 with frozen pnpm 11.21.0 installation, committed-range whitespace checks, the complete Vitest suite, Vite production build, lightweight `dist/index.html` and relative-asset verification, occupation audit, and Standard weapon audit
 - job-scoped least privilege: validation has only `contents: read`; Pages artifact construction has only repository/Pages read access; only deployment receives `pages: write` and `id-token: write`, with no `contents: write`, `write-all`, secrets, or failure suppression
@@ -47,7 +53,7 @@ Phase 13B production closure documentation was created from the validated produc
 - explicit `creationStore.start(sharedPreset.settingId, sharedPreset)` semantics preserving every normalized field and original Preset ID in the new CreationSession.presetSnapshot, without temporary/global Preset records
 - legal same-ID/different-content receiver global KPPreset independence with no collision, overwrite, merge, local substitution or import write
 - request-sequence protection against async route A → B decode races, so only the newest route query can update the preview
-- Guided / Quick browser preference isolation and same-Setting non-Standard creation without Standard fallback or new Setting content
+- Guided / Quick browser preference isolation from supported Setting enforcement, with no Standard fallback or new Setting content
 - unchanged Character/CreationSession/CreationPreset and Record version 1, Dexie version/tables/indexes, `cocsheet-character` v1 and `cocsheet-library` v1
 - seven-step contextual Creation Guide covering Basic Info, Attributes, Occupation, Skills, Background, Possessions and Review through exhaustive pure presentation metadata
 - persistent Guided / Quick browser UI preference with first-use Guided default, versioned `localStorage` key, safe unknown/read-failure fallback, and in-memory switching that survives write failure
@@ -55,7 +61,7 @@ Phase 13B production closure documentation was created from the validated produc
 - controlled `CreationGuidePanel` presentation API and Quick full-width workspace with no empty desktop sidebar, while Guided retains the existing responsive Guide rail
 - complete mode isolation from currentStep, Character/CreationSession drafts and writes, KP Preset semantics, domain/Record/Dexie version 1, and both version-1 portability formats
 - direct Guide synchronization from the real `CreationSession.currentStep`, with no independent guide step, duplicate completion state, second Next/Previous controls, Store mutation or Repository/Dexie access
-- non-Standard-safe Attributes, Occupation, Skills and Possessions guidance that explicitly preserves placeholder boundaries and never falls back to Standard rules, catalogs, wealth or weapon assumptions
+- Standard-only Guide metadata plus an unsupported historical Creation Editor boundary that mounts no attributes, occupation, skills, wealth, or weapon workflow components
 - responsive desktop rail/current-step composition and normal-flow mobile stacking, plus active-step `aria-current="step"`, labelled Guide landmark and accurate `aria-expanded` controls without focus trap or automatic focus movement
 - independent strict `Full Library Backup v1` with fixed `cocsheet-library` format, complete Character + corresponding optional CreationSession entries, complete global CreationPreset data, nonnegative export metadata, and no IndexedDB Record wrappers/timestamps
 - deterministic outer Character-entry and KPPreset ID ordering while preserving nested Character, Session, allocation, backstory, asset, possession, weapon, SkillRef, Key Connection and Preset domain array order and identity
@@ -99,10 +105,10 @@ Phase 13B production closure documentation was created from the validated produc
 - Vue 3 / TypeScript / Vite project with strict type checking
 - Hash Router, Pinia, Dexie, Zod, Vitest, and pnpm
 - `GPL-3.0-only` license
-- five registered SettingPacks, with the complete core skill catalog only in Standard and empty content placeholders for the other settings
+- one production-registered Standard SettingPack plus display-only historical Setting identity metadata; no non-Standard placeholder content packs
 - strict independent `WeaponDefinition` with stable ID, closed category, standard/predefined-only typed SkillRef, structured impale/era/malfunction/source metadata, and source-faithful display text for damage, range, attacks, capacity, and reference prices
 - optional `SettingPack.weapons` plus a cached same-Setting `WeaponRegistry` that rejects duplicate IDs, unknown skills, specialization-required parent standard refs, and missing predefined specializations without Standard fallback
-- complete 104-row Standard production weapon catalog across all eight closed categories: 28 melee/other, 16 handguns, 12 rifles, 9 shotguns, 9 assault rifles, 6 submachine guns, 8 machine guns, and 16 explosive/heavy/other definitions; all four non-Standard weapon registries remain empty
+- complete 104-row Standard production weapon catalog across all eight closed categories: 28 melee/other, 16 handguns, 12 rifles, 9 shotguns, 9 assault rifles, 6 submachine guns, 8 machine guns, and 16 explosive/heavy/other definitions; historical unsupported same-Setting weapon registries remain empty without registered placeholder packs
 - complete Keeper table 17 plus Investigator tables 10-2～10-9 source inventory with 104 production mappings, zero duplicate mechanics mappings, `needs-review = 0`, explicit discrepancy resolution, all 8 Phase 7C-1 pilots reconciled in place, and an independently runnable full-catalog audit
 - pure weapon SkillRef formatting, catalog filtering, reference-price formatting, classic/modern availability status, Character instance presentation, and orphan fallback helpers
 - optional Character version-1 weapon instances containing only Store-owned UUID, WeaponDefinition stable ID, and optional trimmed notes; duplicate definitions are legal while instance UUIDs stay unique
@@ -269,18 +275,18 @@ Merged in the current enum:
 - richer field-level guided focus, advanced coachmarks, and further Guide overlay refinements
 - generic Settings and broader UI preference infrastructure
 - arbitrary multi-file batch import/export, selective restore, replace/merge/import-as-copy, and file migrations beyond current v1 formats
-- Setting-specific rules and full Setting content
+- non-Standard Setting rules and content, which are outside the current product scope and Roadmap
 - MP natural recovery rules and recovery limits
 
 ## Next intended work
 
-Phase 13 is complete after the production `main` workflow, Pages artifact, deployment, live endpoint, and nested-path Hash Router behavior were verified. Phase 14 remains unfrozen and is not authorized by this closure.
+Phase 14 is complete. Phase 15 remains unfrozen and is not authorized by this cleanup.
 
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
 - future Portable Package and Full Library Backup migrations or advanced conflict-resolution compatibility
-- Setting-specific extension evolution
+- future explicitly authorized Setting extension evolution
 - Deprogrammer's former `keeper-approved-single-occupation-skill-replacement` pressure is resolved by an occupation-level singular exact replacement policy with explicit target and target-scoped Keeper approval; there is no active Engine pressure
 - Keeper Criminal's former `choice-pool-with-repeatable-specialization-branch` pressure is resolved by the top-level-only `choice-pool` selector, which separates selected category count from selected SkillRef count
 - browser storage can be cleared; single-Character and full-library local backups now exist, but there is no automatic/cloud backup or encrypted archive

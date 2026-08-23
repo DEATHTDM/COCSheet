@@ -12,6 +12,11 @@ function makeCharacter() {
 }
 
 describe("Character identity 与 backstory schema", () => {
+  it("historical non-Standard Setting identity 仍按 Character version 1 解析", () => {
+    const historical = { ...makeCharacter(), settingId: "gaslight" as const };
+    expect(characterSchema.parse(historical)).toEqual(historical);
+  });
+
   it("legacy Character 缺少 Phase 6 字段时仍按 version 1 解析", () => {
     const legacy = makeCharacter();
     expect(characterSchema.parse(legacy)).toEqual(legacy);

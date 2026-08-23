@@ -44,17 +44,9 @@ Zero Server
 
 ## Rules and setting scope
 
-规则基础是 Call of Cthulhu 7th Edition。计划支持五种主要建卡环境：
+规则基础是 Call of Cthulhu 7th Edition。正式产品当前只支持 Standard CoC 7E。
 
-| ID | Setting |
-| --- | --- |
-| `standard` | Standard COC7 |
-| `gaslight` | Cthulhu by Gaslight |
-| `down-darker-trails` | Down Darker Trails |
-| `dark-ages` | Cthulhu Dark Ages |
-| `regency` | Regency Cthulhu |
-
-这些 Setting 是彼此独立的主要建卡环境；普通玩家不应被要求同时勾选五个时代包。
+Gaslight、Down Darker Trails、Dark Ages 与 Regency 当前不在 Roadmap。历史 domain/file 数据中的这些 Setting ID 继续作为 compatibility identity 读取，但不代表当前产品支持。未来若重新增加正式 Setting，必须另行获得产品授权并具备明确规则资料；底层 `SettingPack`、Setting Registry、same-Setting Registry 与 Extension Registry 扩展边界继续保留。
 
 当前明确不支持 Pulp Cthulhu，也不规划日本职业或日系扩展。不得为了“规则完整”自行加入这些范围。
 

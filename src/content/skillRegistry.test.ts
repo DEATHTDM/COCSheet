@@ -12,7 +12,7 @@ describe("skill registry", () => {
     expect(registry.definitions).toHaveLength(54);
   });
 
-  it("每个 Setting registry 都从对应 SettingPack.skills 构建并缓存", () => {
+  it("supported registry 从 SettingPack.skills 构建，历史 Setting 保持同 Setting 空目录", () => {
     for (const pack of getAvailableSettings()) {
       const registry = getSkillRegistry(pack.id);
       expect(registry.definitions.map((definition) => definition.id)).toEqual(
@@ -22,6 +22,9 @@ describe("skill registry", () => {
     }
     expect(getSkillRegistry("standard").definitions.length).toBeGreaterThan(0);
     expect(getSkillRegistry("gaslight").definitions).toEqual([]);
+    expect(getSkillRegistry("down-darker-trails").definitions).toEqual([]);
+    expect(getSkillRegistry("dark-ages").definitions).toEqual([]);
+    expect(getSkillRegistry("regency").definitions).toEqual([]);
   });
 
   it("拒绝重复 definition ID", () => {

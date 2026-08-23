@@ -3,7 +3,7 @@ import { reactive, ref } from "vue";
 
 import { useCharacterStore } from "../app/stores/characterStore";
 import type { Character } from "../coc7/types/character";
-import { getSettingPackOrThrow } from "../content/registry";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
 
 const props = defineProps<{ readonly character: Character }>();
@@ -97,7 +97,7 @@ async function saveIdentity(): Promise<void> {
       <div><dt>住所</dt><dd>{{ character.residence ?? '—' }}</dd></div>
       <div><dt>出身地</dt><dd>{{ character.birthplace ?? '—' }}</dd></div>
       <div><dt>职业</dt><dd>{{ character.occupation?.displayNameSnapshot.zh ?? '—' }}</dd></div>
-      <div><dt>Setting</dt><dd>{{ getSettingPackOrThrow(character.settingId).name }}</dd></div>
+      <div><dt>Setting</dt><dd>{{ getHistoricalSettingLabel(character.settingId) }}</dd></div>
     </dl>
 
     <p v-if="actionError" class="error-message final-narrative-message" role="alert">{{ actionError }}</p>

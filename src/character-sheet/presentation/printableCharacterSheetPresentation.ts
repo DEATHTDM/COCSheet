@@ -8,7 +8,7 @@ import type {
   CharacterAssetEntry,
   CharacterPossessionEntry,
 } from "../../coc7/types/character";
-import type { SettingPack } from "../../coc7/types/settingPack";
+import type { EraId } from "../../coc7/types/occupation";
 import type { SkillRegistry } from "../../content/skillRegistry";
 import {
   presentCharacterWeapon,
@@ -96,11 +96,16 @@ export interface PrintableCharacterSheetPresentation {
   readonly weapons: readonly CharacterWeaponPresentation[];
 }
 
+export interface PrintableSettingPresentation {
+  readonly name: string;
+  readonly eras?: readonly EraId[];
+}
+
 function displayValue(value: string | number | undefined): string {
   return value === undefined || value === "" ? "—" : String(value);
 }
 
-function resolveEraLabel(character: Character, setting: SettingPack): string {
+function resolveEraLabel(character: Character, setting: PrintableSettingPresentation): string {
   if (!character.eraId || !setting.eras?.includes(character.eraId)) return "—";
   return formatOccupationEraId(character.eraId);
 }
@@ -160,7 +165,7 @@ function presentWealth(character: Character): PrintableWealth | undefined {
 
 export function presentPrintableCharacterSheet(
   character: Character,
-  setting: SettingPack,
+  setting: PrintableSettingPresentation,
   skillRegistry: SkillRegistry,
   weaponRegistry: WeaponRegistry,
 ): PrintableCharacterSheetPresentation {

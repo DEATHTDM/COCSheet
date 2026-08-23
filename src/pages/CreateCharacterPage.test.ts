@@ -76,13 +76,18 @@ describe("CreateCharacterPage creation experience preference", () => {
     expect(window.localStorage.getItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY)).toBe("guided");
   });
 
-  it("starts a Setting with the original arguments and never passes mode into the workflow", async () => {
+  it("shows one Standard entry and never passes mode into the workflow", async () => {
     window.localStorage.setItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY, "quick");
     const { wrapper, start } = await mountPage();
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
-      .find((button) => button.text().includes("Standard COC7"));
+      .find((button) => button.text().includes("Standard CoC 7E"));
 
     expect(standardButton).toBeDefined();
+    expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
+    expect(wrapper.text()).not.toContain("Cthulhu by Gaslight");
+    expect(wrapper.text()).not.toContain("Down Darker Trails");
+    expect(wrapper.text()).not.toContain("Cthulhu Dark Ages");
+    expect(wrapper.text()).not.toContain("Regency Cthulhu");
     await standardButton?.trigger("click");
 
     expect(start).toHaveBeenCalledOnce();
@@ -127,7 +132,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     age: { min: 20, max: 60 },
   };
 
-  it("previews a valid transient non-Standard preset with zero creation writes", async () => {
+  it("safely identifies a valid historical shared preset but does not allow creation", async () => {
     decodeSharedPresetMock.mockResolvedValue(sharedPreset);
     const localPreset: CreationPreset = {
       ...sharedPreset,
@@ -149,19 +154,22 @@ describe("CreateCharacterPage shared KP Preset", () => {
     expect(wrapper.text()).toContain("Cthulhu by Gaslight");
     expect(wrapper.text()).toContain("手动输入、购点");
     expect(wrapper.text()).toContain("不会自动保存到你的 KP 预设库");
+    expect(wrapper.text()).toContain("当前版本不支持，不能用于新建调查员");
+    expect(wrapper.find(".shared-preset-preview .button.primary").exists()).toBe(false);
     expect(start).not.toHaveBeenCalled();
     expect(presetStore.records).toEqual([localRecord]);
   });
 
-  it("creates only after the explicit action with the exact shared preset and keeps mode unchanged", async () => {
+  it("creates a supported shared preset only after the explicit action and keeps mode unchanged", async () => {
     window.localStorage.setItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY, "quick");
-    decodeSharedPresetMock.mockResolvedValue(sharedPreset);
+    const standardSharedPreset = { ...sharedPreset, settingId: "standard" as const };
+    decodeSharedPresetMock.mockResolvedValue(standardSharedPreset);
     const { wrapper, start, uiPreferenceStore } = await mountPage(undefined, "/create?kp=valid-token");
 
     await wrapper.get(".shared-preset-preview .button.primary").trigger("click");
 
     expect(start).toHaveBeenCalledOnce();
-    expect(start).toHaveBeenCalledWith("gaslight", sharedPreset);
+    expect(start).toHaveBeenCalledWith("standard", standardSharedPreset);
     expect(uiPreferenceStore.creationExperienceMode).toBe("quick");
     expect(window.localStorage.getItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY)).toBe("quick");
   });
@@ -172,7 +180,8 @@ describe("CreateCharacterPage shared KP Preset", () => {
 
     expect(wrapper.get('[role="alert"]').text()).toContain("无法读取共享 KP 预设：压缩内容已损坏。");
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
-      .find((button) => button.text().includes("Standard COC7"));
+      .find((button) => button.text().includes("Standard CoC 7E"));
+    expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
     await standardButton?.trigger("click");
     expect(start).toHaveBeenCalledWith("standard", undefined);
   });
@@ -188,7 +197,9 @@ describe("CreateCharacterPage shared KP Preset", () => {
     decodeSharedPresetMock.mockResolvedValue(sharedPreset);
     const { wrapper, router } = await mountPage(undefined, "/create?kp=valid-token&ref=keeper");
 
-    await wrapper.findAll(".shared-preset-preview .button")[1]?.trigger("click");
+    await wrapper.findAll(".shared-preset-preview .button")
+      .find((button) => button.text().includes("忽略共享预设"))
+      ?.trigger("click");
     await flushPromises();
 
     expect(router.currentRoute.value.name).toBe("create");

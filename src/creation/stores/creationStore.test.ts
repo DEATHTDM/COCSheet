@@ -37,6 +37,22 @@ async function prepareCompletableManual(store: ReturnType<typeof useCreationStor
   return characterId;
 }
 
+describe("supported Setting creation boundary", () => {
+  it("creates Standard Character + Session and rejects historical Setting IDs with zero writes", async () => {
+    const store = useCreationStore();
+    const standardId = await store.start("standard");
+    expect((await characterRepository.getById(standardId))?.data.settingId).toBe("standard");
+    expect((await creationSessionRepository.getByCharacterId(standardId))?.data.settingId)
+      .toBe("standard");
+
+    const charactersBefore = await db.characters.count();
+    const sessionsBefore = await db.creationSessions.count();
+    await expect(store.start("gaslight")).rejects.toThrow("当前版本不支持该建卡环境");
+    expect(await db.characters.count()).toBe(charactersBefore);
+    expect(await db.creationSessions.count()).toBe(sessionsBefore);
+  });
+});
+
 describe("creation session status listing", () => {
   it("为 Home 提供现有 currentStep，而缺失会话保持未定义", async () => {
     const store = useCreationStore();
