@@ -1,25 +1,93 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { useSettingStore } from "../app/stores/settingStore";
 import { useUiPreferenceStore } from "../app/stores/uiPreferenceStore";
 import type { SettingId } from "../coc7/types/setting";
+import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
-import type { CreationPreset } from "../creation/types/creationPreset";
+import {
+  type AttributeGenerationMethod,
+  type CreationPreset,
+} from "../creation/types/creationPreset";
+import { decodeKPPresetShareToken } from "../kp/presets/presetShare";
 import { usePresetStore } from "../kp/presets/presetStore";
 
+const route = useRoute();
 const router = useRouter();
 const settingStore = useSettingStore();
 const uiPreferenceStore = useUiPreferenceStore();
 const creationStore = useCreationStore();
 const presetStore = usePresetStore();
+type SharedPresetState =
+  | { readonly status: "idle" }
+  | { readonly status: "loading" }
+  | { readonly status: "valid"; readonly preset: CreationPreset }
+  | { readonly status: "error"; readonly message: string };
+const sharedPresetState = ref<SharedPresetState>({ status: "idle" });
+let sharedPresetRequestSequence = 0;
+const methodLabels: Readonly<Record<AttributeGenerationMethod, string>> = {
+  "standard-roll": "标准掷骰",
+  "low-roll-boost": "低骰补强",
+  "assign-roll": "自由分配骰值",
+  "multi-roll": "多组选择",
+  "point-buy": "购点",
+  manual: "手动输入",
+};
 
 onMounted(() => void presetStore.loadList());
+
+watch(
+  () => route.query.kp,
+  async (queryValue) => {
+    const requestSequence = ++sharedPresetRequestSequence;
+    if (queryValue === undefined) {
+      sharedPresetState.value = { status: "idle" };
+      return;
+    }
+    if (Array.isArray(queryValue)) {
+      sharedPresetState.value = {
+        status: "error",
+        message: "链接包含多个 kp 参数，无法确定要使用的共享预设。",
+      };
+      return;
+    }
+    sharedPresetState.value = { status: "loading" };
+    try {
+      const preset = await decodeKPPresetShareToken(queryValue ?? "");
+      if (requestSequence !== sharedPresetRequestSequence) return;
+      sharedPresetState.value = { status: "valid", preset };
+    } catch (error: unknown) {
+      if (requestSequence !== sharedPresetRequestSequence) return;
+      sharedPresetState.value = {
+        status: "error",
+        message: error instanceof Error ? error.message : "共享预设内容不正确。",
+      };
+    }
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  sharedPresetRequestSequence += 1;
+});
 
 async function chooseSetting(settingId: SettingId, preset?: CreationPreset): Promise<void> {
   const characterId = await creationStore.start(settingId, preset);
   await router.push(`/characters/${characterId}`);
+}
+
+async function useSharedPreset(): Promise<void> {
+  const state = sharedPresetState.value;
+  if (state.status !== "valid") return;
+  await chooseSetting(state.preset.settingId, state.preset);
+}
+
+async function removeSharedPreset(): Promise<void> {
+  const query = { ...route.query };
+  delete query.kp;
+  await router.replace({ name: "create", query });
 }
 </script>
 
@@ -60,6 +128,42 @@ async function chooseSetting(settingId: SettingId, preset?: CreationPreset): Pro
         </span>
       </label>
     </fieldset>
+
+    <section
+      v-if="sharedPresetState.status !== 'idle'"
+      class="panel form-stack shared-preset-preview"
+      aria-labelledby="shared-preset-title"
+    >
+      <div>
+        <p class="eyebrow">来自链接</p>
+        <h2 id="shared-preset-title">共享 KP 建卡预设</h2>
+      </div>
+      <p v-if="sharedPresetState.status === 'loading'" role="status">正在读取共享预设…</p>
+      <template v-else-if="sharedPresetState.status === 'valid'">
+        <dl class="shared-preset-facts">
+          <div><dt>预设名称</dt><dd>{{ sharedPresetState.preset.name }}</dd></div>
+          <div><dt>建卡环境</dt><dd>{{ getSettingPackOrThrow(sharedPresetState.preset.settingId).name }}</dd></div>
+          <div>
+            <dt>属性生成方式</dt>
+            <dd>{{ sharedPresetState.preset.attributeGeneration.allowedMethods.map((method) => methodLabels[method]).join("、") }}</dd>
+          </div>
+        </dl>
+        <p>此预设来自分享链接，不会自动保存到你的 KP 预设库。</p>
+        <div class="actions">
+          <button
+            class="button primary"
+            type="button"
+            :disabled="creationStore.creating"
+            @click="useSharedPreset"
+          >使用共享预设创建调查员</button>
+          <button class="button" type="button" @click="removeSharedPreset">忽略共享预设</button>
+        </div>
+      </template>
+      <template v-else-if="sharedPresetState.status === 'error'">
+        <p class="error-message" role="alert">无法读取共享 KP 预设：{{ sharedPresetState.message }}</p>
+        <button class="button" type="button" @click="removeSharedPreset">移除共享预设</button>
+      </template>
+    </section>
 
     <div class="setting-grid">
       <button

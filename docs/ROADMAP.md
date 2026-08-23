@@ -386,11 +386,23 @@ Status: Completed
 - unchanged currentStep, drafts, workflow, validators, KP Preset semantics, domain/Record/Dexie schemas and version-1 portability formats
 - storage failures remain non-fatal and cross-tab live sync remains outside current scope
 
+## Phase 11 — KP Preset Share Links
+
+Status: Completed
+
+- strict independent `cocsheet-kp-preset-share / formatVersion 1` envelope carrying the full normalized CreationPreset without Record metadata
+- browser-native gzip plus unpadded base64url token with versioned wire shape, typed readable failures and bounded token/compressed/decompressed input
+- Hash Router `/create?kp=...` share URL preserving static-host base paths and keeping payload in the fragment
+- saved-KPPreset share UI with one readonly URL, copy action and resilient manual-copy fallback
+- transient shared Preset preview with zero writes on open, invalid-link isolation, multiple-query rejection and async route-race protection
+- explicit shared creation into Character + CreationSession.presetSnapshot without global KPPreset import or same-ID collision
+- unchanged Guided / Quick preference, non-Standard no-fallback boundary, portability v1 formats, domain/Record schemas and Dexie version 1
+
 ## Later
 
 - richer guided-creation refinements
 - Settings and broader UI preferences
-- KP preset sharing
+- shared-Preset local save semantics, QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 - printing / PDF export
 - Gaslight

@@ -256,6 +256,14 @@ Preset 计划通过纯前端 URL / Hash 分享，不为分享功能引入服务�
 
 新的 `skillLimits` 分别表达职业技能最终值、非职业兴趣技能最终值与全局最终技能值上限，不把分配贡献与最终成功率混为一谈。旧 `skillCaps` 语义从未冻结，因此只保留 deprecated 读取兼容，不猜测映射，也不影响新 allocation validator。
 
+### K005 — KP Preset share links are ephemeral client-side configuration
+
+KP Preset 分享使用纯前端、版本化的压缩 payload：完整且经 `creationPresetSchema` 规范化的 `CreationPreset` 进入独立 strict envelope，再以 gzip 与无 padding 的 base64url 编码为 token，并放在 Hash Router 的 `/create` route query。分享数据不包含 KPPresetRecord、timestamps、Guided / Quick preference、Character、CreationSession 或 portability metadata；服务器不参与生成、传输或解析。
+
+打开链接只执行有 token／解压大小上限的严格解析与 transient preview，不创建或修改 Character、CreationSession、global KPPreset、IndexedDB 或 browser preference。只有接收者明确点击创建时，URL 中的共享 Preset 才原样传给 `creationStore.start` 并进入新 `CreationSession.presetSnapshot`；它不自动导入 global KPPreset，同 ID 的接收方本地 Preset 即使内容不同也不冲突、不覆盖、不替代共享内容。
+
+当前不支持把共享 Preset 保存到本地、overwrite、import-as-copy、QR、short link、hosted share ID、analytics、加密或过期语义；这些能力若需要必须另行设计。
+
 ## Third-party projects
 
 ### T001 — trpg-saikou reference

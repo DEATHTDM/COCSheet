@@ -1325,6 +1325,42 @@ textarea:disabled {
   justify-content: flex-end;
 }
 
+.preset-share-panel,
+.shared-preset-preview {
+  min-width: 0;
+}
+
+.preset-share-url {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 7rem;
+  padding: 0.65rem;
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+
+.shared-preset-facts {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.shared-preset-facts > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.shared-preset-facts dt {
+  color: #695f52;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.shared-preset-facts dd {
+  margin: 0;
+}
+
 .status-badge {
   display: inline-flex;
   padding: 0.2rem 0.5rem;

@@ -166,6 +166,38 @@ Library package 顶层包含 `exportedAt`、`characterEntries` 与 `kpPresets`�
 
 Phase 9A 与 9B 都不解析 Registry、运行创建完成规则、重算财富/资源、修复 orphan domain references 或写入 snapshot linkage。Phase 9B 同样不新增 server、table、index、migration 或 DB version；Character、CreationSession、CreationPreset、全部 Record 与 Dexie version 继续为 1。
 
+## KP Preset share links
+
+Phase 11 的 KP Preset 分享是独立于两个 portability file format 的 transient client-side configuration boundary。发送链路只接受已经由 KPPresetRepository 持久化并在 `record.data` 中保存的完整 CreationPreset：
+
+```text
+Saved KPPreset record.data
+      ↓ creationPresetSchema
+strict cocsheet-kp-preset-share / formatVersion 1 envelope
+      ↓ UTF-8 → gzip → unpadded base64url
+1.<payload> token
+      ↓ router.resolve({ name: "create", query: { kp } })
+https://host/base/#/create?kp=<token>
+```
+
+接收链路只从 `route.query.kp` 读取外部输入，并以 request sequence 防止同一 CreateCharacterPage instance 中较慢的旧 token 覆盖较新的 route：
+
+```text
+Hash Router route query
+      ↓ token length + compressed-byte limits
+bounded streaming gzip decode
+      ↓ 64 KiB decompressed JSON limit
+strict share envelope + creationPresetSchema
+      ↓
+transient shared CreationPreset preview (zero writes)
+      ↓ explicit user create
+Creation Store → CreationWorkflowRepository → Dexie
+      ↓
+Character + CreationSession.presetSnapshot
+```
+
+该边界没有 Share Repository、Dexie table、server、short-link storage、global preset import write 或 preference write。CompressionStream / DecompressionStream 不可用时只禁用对应分享操作并显示可读错误，普通本地 Preset 编辑和建卡继续可用。Character、CreationSession、CreationPreset、所有 Record、Dexie、`cocsheet-character` v1 与 `cocsheet-library` v1 的 schema/version 均不改变。
+
 ## Persistence
 
 IndexedDB 当前为 version 1，包含：
