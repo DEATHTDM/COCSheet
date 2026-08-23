@@ -362,7 +362,7 @@ Status: Completed
 
 ## Phase 10 — Guided Creation UX
 
-Status: In Progress
+Status: Completed
 
 ### Phase 10A — Guided Creation Shell & Step Guidance
 
@@ -376,9 +376,20 @@ Status: Completed
 - desktop Guide rail plus current-step focus container, mobile normal-flow stacking, active-step `aria-current`, labelled Guide landmark and accurate collapse semantics
 - unchanged existing step component boundaries, workflow actions, schemas, records, tables, indexes and Dexie version
 
+### Phase 10B — Guided / Quick Creation Preference & Phase 10 Closure
+
+Status: Completed
+
+- browser-level Guided / Quick preference with first-use Guided default and safe versioned localStorage boundary
+- accessible Create Character selector plus persisted Editor hide/reopen controls shared across Characters
+- controlled CreationGuidePanel and full-width Quick layout without empty desktop sidebar
+- unchanged currentStep, drafts, workflow, validators, KP Preset semantics, domain/Record/Dexie schemas and version-1 portability formats
+- storage failures remain non-fatal and cross-tab live sync remains outside current scope
+
 ## Later
 
 - richer guided-creation refinements
+- Settings and broader UI preferences
 - KP preset sharing
 - advanced import conflict resolution and future file migrations
 - printing / PDF export

@@ -28,6 +28,12 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 Guide 可以在当前建卡页面实例内收起，但 Phase 10A 不把该 UI 偏好写入 IndexedDB、Web Storage 或 Pinia persistence，刷新后重新默认展开。任何 non-Standard Guide 都只说明当前 Setting 已实际实现的内容，不回退 Standard 特有的属性、财富、职业、技能或武器规则。未来若需要更细粒度引导或持久化 UI preference，应另行设计，同时保持 domain 数据与业务 validator 的单一来源。
 
+### G002 — Guided / Quick is a browser UI preference
+
+Guided 与 Quick 使用同一份 `Character`、同一份 `CreationSession`、同一套七步 UI、workflow 与 validator。Mode 只控制 Creation Guide presentation：Guided 显示说明，Quick 隐藏说明并让真实建卡内容恢复完整可用宽度；切换 mode 不改变 `currentStep`、草稿、KP Preset snapshot、规则限制或任何 domain state。首次使用与无有效 preference 时默认 Guided。
+
+该用户级 browser preference 使用集中、安全的 `localStorage` boundary 保存，不属于 per-Character state，也不进入 `Character`、`CreationSession`、`CreationPreset`、Record、Dexie 或 `cocsheet-character` / `cocsheet-library` portability format。读取失败或未知值安全回退 Guided；写入失败仍先更新当前页面内的 mode，不阻断建卡。Phase 10B 不建立通用 Settings framework，也不做跨 tab live synchronization；未来其他 UI preference 的存储方式继续独立决定。
+
 ## Data portability
 
 ### D001 — Portable Character Package v1

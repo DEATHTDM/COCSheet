@@ -58,7 +58,7 @@ Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过�
 
 ## Guided creation presentation
 
-Phase 10A 的建卡引导是没有 write path 的 presentation boundary：
+Phase 10A 的建卡引导 metadata 与业务状态保持没有 write path 的 presentation boundary：
 
 ```text
 CharacterEditorPage
@@ -68,7 +68,21 @@ CreationGuidePanel
 pure creation-guide metadata
 ```
 
-`CreationGuidePanel` 只读取实际 `CreationSession.currentStep`、人物 Setting 与纯 metadata，不访问 Character / CreationSession / CreationWorkflow Repository、Dexie 或 Store mutation。面板的展开／收起只属于当前 Vue 页面实例，刷新后默认展开，不持久化，也不进入人物、会话、预设或导入导出格式。Guide 不保存 `guideCurrentStep`，因此真实 step 前进或返回后直接由响应式 `currentStep` 切换内容。
+`CreationGuidePanel` 只读取实际 `CreationSession.currentStep`、人物 Setting 与纯 metadata，不访问 preference Store、browser storage、Character / CreationSession / CreationWorkflow Repository、Dexie 或 domain Store mutation。Phase 10B 将它改为由 `open` + `update:open` 控制的 presentation component；Guide 不保存 `guideCurrentStep`，因此真实 step 前进或返回后仍直接由响应式 `currentStep` 切换内容。
+
+Guided / Quick 的唯一持久化链路是：
+
+```text
+CreateCharacterPage / CharacterEditorPage
+        ↓
+UI Preference Store
+        ↓
+safe creation-experience browser-storage adapter
+        ↓
+localStorage
+```
+
+adapter 同步读取并将 missing、空值、未知值或读取异常回退为 Guided；Store 切换时先更新 in-memory mode，再 best-effort 写入版本化 key。该链路只控制 Guide 是否展示及 Quick 的 full-width layout，与 `Character` / `CreationSession` / `CreationPreset`、Repository、Dexie、database cleanup 和 portability import/export 完全分离。Mode 是 browser user preference，不是 per-Character provenance；当前不监听 `storage` event，也不扩张为通用 Settings framework。
 
 业务写入与流程推进继续保持原链路：
 

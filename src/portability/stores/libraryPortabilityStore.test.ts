@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 import { useCharacterStore } from "../../app/stores/characterStore";
+import { useUiPreferenceStore } from "../../app/stores/uiPreferenceStore";
 import type { Character } from "../../coc7/types/character";
 import { useCreationStore } from "../../creation/stores/creationStore";
 import type { CreationPreset } from "../../creation/types/creationPreset";
@@ -88,6 +89,8 @@ describe("Library Portability Store", () => {
     const characterStore = useCharacterStore();
     const creationStore = useCreationStore();
     const presetStore = usePresetStore();
+    const uiPreferenceStore = useUiPreferenceStore();
+    uiPreferenceStore.setCreationExperienceMode("quick");
     const loadCharacters = vi.spyOn(characterStore, "loadList");
     const loadSessions = vi.spyOn(creationStore, "loadSessionSteps");
     const loadPresets = vi.spyOn(presetStore, "loadList");
@@ -109,6 +112,7 @@ describe("Library Portability Store", () => {
     expect(characterStore.records[0]?.data).toEqual(character);
     expect(creationStore.sessionSteps[character.id]).toBe("review");
     expect(presetStore.records[0]?.data).toEqual(preset);
+    expect(uiPreferenceStore.creationExperienceMode).toBe("quick");
   });
 
   it("single-character file 由 Library importer 明确拒绝且 Repository 零调用", async () => {
