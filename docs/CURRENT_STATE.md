@@ -4,16 +4,21 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 9 — Data Portability (Completed)
+Phase 10 — Guided Creation UX (In Progress)
 
-Phase 9A — Portable Character Package and Phase 9B — Full Library Backup are completed. COCSheet retains the strict `cocsheet-character` v1 single-Character file while adding an independent strict `cocsheet-library` v1 full-library domain backup containing all Characters, their corresponding optional CreationSessions, and all global KP Presets. Full-library export uses one three-table read snapshot with orphan-Session protection; import is append-only, all-or-nothing, collision-conservative, and atomic across all three tables with fresh local Record timestamps. Home clearly separates single-Character files from complete local backups and refreshes Character, session-step, and Preset stores after library import. Replace/merge/import-as-copy, selective restore, arbitrary multi-file batch import/export, file migrations beyond v1, KP Preset URL/Hash sharing, and PDF/printing remain unimplemented.
+Phase 10A — Guided Creation Shell & Step Guidance is completed. CharacterEditorPage now composes a default-open, page-local collapsible Guide rail with all seven existing creation steps. Guide content follows the real `CreationSession.currentStep`, stays presentation-only, does not duplicate validators or provide workflow mutation, and uses neutral non-Standard guidance without Standard fallback. The existing seven step components and workflow remain intact; richer field-level focus, persistent guide preference, and further guided-creation refinements remain unimplemented and unfrozen.
 
 ## Git baseline
 
-Phase 9B Full Library Backup branch was created from `main` at `ca26d04eebeb0d6014ea756c643f1ab269ce1cc8`.
+Phase 10A Guided Creation Shell branch was created from `main` at `1cd24adc298165a6d3e20569803f0ecd0bf42c57`.
 
 ## Implemented
 
+- seven-step contextual Creation Guide covering Basic Info, Attributes, Occupation, Skills, Background, Possessions and Review through exhaustive pure presentation metadata
+- default-open Guide rail with page-instance-only hide/show state, no Web Storage or Pinia persistence, and automatic reset to open on refresh
+- direct Guide synchronization from the real `CreationSession.currentStep`, with no independent guide step, duplicate completion state, second Next/Previous controls, Store mutation or Repository/Dexie access
+- non-Standard-safe Attributes, Occupation, Skills and Possessions guidance that explicitly preserves placeholder boundaries and never falls back to Standard rules, catalogs, wealth or weapon assumptions
+- responsive desktop rail/current-step composition and normal-flow mobile stacking, plus active-step `aria-current="step"`, labelled Guide landmark and accurate `aria-expanded` controls without focus trap or automatic focus movement
 - independent strict `Full Library Backup v1` with fixed `cocsheet-library` format, complete Character + corresponding optional CreationSession entries, complete global CreationPreset data, nonnegative export metadata, and no IndexedDB Record wrappers/timestamps
 - deterministic outer Character-entry and KPPreset ID ordering while preserving nested Character, Session, allocation, backstory, asset, possession, weapon, SkillRef, Key Connection and Preset domain array order and identity
 - one-read-transaction `characters + creationSessions + kpPresets` export snapshot with validation of every local Record, zero writes, explicit orphan Session rejection, empty-library support, and no best-effort skipping or repair
@@ -223,7 +228,7 @@ Merged in the current enum:
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background automatic mutation, investigator development, and experience packages
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, automatic cash deduction, and improvement-roll workflows
 - Optional Luck spending/roll-modification and session-end Luck improvement workflows
-- guide overlay
+- richer field-level guided focus, persistent Guide UI preference, and further Guide overlay refinements
 - arbitrary multi-file batch import/export, selective restore, replace/merge/import-as-copy, and file migrations beyond current v1 formats
 - printing/PDF export
 - URL / Hash preset sharing
@@ -233,7 +238,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-No Later phase is authorized. Later-item ordering remains unfrozen.
+Phase 10A is complete, but no later Phase 10 increment is authorized or frozen. Later-item ordering remains unfrozen.
 
 ## Known technical risks
 

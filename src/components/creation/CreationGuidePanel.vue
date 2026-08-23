@@ -1,0 +1,67 @@
+<script setup lang="ts">
+import { computed, ref, useId } from "vue";
+
+import type { SettingId } from "../../coc7/types/setting";
+import {
+  creationGuideSteps,
+  getCreationGuideStepContent,
+} from "../../creation/presentation/creationGuide";
+import type { CreationStepId } from "../../creation/types/creationSession";
+
+const props = defineProps<{
+  readonly currentStep: CreationStepId;
+  readonly settingId: SettingId;
+}>();
+
+const isOpen = ref(true);
+const headingId = `creation-guide-${useId()}`;
+const content = computed(() => getCreationGuideStepContent(props.currentStep, props.settingId));
+const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) + 1);
+</script>
+
+<template>
+  <aside
+    v-if="isOpen"
+    class="creation-guide-shell creation-guide-panel panel"
+    :aria-labelledby="headingId"
+  >
+    <header class="creation-guide-heading">
+      <div>
+        <p class="eyebrow">新手引导 · 第 {{ stepNumber }} / {{ creationGuideSteps.length }} 步</p>
+        <h2 :id="headingId">{{ content.title }}</h2>
+      </div>
+      <button
+        class="button creation-guide-toggle"
+        type="button"
+        aria-expanded="true"
+        :aria-controls="`${headingId}-content`"
+        @click="isOpen = false"
+      >隐藏新手引导</button>
+    </header>
+
+    <div :id="`${headingId}-content`" class="creation-guide-content">
+      <p>{{ content.summary }}</p>
+      <p v-if="content.settingNotice" class="warning-message">{{ content.settingNotice }}</p>
+      <section aria-label="建议操作">
+        <h3>建议先做</h3>
+        <ol>
+          <li v-for="action in content.actions" :key="action">{{ action }}</li>
+        </ol>
+      </section>
+      <section class="creation-guide-completion" aria-label="完成提示">
+        <h3>什么时候可以继续</h3>
+        <p>{{ content.completionHint }}</p>
+      </section>
+    </div>
+  </aside>
+
+  <div v-else class="creation-guide-shell creation-guide-collapsed">
+    <button
+      class="button creation-guide-toggle"
+      type="button"
+      aria-expanded="false"
+      :aria-controls="`${headingId}-content`"
+      @click="isOpen = true"
+    >显示新手引导</button>
+  </div>
+</template>

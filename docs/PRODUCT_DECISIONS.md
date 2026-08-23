@@ -20,6 +20,14 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 最终人物卡是独立于建卡编辑器与创建期 Review 的长期使用页面，并直接以 `Character` 为数据源。`CreationSession` 只用于判断建卡完成状态以及提供继续／修改建卡入口；不存在 CreationSession 时仍可打开人物卡，且页面加载不得从会话反推数值或自动补写缺失的 Character 字段。
 
+## Guided creation
+
+### G001 — Creation Guide is presentation-only
+
+创建引导以真实 `CreationSession.currentStep` 作为当前步骤的唯一来源，不保存独立 workflow state，也不进入 `Character`、`CreationSession`、`CreationPreset` 或其他 domain / portability schema。Guide metadata 只提供当前步骤的目标、建议操作与完成提示，不复制 completion validator，不判断是否可以继续，也不调用流程推进 mutation；真实的继续、返回与完成仍由各 step UI 和现有 workflow 负责。
+
+Guide 可以在当前建卡页面实例内收起，但 Phase 10A 不把该 UI 偏好写入 IndexedDB、Web Storage 或 Pinia persistence，刷新后重新默认展开。任何 non-Standard Guide 都只说明当前 Setting 已实际实现的内容，不回退 Standard 特有的属性、财富、职业、技能或武器规则。未来若需要更细粒度引导或持久化 UI preference，应另行设计，同时保持 domain 数据与业务 validator 的单一来源。
+
 ## Data portability
 
 ### D001 — Portable Character Package v1

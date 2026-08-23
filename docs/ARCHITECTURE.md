@@ -56,6 +56,34 @@ Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过�
 
 创建 `Character` 与 `CreationSession` 时使用同一 Dexie 事务。完成 attributes 时原子写入最终属性与推进 occupation；完成 skills 时同样通过 Creation Workflow Repository 在一个事务中原子写入 `Character.occupation`、重建后的 `Character.skills` 与 `CreationSession.currentStep = background`。Background 完成 action 从持久化 Character 读取背景并通过纯 validator 检查后推进 possessions。Standard wealth 只由显式 Creation Store action 初始化：该 action 读取最新持久化 Character，以当前 era + finalized Credit Rating 调用纯表格规则，并在同一个 Creation Workflow Repository transaction 写入 Character wealth 与 session provenance；mount、Repository read 和 stale 检测均不自动初始化或重算。Possessions completion 只在 wealth 已初始化、provenance current，并且正资产至少有一条资产说明时推进 review。旧 session 若已经位于 review 会原样读取，不自动倒退或 writeback。删除 `CreationSession` 不影响 `Character`；删除 `Character` 时会同时删除对应会话。
 
+## Guided creation presentation
+
+Phase 10A 的建卡引导是没有 write path 的 presentation boundary：
+
+```text
+CharacterEditorPage
+        ↓ currentStep + settingId
+CreationGuidePanel
+        ↓
+pure creation-guide metadata
+```
+
+`CreationGuidePanel` 只读取实际 `CreationSession.currentStep`、人物 Setting 与纯 metadata，不访问 Character / CreationSession / CreationWorkflow Repository、Dexie 或 Store mutation。面板的展开／收起只属于当前 Vue 页面实例，刷新后默认展开，不持久化，也不进入人物、会话、预设或导入导出格式。Guide 不保存 `guideCurrentStep`，因此真实 step 前进或返回后直接由响应式 `currentStep` 切换内容。
+
+业务写入与流程推进继续保持原链路：
+
+```text
+Creation Step UI
+        ↓
+Creation Store / Character Store
+        ↓
+Repository
+        ↓
+Dexie
+```
+
+Guide 的 completion hint 只是操作文案，不复制 attribute、occupation、skill allocation、background、wealth 或 possessions validator，也不提供第二套 Next / Previous。non-Standard metadata 对当前未实现内容使用中性说明，绝不回退 Standard 特有规则或目录。
+
 ## Final character sheet
 
 最终人物卡、建卡编辑器与创建期 Review 的边界是：
