@@ -124,6 +124,26 @@ Phase 8D 将长期 inventory mutation 拆进 `FinalSheetWealthWorkspace`、`Fina
 
 武器使用人物自身 Setting 的 WeaponRegistry 与现有 orphan-safe presentation，不回退 Standard。Standard derived values 与 wealth presentation 只在当前 Character 信息足以可靠派生时显示，Half/Fifth、Maximum HP、Initial MP、Maximum SAN、MOV、Damage Bonus、Build 与 spending level 继续不持久化。
 
+## Printable character sheet
+
+Phase 12 在交互式 Final Sheet 之外建立独立的 Character-only 打印链路：
+
+```text
+FinalCharacterSheetPage
+        ↓ /characters/:id/print link
+PrintableCharacterSheetPage
+        ↓ read-only print presentation
+existing Final Sheet presentation + same-Setting registries
+        ↓
+Character Store → CharacterRepository → Dexie（read only）
+        ↓
+window.print() → browser print / Save as PDF dialog
+```
+
+Printable page 只调用 `CharacterStore.loadById`，不加载或创建 CreationSession，也不挂载任何 Final Sheet mutation workspace。print presentation 只分组、格式化并复用现有 Character-only resolver；它不访问 Dexie、不重建规则、不生成或持久化技能 baseline，也不把 Final Sheet 未保存 draft 带入纸面。完整、未完成、legacy no-session 与缺失 optional fields 的 Character 均由同一安全只读边界处理；non-Standard 继续使用人物自身空／现有 Registry，绝不回退 Standard。
+
+浏览器 `window.print()` 只是当前输出边界。架构中没有 PDF Store、PDF Repository、PDF data schema、render cache、server conversion 或 CreationSession dependency；Character、CreationSession、CreationPreset、Record、Dexie 与两个 portability v1 format 均不受打印能力影响。
+
 ## Data portability
 
 Phase 9A 的单人物 JSON 迁移链路是：

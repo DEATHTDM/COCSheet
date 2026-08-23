@@ -20,6 +20,12 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 最终人物卡是独立于建卡编辑器与创建期 Review 的长期使用页面，并直接以 `Character` 为数据源。`CreationSession` 只用于判断建卡完成状态以及提供继续／修改建卡入口；不存在 CreationSession 时仍可打开人物卡，且页面加载不得从会话反推数值或自动补写缺失的 Character 字段。
 
+### P005 — Printable output is a Character-only read-only projection
+
+当前打印输出使用独立的只读 Printable Character Sheet，而不是直接打印包含输入、草稿和 mutation controls 的交互式 Final Sheet。打印页只读取已经持久化的 `Character`，不依赖 `CreationSession`，也不读取、自动保存或重建 Final Sheet 尚未保存的 UI draft；打开页面不得初始化 resources / wealth、reconcile SAN、实例化技能或产生其他 writeback。
+
+Printable presentation 只做纸面分组与格式化，并复用现有 Final Sheet derived / Maximum SAN / sparse skill resolver、same-Setting SkillRegistry、same-Setting WeaponRegistry 与 orphan-safe presentation。任何 non-Standard Setting 都不回退 Standard 规则或目录。当前“打印 / 保存 PDF”以 `window.print()` 进入浏览器自己的打印／Save as PDF 对话框，不引入第二套 PDF binary renderer、Repository、Store、schema、缓存或导出 metadata；未来若需要直接 PDF renderer，应另行设计而不破坏这条长期数据边界。
+
 ## Guided creation
 
 ### G001 — Creation Guide is presentation-only

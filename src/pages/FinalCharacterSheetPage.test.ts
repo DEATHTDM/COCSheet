@@ -56,6 +56,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
         { path: "/", component: { template: "<div />" } },
         { path: "/characters/:id", component: { template: "<div />" } },
         { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+        { path: "/characters/:id/print", component: { template: "<div />" } },
       ],
     });
     await router.push(`/characters/${legacy.id}/sheet`);
@@ -71,6 +72,8 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     expect(wrapper.find(".sheet-backstory-workspace").exists()).toBe(true);
     expect(wrapper.find(".final-possessions-workspace").exists()).toBe(true);
     expect(wrapper.find(".final-weapon-workspace").exists()).toBe(true);
+    const printEntry = wrapper.findAll("a").find((link) => link.text() === "打印 / PDF");
+    expect(printEntry?.attributes("href")).toBe(`/characters/${legacy.id}/print`);
     expect(wrapper.text()).toContain("打开页面不会自动生成空数组");
     expect(wrapper.text()).toContain("缺失字段不会在打开页面时自动生成");
     expect(updateSpy).not.toHaveBeenCalled();
@@ -106,6 +109,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
         { path: "/", component: { template: "<div />" } },
         { path: "/characters/:id", component: { template: "<div />" } },
         { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+        { path: "/characters/:id/print", component: { template: "<div />" } },
       ],
     });
     await router.push(`/characters/${inventoryCharacter.id}/sheet`);
@@ -192,6 +196,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
         { path: "/", component: { template: "<div />" } },
         { path: "/characters/:id", component: { template: "<div />" } },
         { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+        { path: "/characters/:id/print", component: { template: "<div />" } },
       ],
     });
     await router.push(`/characters/${character.id}/sheet`);
@@ -230,6 +235,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
         { path: "/", component: { template: "<div />" } },
         { path: "/characters/:id", component: { template: "<div />" } },
         { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+        { path: "/characters/:id/print", component: { template: "<div />" } },
       ],
     });
     await router.push(`/characters/${legacy.id}/sheet`);
@@ -268,6 +274,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
         { path: "/", component: { template: "<div />" } },
         { path: "/characters/:id", component: { template: "<div />" } },
         { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+        { path: "/characters/:id/print", component: { template: "<div />" } },
       ],
     });
     await refreshedRouter.push(`/characters/${legacy.id}/sheet`);
@@ -299,6 +306,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
         { path: "/", component: { template: "<div />" } },
         { path: "/characters/:id", component: { template: "<div />" } },
         { path: "/characters/:id/sheet", component: FinalCharacterSheetPage },
+        { path: "/characters/:id/print", component: { template: "<div />" } },
       ],
     });
     await router.push(`/characters/${first.id}/sheet`);

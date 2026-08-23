@@ -6,6 +6,7 @@ import FinalCharacterSheetPage from "../../pages/FinalCharacterSheetPage.vue";
 import HomePage from "../../pages/HomePage.vue";
 import KPPresetEditorPage from "../../pages/KPPresetEditorPage.vue";
 import KPPresetsPage from "../../pages/KPPresetsPage.vue";
+import PrintableCharacterSheetPage from "../../pages/PrintableCharacterSheetPage.vue";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -14,6 +15,7 @@ export const router = createRouter({
     { path: "/create", name: "create", component: CreateCharacterPage },
     { path: "/characters/:id", name: "character", component: CharacterEditorPage },
     { path: "/characters/:id/sheet", name: "character-sheet", component: FinalCharacterSheetPage },
+    { path: "/characters/:id/print", name: "character-print", component: PrintableCharacterSheetPage },
     { path: "/kp/presets", name: "presets", component: KPPresetsPage },
     { path: "/kp/presets/:id", name: "preset", component: KPPresetEditorPage },
   ],

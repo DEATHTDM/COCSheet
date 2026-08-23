@@ -2098,6 +2098,342 @@ textarea:disabled {
   color: #315649;
 }
 
+.app-shell:has(.print-preview-page) {
+  width: min(100% - 2rem, 1280px);
+}
+
+.print-preview-page {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+}
+
+.print-preview-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem;
+  border: 1px solid #cfc6b3;
+  border-radius: 6px;
+  background: #fffdf8;
+}
+
+.print-preview-toolbar p,
+.print-preview-message,
+.print-sheet-header p,
+.print-section p,
+.print-section h2,
+.print-section h3,
+.print-weapon-card header,
+.print-weapon-card dl {
+  margin: 0;
+}
+
+.print-preview-toolbar p {
+  color: #695f52;
+  text-align: center;
+}
+
+.print-preview-message {
+  margin-bottom: 1.25rem;
+}
+
+.printable-sheet {
+  display: grid;
+  gap: 1.1rem;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 2.4rem);
+  border: 1px solid #b8ad98;
+  background: white;
+  box-shadow: 8px 8px 0 #ded6c7;
+}
+
+.print-sheet-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px double #25211e;
+}
+
+.print-sheet-header h1 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  overflow-wrap: anywhere;
+}
+
+.print-kicker,
+.print-save-note {
+  color: #5e574e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.print-save-note {
+  flex: 0 0 auto;
+}
+
+.print-section {
+  min-width: 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid #6f675c;
+}
+
+.print-section > h2,
+.print-section-heading h2 {
+  margin-bottom: 0.7rem;
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.print-section > h3 {
+  margin-top: 0.85rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.print-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.print-section-heading span {
+  color: #5e574e;
+  font-size: 0.8rem;
+}
+
+.print-fact-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.print-identity-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.print-resource-grid,
+.print-wealth-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.print-derived-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.print-fact-grid > div,
+.print-characteristic-card {
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid #9b9489;
+}
+
+.print-fact-grid dt,
+.print-skill-row dt,
+.print-weapon-mechanics dt {
+  color: #5e574e;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.print-fact-grid dd,
+.print-skill-row dd,
+.print-weapon-mechanics dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.print-fact-grid small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #5e574e;
+  font-size: 0.68rem;
+}
+
+.print-resource-grid dd {
+  font-size: 1.35rem;
+}
+
+.print-characteristic-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.print-characteristic-card {
+  display: grid;
+  gap: 0.12rem;
+  text-align: center;
+}
+
+.print-characteristic-card span {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.print-characteristic-card strong {
+  font-size: 1.35rem;
+}
+
+.print-characteristic-card small {
+  color: #5e574e;
+  font-size: 0.62rem;
+  overflow-wrap: anywhere;
+}
+
+.print-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem 0.6rem;
+}
+
+.print-skill-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.3rem 0.7rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #aaa39a;
+}
+
+.print-skill-row.orphaned,
+.print-weapon-card.orphaned {
+  border-style: dashed;
+}
+
+.print-skill-name {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.print-skill-name small {
+  color: #5e574e;
+  font-size: 0.62rem;
+}
+
+.print-skill-row dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(2.5rem, 1fr));
+  gap: 0.3rem;
+  margin: 0;
+  text-align: center;
+}
+
+.print-improvement-mark {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.print-backstory-groups,
+.print-entry-list,
+.print-weapon-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.print-backstory-group {
+  min-width: 0;
+}
+
+.print-backstory-group h3 {
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.print-backstory-group ul,
+.print-entry-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.print-backstory-entry,
+.print-entry-list li {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border-left: 3px solid #6f675c;
+  overflow-wrap: anywhere;
+}
+
+.print-backstory-entry strong {
+  font-size: 0.72rem;
+}
+
+.print-entry-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.65rem;
+}
+
+.print-entry-list span {
+  color: #5e574e;
+  overflow-wrap: anywhere;
+}
+
+.print-weapon-card {
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid #7d766c;
+  overflow-wrap: anywhere;
+}
+
+.print-weapon-card header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid #aaa39a;
+}
+
+.print-weapon-card header h3 {
+  margin-right: auto;
+}
+
+.print-weapon-card header span {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.print-weapon-mechanics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+}
+
+.print-weapon-mechanics > div {
+  min-width: 0;
+}
+
+.print-weapon-notes {
+  margin-top: 0.55rem !important;
+  padding-top: 0.45rem;
+  border-top: 1px dotted #7d766c;
+  overflow-wrap: anywhere;
+}
+
+.print-empty,
+.print-muted {
+  padding: 0.55rem;
+  border: 1px dashed #9b9489;
+  color: #5e574e;
+}
+
 @media (max-width: 640px) {
   .site-header,
   .record-card,
@@ -2228,6 +2564,51 @@ textarea:disabled {
   .final-skill-toggles {
     justify-content: flex-start;
   }
+
+  .print-preview-toolbar,
+  .print-sheet-header {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .print-preview-toolbar {
+    display: grid;
+  }
+
+  .print-preview-toolbar p {
+    text-align: left;
+  }
+
+  .print-sheet-header {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .print-identity-grid,
+  .print-resource-grid,
+  .print-wealth-grid,
+  .print-derived-grid,
+  .print-skill-grid,
+  .print-entry-list {
+    grid-template-columns: 1fr;
+  }
+
+  .print-characteristic-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .print-skill-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .print-skill-row dl {
+    width: 100%;
+  }
+
+  .print-weapon-mechanics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 840px) {
@@ -2241,5 +2622,120 @@ textarea:disabled {
 
   .creation-guide-toolbar {
     justify-content: flex-start;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+@media print {
+  :root,
+  body {
+    color: #111;
+    background: white;
+  }
+
+  body {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .site-header,
+  .print-preview-toolbar,
+  .print-preview-message {
+    display: none !important;
+  }
+
+  .app-shell,
+  .app-shell:has(.print-preview-page),
+  main,
+  .print-preview-page,
+  .printable-sheet {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  main {
+    display: block;
+  }
+
+  .printable-sheet {
+    gap: 4mm;
+    border: 0;
+    background: white;
+    box-shadow: none;
+  }
+
+  .print-sheet-header {
+    padding-bottom: 3mm;
+  }
+
+  .print-sheet-header h1 {
+    font-size: 22pt;
+  }
+
+  .print-section {
+    padding-top: 3mm;
+  }
+
+  .print-fact-grid > div,
+  .print-characteristic-card,
+  .print-skill-row,
+  .print-backstory-entry,
+  .print-entry-list li,
+  .print-weapon-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-section > h2,
+  .print-section > h3,
+  .print-section-heading,
+  .print-backstory-group h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .print-skill-grid,
+  .print-backstory-group,
+  .print-backstory-groups,
+  .print-weapon-list {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .print-skill-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .print-identity-grid,
+  .print-resource-grid,
+  .print-wealth-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .print-derived-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .print-characteristic-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .print-entry-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .print-weapon-mechanics {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
   }
 }

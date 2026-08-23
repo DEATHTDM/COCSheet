@@ -85,6 +85,7 @@ watch(characterId, (id) => void loadCharacterSheet(id), { immediate: true });
         </div>
         <div class="actions">
           <RouterLink class="button" to="/">返回首页</RouterLink>
+          <RouterLink class="button" :to="`/characters/${character.id}/print`">打印 / PDF</RouterLink>
           <RouterLink
             v-if="creationStatus !== 'missing-session'"
             class="button"
