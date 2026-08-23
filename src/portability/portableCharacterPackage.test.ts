@@ -126,7 +126,9 @@ describe("Portable Character Package v1", () => {
   });
 
   it("接受 Character + 完整 CreationSession package", () => {
-    expect(createPortableCharacterPackage(character, session, 456).creationSession).toEqual(session);
+    const portablePackage = createPortableCharacterPackage(character, session, 456);
+    expect(portablePackage.creationSession).toEqual(session);
+    expect(serializePortableCharacterPackage(portablePackage)).not.toContain("creationExperienceMode");
   });
 
   it("分别拒绝 wrong format、unsupported version 与 malformed JSON", () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from "vue";
+import { computed, useId } from "vue";
 
 import type { SettingId } from "../../coc7/types/setting";
 import {
@@ -11,9 +11,13 @@ import type { CreationStepId } from "../../creation/types/creationSession";
 const props = defineProps<{
   readonly currentStep: CreationStepId;
   readonly settingId: SettingId;
+  readonly open: boolean;
 }>();
 
-const isOpen = ref(true);
+const emit = defineEmits<{
+  (event: "update:open", open: boolean): void;
+}>();
+
 const headingId = `creation-guide-${useId()}`;
 const content = computed(() => getCreationGuideStepContent(props.currentStep, props.settingId));
 const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) + 1);
@@ -21,7 +25,7 @@ const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) 
 
 <template>
   <aside
-    v-if="isOpen"
+    v-if="open"
     class="creation-guide-shell creation-guide-panel panel"
     :aria-labelledby="headingId"
   >
@@ -35,7 +39,7 @@ const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) 
         type="button"
         aria-expanded="true"
         :aria-controls="`${headingId}-content`"
-        @click="isOpen = false"
+        @click="emit('update:open', false)"
       >隐藏新手引导</button>
     </header>
 
@@ -54,14 +58,4 @@ const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) 
       </section>
     </div>
   </aside>
-
-  <div v-else class="creation-guide-shell creation-guide-collapsed">
-    <button
-      class="button creation-guide-toggle"
-      type="button"
-      aria-expanded="false"
-      :aria-controls="`${headingId}-content`"
-      @click="isOpen = true"
-    >显示新手引导</button>
-  </div>
 </template>

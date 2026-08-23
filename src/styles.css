@@ -145,6 +145,10 @@ h2 {
   gap: 1.25rem;
 }
 
+.creation-workspace--quick {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .creation-guide-shell {
   width: 16rem;
   min-width: 0;
@@ -186,8 +190,10 @@ h2 {
   border-top: 1px solid #ded6c7;
 }
 
-.creation-guide-collapsed {
-  width: auto;
+.creation-guide-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .creation-step-focus {
@@ -1988,6 +1994,42 @@ textarea:disabled {
   gap: 1rem;
 }
 
+.creation-experience-selector {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.creation-experience-selector legend {
+  padding: 0 0.35rem;
+  font-weight: 800;
+}
+
+.creation-experience-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #ded6c7;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.creation-experience-option:has(input:checked) {
+  border-color: #315649;
+  background: #f2f6f0;
+}
+
+.creation-experience-option input {
+  margin-top: 0.2rem;
+}
+
+.creation-experience-option span {
+  display: grid;
+  gap: 0.25rem;
+}
+
 .setting-card {
   min-height: 88px;
   text-align: center;
@@ -2161,8 +2203,7 @@ textarea:disabled {
     width: 100%;
   }
 
-  .creation-guide-collapsed {
-    width: auto;
-    justify-self: start;
+  .creation-guide-toolbar {
+    justify-content: flex-start;
   }
 }

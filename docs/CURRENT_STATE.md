@@ -4,18 +4,21 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 10 — Guided Creation UX (In Progress)
+Phase 10 — Guided Creation UX (Completed)
 
-Phase 10A — Guided Creation Shell & Step Guidance is completed. CharacterEditorPage now composes a default-open, page-local collapsible Guide rail with all seven existing creation steps. Guide content follows the real `CreationSession.currentStep`, stays presentation-only, does not duplicate validators or provide workflow mutation, and uses neutral non-Standard guidance without Standard fallback. The existing seven step components and workflow remain intact; richer field-level focus, persistent guide preference, and further guided-creation refinements remain unimplemented and unfrozen.
+Phase 10A — Guided Creation Shell & Step Guidance and Phase 10B — Guided / Quick Creation Preference & Phase 10 Closure are completed. Guided remains the first-use default; users can select Guided or Quick on Create Character and persistently hide/show the controlled Guide in CharacterEditorPage. Quick restores the real step content to full workspace width without changing the shared Character, CreationSession, currentStep, draft, KP Preset, workflow or validators. Richer field-level focus and advanced coachmarks remain Later refinements rather than Phase 10 blockers.
 
 ## Git baseline
 
-Phase 10A Guided Creation Shell branch was created from `main` at `1cd24adc298165a6d3e20569803f0ecd0bf42c57`.
+Phase 10B Guided / Quick Creation Preference branch was created from `main` at `77731e2bddd555bc93dd116daede02ee92ee53ab`.
 
 ## Implemented
 
 - seven-step contextual Creation Guide covering Basic Info, Attributes, Occupation, Skills, Background, Possessions and Review through exhaustive pure presentation metadata
-- default-open Guide rail with page-instance-only hide/show state, no Web Storage or Pinia persistence, and automatic reset to open on refresh
+- persistent Guided / Quick browser UI preference with first-use Guided default, versioned `localStorage` key, safe unknown/read-failure fallback, and in-memory switching that survives write failure
+- accessible Create Character mode selector plus persisted CharacterEditor hide/reopen controls shared across Characters, with no mode argument passed into Setting or KP Preset creation
+- controlled `CreationGuidePanel` presentation API and Quick full-width workspace with no empty desktop sidebar, while Guided retains the existing responsive Guide rail
+- complete mode isolation from currentStep, Character/CreationSession drafts and writes, KP Preset semantics, domain/Record/Dexie version 1, and both version-1 portability formats
 - direct Guide synchronization from the real `CreationSession.currentStep`, with no independent guide step, duplicate completion state, second Next/Previous controls, Store mutation or Repository/Dexie access
 - non-Standard-safe Attributes, Occupation, Skills and Possessions guidance that explicitly preserves placeholder boundaries and never falls back to Standard rules, catalogs, wealth or weapon assumptions
 - responsive desktop rail/current-step composition and normal-flow mobile stacking, plus active-step `aria-current="step"`, labelled Guide landmark and accurate `aria-expanded` controls without focus trap or automatic focus movement
@@ -228,7 +231,8 @@ Merged in the current enum:
 - Key Connection SAN loss, self-help, Keeper locks, insanity/background automatic mutation, investigator development, and experience packages
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, automatic cash deduction, and improvement-roll workflows
 - Optional Luck spending/roll-modification and session-end Luck improvement workflows
-- richer field-level guided focus, persistent Guide UI preference, and further Guide overlay refinements
+- richer field-level guided focus, advanced coachmarks, and further Guide overlay refinements
+- generic Settings and broader UI preference infrastructure
 - arbitrary multi-file batch import/export, selective restore, replace/merge/import-as-copy, and file migrations beyond current v1 formats
 - printing/PDF export
 - URL / Hash preset sharing
@@ -238,7 +242,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 10A is complete, but no later Phase 10 increment is authorized or frozen. Later-item ordering remains unfrozen.
+Phase 10 is complete. No next Phase number, name, scope, or ordering is authorized or frozen; Later-item ordering remains unfrozen.
 
 ## Known technical risks
 

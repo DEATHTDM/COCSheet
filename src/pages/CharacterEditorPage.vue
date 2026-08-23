@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { useCharacterStore } from "../app/stores/characterStore";
+import { useUiPreferenceStore } from "../app/stores/uiPreferenceStore";
 import { deriveFinalCharacteristics, getAgeAdjustmentRule } from "../coc7/rules/age";
 import { applyLowRollBoost, getFifthValue, getHalfValue, getPointBuyAllocationSummary, validateAssignRoll, validatePointBuy } from "../coc7/rules/attributes";
 import {
@@ -27,6 +28,7 @@ import type { CreationStepId } from "../creation/types/creationSession";
 const route = useRoute();
 const characterStore = useCharacterStore();
 const creationStore = useCreationStore();
+const uiPreferenceStore = useUiPreferenceStore();
 const name = ref("");
 const sex = ref("");
 const residence = ref("");
@@ -61,6 +63,7 @@ const creationSteps: readonly { readonly id: CreationStepId; readonly label: str
 const characterId = computed(() => String(route.params.id));
 const session = computed(() => creationStore.current?.data);
 const currentStep = computed(() => session.value?.currentStep ?? "basic-info");
+const guideOpen = computed(() => uiPreferenceStore.creationExperienceMode === "guided");
 const attributes = computed(() => session.value?.attributes);
 const generation = computed(() => attributes.value?.generation);
 const baseValues = computed(() => generation.value?.baseCharacteristics);
@@ -136,6 +139,10 @@ const sanityNeedsReconciliation = computed(() => {
   const currentSan = characterStore.current?.data.resources?.san.current;
   return currentSan !== undefined && currentSan > savedMaximumSanity.value;
 });
+
+function setGuideOpen(open: boolean): void {
+  uiPreferenceStore.setCreationExperienceMode(open ? "guided" : "quick");
+}
 
 onMounted(async () => {
   try {
@@ -359,13 +366,26 @@ async function reconcileSanity(): Promise<void> {
         >{{ step.label }}</li>
       </ol>
 
-      <div class="creation-workspace">
+      <div
+        class="creation-workspace"
+        :class="{ 'creation-workspace--quick': !guideOpen }"
+      >
         <CreationGuidePanel
           :current-step="currentStep"
           :setting-id="characterStore.current.data.settingId"
+          :open="guideOpen"
+          @update:open="setGuideOpen"
         />
 
         <div class="creation-step-focus" aria-label="当前建卡步骤内容">
+          <div v-if="!guideOpen" class="creation-guide-toolbar">
+            <button
+              class="button creation-guide-toggle"
+              type="button"
+              aria-expanded="false"
+              @click="setGuideOpen(true)"
+            >显示新手引导</button>
+          </div>
       <section v-if="currentStep === 'basic-info'" class="panel form-stack">
         <h2>基本信息</h2>
         <label class="field">

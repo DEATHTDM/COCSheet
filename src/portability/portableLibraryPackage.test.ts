@@ -99,6 +99,7 @@ describe("Full Library Backup v1", () => {
     expect(result.characterEntries.find((entry) => entry.character.id === characterB.id)?.creationSession?.currentStep)
       .toBe("review");
     expect(result.kpPresets).toHaveLength(2);
+    expect(serializePortableLibraryPackage(result)).not.toContain("creationExperienceMode");
   });
 
   it("分别拒绝空文件、malformed JSON、wrong format 与 unsupported version", () => {
