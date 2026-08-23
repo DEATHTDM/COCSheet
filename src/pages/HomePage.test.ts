@@ -136,6 +136,22 @@ describe("HomePage portable Character integration", () => {
     expect(await db.characters.count()).toBe(0);
   });
 
+  it("完整备份文件误选单人物 importer 时明确拒绝且零写入", async () => {
+    const { wrapper } = await mountHome();
+    await selectFile(wrapper, { text: vi.fn().mockResolvedValue(JSON.stringify({
+      format: "cocsheet-library",
+      formatVersion: 1,
+      exportedAt: 1,
+      characterEntries: [],
+      kpPresets: [],
+    })) });
+
+    expect(wrapper.get('[role="alert"]').text()).toBe("这不是 COCSheet 人物文件。");
+    expect(await db.characters.count()).toBe(0);
+    expect(await db.creationSessions.count()).toBe(0);
+    expect(await db.kpPresets.count()).toBe(0);
+  });
+
   it("complete、incomplete 与 no-session 三类人物都提供导出 control", async () => {
     const complete = makeCharacter("b2000000-0000-4000-8000-00000000000b", "Complete");
     const incomplete = makeCharacter("b3000000-0000-4000-8000-00000000000b", "Incomplete");

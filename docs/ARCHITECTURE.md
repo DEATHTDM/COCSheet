@@ -104,6 +104,26 @@ Repository 在一个只读 Dexie transaction 中读取最新 Character Record �
 
 导入不解析 Registry 可用性、不回退 Standard、不运行 creation completion rules，也不重算或清洗 legacy/orphan state。Phase 9A 不新增 server、table、index、migration 或 DB version；Character、CreationSession、所有 Record 与 Dexie version 继续为 1。
 
+Phase 9B 的完整资料库备份是与单人物文件独立的 `cocsheet-library / formatVersion 1` domain format，链路是：
+
+```text
+Browser File IO
+      ↓
+Library Portability Store
+      ↓
+pure Library Package parser / serializer
+      ↓
+LibraryPortabilityRepository
+      ↓
+Dexie / IndexedDB
+```
+
+Library package 顶层包含 `exportedAt`、`characterEntries` 与 `kpPresets`。每个 entry 保存完整 Character 与对应 optional CreationSession，global CreationPreset 则保存在独立数组；不保存任何 Record wrapper 或 timestamps。外层 entries/presets 按 domain ID 稳定排序，但 Character、Session 与 Preset 内部数组保持原顺序。文件内 Character ID 与 global KPPreset ID 各自唯一；Session 与 Character 必须同时满足 characterId 与 settingId 完整性。Session.presetSnapshot 与 global KPPreset 独立，同 ID 不形成 package 或 local collision。
+
+全库 export 在一个覆盖 `characters + creationSessions + kpPresets` 的只读 Dexie transaction 中读取三表并验证每条现有 Record。发现 malformed Record 或没有 Character 的 orphan Session 时拒绝生成宣称完整的备份，不跳过或修复。全库 import 在进入数据库前完成完整 JSON、format/version、strict domain schema、cross-object 与 duplicate validation；随后在一个覆盖三表的 `rw` transaction 内先检查全部 Character/local Session/global KPPreset ID collision，再写入所有新 Records。策略是 append-only / all-or-nothing：无冲突时可追加到非空库，任一冲突或任一表写入失败则整份零写入。新 Record metadata 统一使用 import time，绝不使用 `exportedAt`。
+
+Phase 9A 与 9B 都不解析 Registry、运行创建完成规则、重算财富/资源、修复 orphan domain references 或写入 snapshot linkage。Phase 9B 同样不新增 server、table、index、migration 或 DB version；Character、CreationSession、CreationPreset、全部 Record 与 Dexie version 继续为 1。
+
 ## Persistence
 
 IndexedDB 当前为 version 1，包含：
