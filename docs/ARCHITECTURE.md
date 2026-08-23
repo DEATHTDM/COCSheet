@@ -42,7 +42,7 @@ Pull Request、main push 与手动运行都执行 validation；Pull Request 永�
 
 交付 artifact 的唯一来源是 Vite `dist/`，只包含静态应用文件；repository root、source tree、dependencies、测试 fixtures、环境文件与任何浏览器数据都不上传。Character、CreationSession、CreationPreset、IndexedDB 与 localStorage 用户偏好仍只存在于用户浏览器，不属于 build 或 deployment 输入。
 
-Hash Router 与 Vite relative `base: "./"` 继续保证同一份 `dist/` 可运行在 GitHub Pages project path 或其他普通子目录 static host，不依赖 origin、固定仓库路径或服务器 rewrite。Phase 13A 只建立 delivery pipeline；production Pages 的真实 URL 与 repository-level Pages setting 必须在 workflow 合并到 `main` 后单独验证。
+Hash Router 与 Vite relative `base: "./"` 继续保证同一份 `dist/` 可运行在 GitHub Pages project path 或其他普通子目录 static host，不依赖 origin、固定仓库路径或服务器 rewrite。GitHub Pages production delivery 已启用；通过 validation 的 `main` push 会自动部署，已验证的 production endpoint 是 <https://deathtdm.github.io/COCSheet/>。
 
 ## Domain separation
 

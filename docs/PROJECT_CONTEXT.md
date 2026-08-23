@@ -38,7 +38,7 @@ Zero Server
 - 人物默认保存在浏览器 IndexedDB。
 - 文件导入/导出是计划中的长期保存与迁移方式。
 - KP Preset 计划通过压缩 URL / Hash 分享，不为分享功能引入服务器。
-- 部署目标是 GitHub Pages、Cloudflare Pages或其他普通静态 Hosting。
+- 当前 production deployment 位于 GitHub Pages；架构继续兼容 Cloudflare Pages 或其他普通静态 Hosting，以保留未来迁移可能。
 
 若未来需求确实无法在零服务器架构下实现，必须先明确提出架构变化，不能因实现方便擅自引入后端。
 
