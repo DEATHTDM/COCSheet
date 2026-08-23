@@ -6,14 +6,19 @@ import { getCharacterCreationStatus } from "../character-sheet/presentation/fina
 import { getSettingPackOrThrow } from "../content/registry";
 import { useCreationStore } from "../creation/stores/creationStore";
 import { downloadJsonFile } from "../portability/browser/downloadJsonFile";
+import { useLibraryPortabilityStore } from "../portability/stores/libraryPortabilityStore";
 import { usePortabilityStore } from "../portability/stores/portabilityStore";
 
 const characterStore = useCharacterStore();
 const creationStore = useCreationStore();
 const portabilityStore = usePortabilityStore();
+const libraryPortabilityStore = useLibraryPortabilityStore();
 const importInput = ref<HTMLInputElement>();
+const libraryImportInput = ref<HTMLInputElement>();
 const exportingCharacterId = ref("");
+const exportingLibrary = ref(false);
 const exportError = ref("");
+const libraryExportError = ref("");
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -66,6 +71,43 @@ async function exportCharacter(characterId: string): Promise<void> {
     exportError.value = error instanceof Error ? error.message : "导出人物文件失败。";
   } finally {
     exportingCharacterId.value = "";
+  }
+}
+
+function selectLibraryImportFile(): void {
+  libraryPortabilityStore.resetImportStatus();
+  libraryImportInput.value?.click();
+}
+
+async function handleLibraryImportFile(event: Event): Promise<void> {
+  const input = event.currentTarget as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || libraryPortabilityStore.importStatus === "importing") {
+    input.value = "";
+    return;
+  }
+  try {
+    const confirmed = window.confirm(
+      "将把完整备份中的数据追加到当前浏览器。\n已有相同 ID 的数据不会被覆盖；发现任一冲突时整份导入取消。\n继续？",
+    );
+    if (!confirmed) return;
+    await libraryPortabilityStore.importLibraryText(await file.text());
+  } catch {
+    // Store exposes the user-facing error while preserving the original rejection for tests/callers.
+  } finally {
+    input.value = "";
+  }
+}
+
+async function exportLibrary(): Promise<void> {
+  libraryExportError.value = "";
+  exportingLibrary.value = true;
+  try {
+    downloadJsonFile(await libraryPortabilityStore.exportLibrary());
+  } catch (error: unknown) {
+    libraryExportError.value = error instanceof Error ? error.message : "导出完整备份失败。";
+  } finally {
+    exportingLibrary.value = false;
   }
 }
 </script>
@@ -151,6 +193,52 @@ async function exportCharacter(characterId: string): Promise<void> {
           </div>
         </li>
       </ul>
+    </section>
+
+    <section class="panel page-stack library-backup-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">完整资料库文件</p>
+          <h2>本地数据备份</h2>
+        </div>
+        <div class="actions">
+          <button
+            class="button"
+            type="button"
+            :disabled="exportingLibrary"
+            @click="exportLibrary"
+          >{{ exportingLibrary ? '正在导出……' : '导出完整备份' }}</button>
+          <button
+            class="button"
+            type="button"
+            :disabled="libraryPortabilityStore.importStatus === 'importing'"
+            @click="selectLibraryImportFile"
+          >{{ libraryPortabilityStore.importStatus === 'importing' ? '正在导入……' : '导入完整备份' }}</button>
+        </div>
+      </div>
+      <input
+        ref="libraryImportInput"
+        class="visually-hidden"
+        type="file"
+        accept=".cocsheet-backup.json,.json,application/json"
+        :disabled="libraryPortabilityStore.importStatus === 'importing'"
+        @change="handleLibraryImportFile"
+      >
+      <p class="muted">
+        完整备份包含全部调查员、对应建卡进度与 KP 建卡预设，仅在当前浏览器本地处理。
+        它与单个人物文件不同，导入只会安全追加且不会覆盖已有数据。
+      </p>
+      <p
+        v-if="libraryPortabilityStore.importStatus === 'success'"
+        class="success-message"
+        role="status"
+      >{{ libraryPortabilityStore.importMessage }}</p>
+      <p
+        v-else-if="libraryPortabilityStore.importStatus === 'error'"
+        class="error-message"
+        role="alert"
+      >{{ libraryPortabilityStore.importMessage }}</p>
+      <p v-if="libraryExportError" class="error-message" role="alert">{{ libraryExportError }}</p>
     </section>
 
     <section>

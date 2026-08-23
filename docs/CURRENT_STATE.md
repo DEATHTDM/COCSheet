@@ -4,16 +4,23 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 9 — Data Portability (In Progress)
+Phase 9 — Data Portability (Completed)
 
-Phase 9A — Portable Character Package is completed. COCSheet can export one latest persisted Character plus its optional CreationSession as a strict version-1 domain JSON package, then validate and atomically import it with conservative ID-collision rejection and fresh local Record timestamps. Home provides local-only import and per-Character export for complete, incomplete, and no-session Characters, and refreshes both the Character list and session-step index after import. Full-library backup, batch import/export, KP Preset portability/sharing, replace/merge/import-as-copy, file migrations beyond v1, and PDF/printing remain unimplemented.
+Phase 9A — Portable Character Package and Phase 9B — Full Library Backup are completed. COCSheet retains the strict `cocsheet-character` v1 single-Character file while adding an independent strict `cocsheet-library` v1 full-library domain backup containing all Characters, their corresponding optional CreationSessions, and all global KP Presets. Full-library export uses one three-table read snapshot with orphan-Session protection; import is append-only, all-or-nothing, collision-conservative, and atomic across all three tables with fresh local Record timestamps. Home clearly separates single-Character files from complete local backups and refreshes Character, session-step, and Preset stores after library import. Replace/merge/import-as-copy, selective restore, arbitrary multi-file batch import/export, file migrations beyond v1, KP Preset URL/Hash sharing, and PDF/printing remain unimplemented.
 
 ## Git baseline
 
-Phase 9A Portable Character Package branch was created from `main` at `42bd007c3848f57bf36fb12dcba165c48c211d1a`.
+Phase 9B Full Library Backup branch was created from `main` at `ca26d04eebeb0d6014ea756c643f1ab269ce1cc8`.
 
 ## Implemented
 
+- independent strict `Full Library Backup v1` with fixed `cocsheet-library` format, complete Character + corresponding optional CreationSession entries, complete global CreationPreset data, nonnegative export metadata, and no IndexedDB Record wrappers/timestamps
+- deterministic outer Character-entry and KPPreset ID ordering while preserving nested Character, Session, allocation, backstory, asset, possession, weapon, SkillRef, Key Connection and Preset domain array order and identity
+- one-read-transaction `characters + creationSessions + kpPresets` export snapshot with validation of every local Record, zero writes, explicit orphan Session rejection, empty-library support, and no best-effort skipping or repair
+- prevalidated append-only full-library import with strict wrong-format/future-version/domain/cross-object/duplicate rejection before writes, plus conservative local Character/orphan Session/global KPPreset collision checks that cancel the entire package
+- one three-table write transaction for all Characters, optional Sessions, and global Presets, with rollback on any entity insertion failure, fresh shared import-time Record timestamps, safe append to a non-empty no-conflict library, and unrelated local data preservation
+- CreationSession presetSnapshot and global KPPreset independence even when IDs match and contents differ, with no snapshot linkage reconstruction or mutual overwrite
+- independent Home “本地数据备份” controls, confirmation wording, success counts, readable import/export errors, same-file reselection, and immediate Character/session/Preset Store refresh without disturbing Phase 9A controls
 - strict `Portable Character Package v1` with fixed `cocsheet-character` format, independent file `formatVersion`, nonnegative epoch-millisecond `exportedAt`, complete Character and optional complete CreationSession domain data
 - pure BOM-safe parser/serializer with distinct readable errors for empty/malformed/wrong-format/unsupported-version/Character/Session/cross-object failures, strict top-level validation, two-space JSON and trailing newline
 - deterministic safe per-Character `.cocsheet.json` filename plus browser Blob download with object URL revocation and no third-party file library
@@ -217,7 +224,7 @@ Merged in the current enum:
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, automatic cash deduction, and improvement-roll workflows
 - Optional Luck spending/roll-modification and session-end Luck improvement workflows
 - guide overlay
-- full-library backup, batch import/export, replace/merge/import-as-copy, and file migrations beyond Portable Character Package v1
+- arbitrary multi-file batch import/export, selective restore, replace/merge/import-as-copy, and file migrations beyond current v1 formats
 - printing/PDF export
 - URL / Hash preset sharing
 - Setting-specific rules and full Setting content
@@ -231,8 +238,8 @@ No Later phase is authorized. Later-item ordering remains unfrozen.
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
-- future Portable Package migrations and broader library backup compatibility
+- future Portable Package and Full Library Backup migrations or advanced conflict-resolution compatibility
 - Setting-specific extension evolution
 - Deprogrammer's former `keeper-approved-single-occupation-skill-replacement` pressure is resolved by an occupation-level singular exact replacement policy with explicit target and target-scoped Keeper approval; there is no active Engine pressure
 - Keeper Criminal's former `choice-pool-with-repeatable-specialization-branch` pressure is resolved by the top-level-only `choice-pool` selector, which separates selected category count from selected SkillRef count
-- browser storage can be cleared; per-Character backup is available, but broader library backup remains unimplemented
+- browser storage can be cleared; single-Character and full-library local backups now exist, but there is no automatic/cloud backup or encrypted archive

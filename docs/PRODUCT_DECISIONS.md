@@ -30,6 +30,16 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 v1 若本地已经存在相同 Character ID，或存在以该 characterId 为主键的 orphan/existing CreationSession，必须拒绝，不 overwrite、merge、remap 或 import-as-copy。Session 内 `presetSnapshot` 只作为原会话快照迁移，不创建或覆盖全局 KPPreset，也不因同 ID KPPreset 冲突而拒绝。未知或未来 `formatVersion` 明确拒绝，不删除未知字段、静默降级或猜测 migration。
 
+### D002 — Full Library Backup v1
+
+完整本地资料库备份使用独立的 strict domain format：`format = cocsheet-library`、`formatVersion = 1`。文件包含全部 Character；每个 Character entry 内嵌同人物的 optional CreationSession；顶层另存全部 global CreationPreset。它不是 D001 单人物文件的新版，也不是三张 IndexedDB table 的 dump；`exportedAt` 只作文件元信息，CharacterRecord、CreationSessionRecord 与 KPPresetRecord 的本地 timestamps、重复 name/settingId metadata 都不进入文件。
+
+导出必须在一个覆盖 `characters + creationSessions + kpPresets` 的只读事务中形成一致 snapshot，并对全部 Record 做现有 schema 校验。任何没有对应 Character 的 orphan Session 都是完整性错误，整份备份拒绝生成，不静默跳过、删除或修复。文件中 Character ID 与 global KPPreset ID 各自全局唯一；同 entry 的 Session 必须与 Character 的 characterId 和 settingId 一致。外层 Character entries 与 global presets 按 ID 稳定排序，但任何 domain 内部数组顺序保持原样。
+
+导入在写事务前完成 format/version、strict package、全部 domain schema、cross-object integrity 与 package 内 duplicate validation。通过后使用一个覆盖三表的写事务执行 append-only / all-or-nothing import：任一 Character ID、占用该 Character ID 的 local Session，或 global KPPreset ID 与本地冲突，整份拒绝；完全无冲突的备份可以追加到非空资料库。不得 overwrite、merge、remap、import-as-copy 或选择性恢复。所有新 Record 使用同一个 import time 创建本地 timestamps，`exportedAt` 不写入 Record。
+
+CreationSession.presetSnapshot 继续是历史创建 provenance，与当前 global KPPreset 是互相独立的 domain data；两者 ID 相同且内容不同合法，不互相覆盖，也不参与彼此的冲突判断。Library v1 不运行 Registry repair、Standard fallback、completion validator、资源/财富重算或其他 domain normalization，也不引入表、索引、migration、server 或同步 metadata。
+
 ## Backstory
 
 ### B001 — Character-owned backstory with stable entry identity

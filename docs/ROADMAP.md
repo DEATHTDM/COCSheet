@@ -333,7 +333,7 @@ Status: Completed
 
 ## Phase 9 — Data Portability
 
-Status: In Progress
+Status: Completed
 
 ### Phase 9A — Portable Character Package
 
@@ -347,11 +347,24 @@ Status: Completed
 - Home local-only import/export interaction with immediate Character/session status refresh
 - unchanged Character, CreationSession, Record, table, index, and Dexie version 1; no server or schema migration
 
+### Phase 9B — Full Library Backup & Phase 9 Closure
+
+Status: Completed
+
+- independent strict `cocsheet-library` version-1 domain backup containing every Character, its corresponding optional CreationSession, and every global KP Preset without Record wrappers or timestamps
+- deterministic outer ID ordering, package-level duplicate and Character/Session integrity validation, and explicit orphan Session export failure
+- one consistent readonly snapshot across all three IndexedDB tables plus empty-library export/import support
+- append-only, all-or-nothing import into empty or non-empty no-conflict libraries with conservative Character/local Session/global KPPreset collision rejection
+- one atomic three-table write transaction, rollback on any insert failure, fresh import-time Record metadata, and unchanged domain identity/data
+- independent historical Session presetSnapshot and current global KPPreset semantics, including legal same-ID/different-content round-trip
+- Home full-backup export/import area, confirmation, readable counts/errors, same-file reselection, and immediate Character/session/Preset Store refresh
+- unchanged Phase 9A `cocsheet-character` v1 behavior and unchanged Character, CreationSession, CreationPreset, Record, table, index, and Dexie version 1
+
 ## Later
 
 - guide overlay
 - KP preset sharing
-- broader library backup / portability
+- advanced import conflict resolution and future file migrations
 - printing / PDF export
 - Gaslight
 - Down Darker Trails
