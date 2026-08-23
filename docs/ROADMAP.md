@@ -360,9 +360,25 @@ Status: Completed
 - Home full-backup export/import area, confirmation, readable counts/errors, same-file reselection, and immediate Character/session/Preset Store refresh
 - unchanged Phase 9A `cocsheet-character` v1 behavior and unchanged Character, CreationSession, CreationPreset, Record, table, index, and Dexie version 1
 
+## Phase 10 — Guided Creation UX
+
+Status: In Progress
+
+### Phase 10A — Guided Creation Shell & Step Guidance
+
+Status: Completed
+
+- contextual Guide for all seven existing creation steps, synchronized only from `CreationSession.currentStep`
+- pure exhaustive presentation metadata with concise goals, suggested actions and non-authoritative completion hints
+- default-open, page-local collapse state with no domain, database, Web Storage or portability persistence
+- no duplicate completion validator, workflow state machine or Guide-owned navigation mutation
+- non-Standard-safe placeholder guidance with no Standard rules or catalog fallback
+- desktop Guide rail plus current-step focus container, mobile normal-flow stacking, active-step `aria-current`, labelled Guide landmark and accurate collapse semantics
+- unchanged existing step component boundaries, workflow actions, schemas, records, tables, indexes and Dexie version
+
 ## Later
 
-- guide overlay
+- richer guided-creation refinements
 - KP preset sharing
 - advanced import conflict resolution and future file migrations
 - printing / PDF export

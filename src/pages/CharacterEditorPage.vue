@@ -13,6 +13,7 @@ import {
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import type { EraId } from "../coc7/types/occupation";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
+import CreationGuidePanel from "../components/creation/CreationGuidePanel.vue";
 import CharacterReviewPanel from "../components/creation/CharacterReviewPanel.vue";
 import CharacterBackgroundStep from "../components/creation/CharacterBackgroundStep.vue";
 import CharacterPossessionsStep from "../components/creation/CharacterPossessionsStep.vue";
@@ -21,6 +22,7 @@ import { getSettingPackOrThrow } from "../content/registry";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { AttributeGenerationMethod } from "../creation/types/creationPreset";
+import type { CreationStepId } from "../creation/types/creationSession";
 
 const route = useRoute();
 const characterStore = useCharacterStore();
@@ -45,6 +47,16 @@ const methodLabels: Readonly<Record<AttributeGenerationMethod, string>> = {
   "point-buy": "购点",
   manual: "手动输入",
 };
+
+const creationSteps: readonly { readonly id: CreationStepId; readonly label: string }[] = [
+  { id: "basic-info", label: "基本信息" },
+  { id: "attributes", label: "属性" },
+  { id: "occupation", label: "职业" },
+  { id: "skills", label: "技能" },
+  { id: "background", label: "背景" },
+  { id: "possessions", label: "财富与物品" },
+  { id: "review", label: "检查" },
+];
 
 const characterId = computed(() => String(route.params.id));
 const session = computed(() => creationStore.current?.data);
@@ -339,15 +351,21 @@ async function reconcileSanity(): Promise<void> {
       </aside>
 
       <ol class="stepper" aria-label="建卡步骤">
-        <li :class="{ active: currentStep === 'basic-info' }">基本信息</li>
-        <li :class="{ active: currentStep === 'attributes' }">属性</li>
-        <li :class="{ active: currentStep === 'occupation' }">职业</li>
-        <li :class="{ active: currentStep === 'skills' }">技能</li>
-        <li :class="{ active: currentStep === 'background' }">背景</li>
-        <li :class="{ active: currentStep === 'possessions' }">财富与物品</li>
-        <li :class="{ active: currentStep === 'review' }">检查</li>
+        <li
+          v-for="step in creationSteps"
+          :key="step.id"
+          :class="{ active: currentStep === step.id }"
+          :aria-current="currentStep === step.id ? 'step' : undefined"
+        >{{ step.label }}</li>
       </ol>
 
+      <div class="creation-workspace">
+        <CreationGuidePanel
+          :current-step="currentStep"
+          :setting-id="characterStore.current.data.settingId"
+        />
+
+        <div class="creation-step-focus" aria-label="当前建卡步骤内容">
       <section v-if="currentStep === 'basic-info'" class="panel form-stack">
         <h2>基本信息</h2>
         <label class="field">
@@ -563,6 +581,8 @@ async function reconcileSanity(): Promise<void> {
         v-else-if="currentStep === 'review'"
         :character="characterStore.current.data"
       />
+        </div>
+      </div>
     </template>
     <p v-else>正在读取本地数据……</p>
   </section>
