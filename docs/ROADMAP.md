@@ -331,12 +331,28 @@ Status: Completed
 - unchanged Character, CreationSession, Record, table, index and Dexie version 1; no schema migration
 - Phase 8 Final Character Sheet UX closure without claiming recovery, insanity, combat, advancement, import/export or printing
 
+## Phase 9 — Data Portability
+
+Status: In Progress
+
+### Phase 9A — Portable Character Package
+
+Status: Completed
+
+- strict version-1 per-Character JSON domain package with complete Character and optional CreationSession
+- independent file format version and export metadata without IndexedDB Record wrappers or timestamps
+- consistent read-only export plus prevalidated atomic import with fresh local timestamps
+- conservative Character/orphan Session ID collision rejection with no overwrite, merge, remap, or import-as-copy
+- stable identity, legacy/orphan, incomplete/review currentStep, provenance, and non-Standard preservation without Registry cleanup or Standard fallback
+- Home local-only import/export interaction with immediate Character/session status refresh
+- unchanged Character, CreationSession, Record, table, index, and Dexie version 1; no server or schema migration
+
 ## Later
 
 - guide overlay
 - KP preset sharing
-- import / export
-- printing / export
+- broader library backup / portability
+- printing / PDF export
 - Gaslight
 - Down Darker Trails
 - Dark Ages
