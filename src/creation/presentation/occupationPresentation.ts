@@ -1,4 +1,5 @@
 import type {
+  EraId,
   OccupationCategoryId,
   OccupationDefinition,
   OccupationEraAvailability,
@@ -8,9 +9,11 @@ import type {
   SkillSelector,
 } from "../../coc7/types/occupation";
 import { occupationCategoryIds } from "../../coc7/types/occupation";
+import { isOccupationAvailableInEra } from "../../coc7/rules/availability";
 import type { SkillRef } from "../../coc7/types/skill";
 import type { SkillRegistry } from "../../content/skillRegistry";
 import type { CreationPreset } from "../types/creationPreset";
+import type { CreationSession } from "../types/creationSession";
 
 const occupationCategoryLabels: Readonly<Record<OccupationCategoryId, string>> = {
   academic: "学术研究",
@@ -216,6 +219,48 @@ export function getOccupationPresetPolicyStatus(
     return "keeper-approval-required";
   }
   return "allowed";
+}
+
+export interface OccupationTransitionStatusInput {
+  readonly occupation: CreationSession["occupation"];
+  readonly presetSnapshot: CreationPreset | undefined;
+  readonly eraId: EraId | undefined;
+  readonly eraRequired: boolean;
+}
+
+export interface OccupationTransitionStatus {
+  readonly canContinue: boolean;
+  readonly reason: string;
+}
+
+export function getOccupationTransitionStatus(
+  input: OccupationTransitionStatusInput,
+): OccupationTransitionStatus {
+  if (input.eraRequired && !input.eraId) {
+    return { canContinue: false, reason: "请先返回基本信息选择建卡时代。" };
+  }
+  if (!input.occupation) {
+    return { canContinue: false, reason: "请先选择一个职业。" };
+  }
+  if (input.occupation.kind === "catalog" && getOccupationPresetPolicyStatus(
+    input.occupation.selectedOccupationId,
+    input.presetSnapshot,
+  ) === "banned") {
+    return { canContinue: false, reason: "当前已选职业被此 KP 预设禁用，请先更换职业。" };
+  }
+  if (input.occupation.kind === "custom" && input.presetSnapshot?.allowCustomOccupation === false) {
+    return { canContinue: false, reason: "当前 KP 预设禁止自定义职业，请先更换职业。" };
+  }
+  if (input.eraRequired && input.eraId && !isOccupationAvailableInEra(
+    input.occupation.definitionSnapshot,
+    input.eraId,
+  )) {
+    return {
+      canContinue: false,
+      reason: `当前职业不适用于${formatOccupationEraId(input.eraId)}`,
+    };
+  }
+  return { canContinue: true, reason: "" };
 }
 
 export function sortOccupationsForDisplay(

@@ -17,6 +17,7 @@ import {
   getAvailableOccupationCategories,
   getAvailableOccupationTags,
   getOccupationPresetPolicyStatus,
+  getOccupationTransitionStatus,
   sortOccupationsForDisplay,
 } from "./occupationPresentation";
 
@@ -209,5 +210,44 @@ describe("occupation presentation", () => {
     expect(getOccupationPresetPolicyStatus("artist", preset)).toBe("keeper-approval-required");
     expect(getOccupationPresetPolicyStatus("author", preset)).toBe("allowed");
     expect(getOccupationPresetPolicyStatus("author")).toBe("allowed");
+  });
+
+  it("为职业页面按钮与 Guide 提供同一 transition status", () => {
+    const registry = getOccupationRegistry("standard");
+    const author = registry.get("author");
+    const deprogrammer = registry.get("deprogrammer");
+    if (!author || !deprogrammer) throw new Error("测试职业不存在");
+
+    expect(getOccupationTransitionStatus({
+      occupation: undefined,
+      presetSnapshot: undefined,
+      eraId: "classic-1920s",
+      eraRequired: true,
+    })).toEqual({ canContinue: false, reason: "请先选择一个职业。" });
+
+    expect(getOccupationTransitionStatus({
+      occupation: {
+        kind: "catalog",
+        selectedOccupationId: author.id,
+        definitionSnapshot: author,
+      },
+      presetSnapshot: undefined,
+      eraId: "classic-1920s",
+      eraRequired: true,
+    })).toEqual({ canContinue: true, reason: "" });
+
+    expect(getOccupationTransitionStatus({
+      occupation: {
+        kind: "catalog",
+        selectedOccupationId: deprogrammer.id,
+        definitionSnapshot: deprogrammer,
+      },
+      presetSnapshot: undefined,
+      eraId: "classic-1920s",
+      eraRequired: true,
+    })).toEqual({
+      canContinue: false,
+      reason: "当前职业不适用于古典（1920年代）",
+    });
   });
 });

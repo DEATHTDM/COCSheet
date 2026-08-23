@@ -86,17 +86,19 @@ Phase 4A 允许保存、但不满足 Maximum SAN 的旧 Character 仍可通过�
 
 ## Guided creation presentation
 
-Phase 10A 的建卡引导 metadata 与业务状态保持没有 write path 的 presentation boundary：
+Phase 10A / 15 的建卡引导 metadata、实时 readiness 与业务状态保持没有 write path 的 presentation boundary：
 
 ```text
 CharacterEditorPage
-        ↓ currentStep + settingId
-CreationGuidePanel
+        ↓ currentStep + authoritative validators / workflow preconditions
+pure creation-guide metadata + readiness presentation
         ↓
-pure creation-guide metadata
+CreationGuidePanel
 ```
 
-`CreationGuidePanel` 只读取实际 `CreationSession.currentStep`、人物 Setting 与纯 metadata，不访问 preference Store、browser storage、Character / CreationSession / CreationWorkflow Repository、Dexie 或 domain Store mutation。Phase 10B 将它改为由 `open` + `update:open` 控制的 presentation component；Guide 不保存 `guideCurrentStep`，因此真实 step 前进或返回后仍直接由响应式 `currentStep` 切换内容。
+`CharacterEditorPage` 只在当前受支持的 Standard step 读取既有权威结果：Basic Info 与真实 transition 共用同一个纯 precondition helper，Attributes 读取 `getCompletionErrors()`，Occupation 与真实 Continue 共用同一个 transition status，Skills 读取 `getSkillFinalizePlan()`，Background / Possessions 分别读取 `validateCreationBackstory()` / `validateCreationWealth()`。这些结果只被轻量 presentation model 整理为空白清理、稳定去重及 errors / approvals / warnings 分栏，不复制或反向推断规则。
+
+`CreationGuidePanel` 只接收实际 `CreationSession.currentStep`、纯 metadata 与纯 readiness data，不访问 preference Store、browser storage、Character / CreationSession / CreationWorkflow Repository、Dexie 或 domain Store mutation。七步 progress 只按 `creationGuideSteps` 顺序与当前 `currentStep` 推导 completed/current/pending；返回较早步骤时后续步骤重新成为 pending，不保存 visited/completed state。Phase 10B 将 Panel 改为由 `open` + `update:open` 控制；Guide 不保存 `guideCurrentStep`，不提供可点击 stepper 或第二套 Next / Previous，也不自动 scroll、focus 或定位字段。
 
 Guided / Quick 的唯一持久化链路是：
 
@@ -124,7 +126,7 @@ Repository
 Dexie
 ```
 
-Guide 的 completion hint 只是操作文案，不复制 attribute、occupation、skill allocation、background、wealth 或 possessions validator，也不提供第二套 Next / Previous。当前 Guide 只覆盖正式支持的 Standard 创建流程；unsupported historical Setting 的 Creation Editor 在挂载 Guide 或规则步骤组件前进入明确的只读安全状态。
+Guide 的 completion hint 与 readiness 都只是权威结果的只读 presentation，不复制 attribute、occupation、skill allocation、background、wealth 或 possessions validator，也不提供第二套 Next / Previous。实时更新只来自现有 Vue / Pinia 响应式 state，不产生 DB write。当前 Guide 只覆盖正式支持的 Standard 创建流程；unsupported historical Setting 的 Creation Editor 在挂载 Guide、readiness 或规则步骤组件前进入明确的只读安全状态。
 
 ## Final character sheet
 

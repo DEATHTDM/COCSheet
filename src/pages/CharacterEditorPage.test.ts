@@ -74,6 +74,7 @@ async function mountPage(
 
 async function mountExistingPage(
   id = characterId,
+  beforeMount?: () => void,
 ): Promise<{ wrapper: VueWrapper; router: Router }> {
   const pinia = createPinia();
   setActivePinia(pinia);
@@ -87,6 +88,7 @@ async function mountExistingPage(
   });
   await router.push(`/characters/${id}`);
   await router.isReady();
+  beforeMount?.();
   const wrapper = mount(CharacterEditorPage, { global: { plugins: [pinia, router] } });
   await vi.waitFor(() => expect(
     wrapper.find(".creation-step-focus").exists() ||
@@ -133,11 +135,16 @@ describe("CharacterEditorPage guided creation integration", () => {
     expect(characterUpdate).not.toHaveBeenCalled();
     expect(sessionUpdate).not.toHaveBeenCalled();
     expect(presetUpdate).not.toHaveBeenCalled();
-    expect(wrapper.findAll('.stepper [aria-current="step"]')).toHaveLength(1);
-    expect(wrapper.get('.stepper [aria-current="step"]').text()).toBe("基本信息");
+    expect(wrapper.findAll('.creation-guide-progress [aria-current="step"]')).toHaveLength(1);
+    expect(wrapper.get('.creation-guide-progress [aria-current="step"]').text()).toContain("基本信息");
+    expect(wrapper.findAll(".creation-guide-progress li")).toHaveLength(7);
+    expect(wrapper.get(".creation-guide-readiness-summary").text())
+      .toBe("当前步骤已满足继续条件。");
 
     await wrapper.get(".creation-guide-toggle").trigger("click");
     expect(wrapper.find(".creation-guide-panel").exists()).toBe(false);
+    expect(wrapper.find(".creation-guide-progress").exists()).toBe(false);
+    expect(wrapper.find(".creation-guide-readiness").exists()).toBe(false);
     expect(wrapper.get(".creation-workspace").classes()).toContain("creation-workspace--quick");
     expect(wrapper.get(".creation-guide-toggle").text()).toBe("显示新手引导");
     expect(wrapper.get(".creation-guide-toggle").attributes("aria-expanded")).toBe("false");
@@ -146,6 +153,7 @@ describe("CharacterEditorPage guided creation integration", () => {
     expect(useCreationStore().current?.data.currentStep).toBe("basic-info");
     await wrapper.get(".creation-guide-toggle").trigger("click");
     expect(wrapper.get(".creation-guide-panel h2").text()).toBe("完善调查员基本信息");
+    expect(wrapper.find(".creation-guide-progress").exists()).toBe(true);
     expect(window.localStorage.getItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY)).toBe("guided");
 
     expect(characterUpdate).not.toHaveBeenCalled();
@@ -203,6 +211,72 @@ describe("CharacterEditorPage guided creation integration", () => {
     expect(wrapper.get(".creation-guide-toggle").text()).toBe("显示新手引导");
   });
 
+  it("updates Basic Info readiness from live drafts before Continue and does not require name", async () => {
+    const character = makeCharacter();
+    character.name = "";
+    delete character.sex;
+    delete character.residence;
+    delete character.birthplace;
+    const { wrapper } = await mountPage(character, makeSession());
+
+    expect(wrapper.get(".creation-guide-readiness").text())
+      .toContain("请填写性别、住所与出身地。");
+
+    const fieldInput = (label: string) => {
+      const field = wrapper.findAll("label.field").find((candidate) =>
+        candidate.find("span").text() === label,
+      );
+      if (!field) throw new Error(`找不到字段：${label}`);
+      return field.get("input");
+    };
+    await fieldInput("性别").setValue("测试");
+    await fieldInput("住所").setValue("上海");
+    await fieldInput("出身地").setValue("香港");
+
+    expect(wrapper.get(".creation-guide-readiness-summary").text())
+      .toBe("当前步骤已满足继续条件。");
+    expect(useCreationStore().current?.data.currentStep).toBe("basic-info");
+
+    await wrapper.get(".creation-step-focus button.primary").trigger("click");
+    await flushPromises();
+    await vi.waitFor(() => expect(useCreationStore().current?.data.currentStep).toBe("attributes"));
+  });
+
+  it("reflects authoritative Attribute, Occupation, Background, Possessions, and Review status", async () => {
+    const { wrapper } = await mountPage(makeCharacter(), makeSession("standard", "attributes"));
+    const creationStore = useCreationStore();
+
+    expect(creationStore.getCompletionErrors()).toEqual(["尚未选择属性生成方式"]);
+    expect(wrapper.get(".creation-guide-readiness-list").text()).toBe("尚未选择属性生成方式");
+
+    await creationStore.chooseGenerationMethod("manual");
+    await flushPromises();
+    expect(creationStore.getCompletionErrors()).toEqual(["基础属性尚未完成或不符合预设限制"]);
+    expect(wrapper.get(".creation-guide-readiness-list").text())
+      .toBe("基础属性尚未完成或不符合预设限制");
+
+    await creationStore.setCurrentStep("occupation");
+    await flushPromises();
+    expect(wrapper.get(".creation-guide-readiness-list").text()).toBe("请先选择一个职业。");
+
+    await creationStore.setCurrentStep("background");
+    await flushPromises();
+    expect(wrapper.get(".creation-guide-readiness").text())
+      .toContain("创建背景至少需要 3 条；当前为 0 条。");
+    expect(wrapper.get(".creation-guide-readiness").text())
+      .toContain("请选择一条创建背景作为关键连接。");
+
+    await creationStore.setCurrentStep("possessions");
+    await flushPromises();
+    expect(wrapper.get(".creation-guide-readiness").text())
+      .toContain("请先按当前 Credit Rating 初始化财富。");
+
+    await creationStore.setCurrentStep("review");
+    await flushPromises();
+    expect(wrapper.get(".creation-guide-readiness-summary").text())
+      .toContain("建卡流程已到检查阶段");
+  });
+
   it("follows the real currentStep forward/back and renders every existing step component", async () => {
     const { wrapper } = await mountPage(makeCharacter(), makeSession());
 
@@ -211,8 +285,8 @@ describe("CharacterEditorPage guided creation integration", () => {
     await wrapper.get("button.primary").trigger("click");
     await flushPromises();
     await vi.waitFor(() => expect(wrapper.get(".creation-guide-panel h2").text()).toBe("生成并确认属性"));
-    expect(wrapper.get('.stepper [aria-current="step"]').text()).toBe("属性");
-    expect(wrapper.findAll('.stepper [aria-current="step"]')).toHaveLength(1);
+    expect(wrapper.get('.creation-guide-progress [aria-current="step"]').text()).toContain("属性");
+    expect(wrapper.findAll('.creation-guide-progress [aria-current="step"]')).toHaveLength(1);
     expect(wrapper.find(".method-grid").exists()).toBe(true);
 
     await wrapper.get(".creation-step-focus button.button").trigger("click");
@@ -231,8 +305,8 @@ describe("CharacterEditorPage guided creation integration", () => {
       await creationStore.setCurrentStep(step);
       await flushPromises();
       expect(wrapper.get(".creation-guide-panel h2").text()).toBe(title);
-      expect(wrapper.get('.stepper [aria-current="step"]').attributes("aria-current")).toBe("step");
-      expect(wrapper.findAll('.stepper [aria-current="step"]')).toHaveLength(1);
+      expect(wrapper.get('.creation-guide-progress [aria-current="step"]').attributes("aria-current")).toBe("step");
+      expect(wrapper.findAll('.creation-guide-progress [aria-current="step"]')).toHaveLength(1);
       expect(wrapper.find(selector).exists()).toBe(true);
     }
   });
@@ -240,18 +314,25 @@ describe("CharacterEditorPage guided creation integration", () => {
   it("blocks an unsupported legacy workflow without writes or Standard rule components", async () => {
     const legacyCharacterId = "a0000000-0000-4000-8000-000000000099";
     const character = makeCharacter("gaslight", legacyCharacterId);
-    const session = makeSession("gaslight", "possessions", legacyCharacterId);
+    const session = makeSession("gaslight", "skills", legacyCharacterId);
     await characterRepository.create(character);
     await creationSessionRepository.create(session);
     const characterUpdate = vi.spyOn(characterRepository, "update");
     const sessionUpdate = vi.spyOn(creationSessionRepository, "update");
-    const { wrapper } = await mountExistingPage(legacyCharacterId);
+    let skillReadinessCalls = 0;
+    const { wrapper } = await mountExistingPage(legacyCharacterId, () => {
+      vi.spyOn(useCreationStore(), "getSkillFinalizePlan").mockImplementation(() => {
+        skillReadinessCalls += 1;
+        throw new Error("不应运行 Standard 技能 readiness");
+      });
+    });
 
     expect(wrapper.text()).toContain("Cthulhu by Gaslight");
     expect(wrapper.text()).toContain("当前不支持继续该建卡环境");
     expect(wrapper.text()).toContain("不会用 Standard 的属性、职业、技能、财富或武器规则");
     expect(wrapper.find(".creation-workspace").exists()).toBe(false);
-    expect(wrapper.find(".possessions-step").exists()).toBe(false);
+    expect(wrapper.find(".skill-requirement-step").exists()).toBe(false);
+    expect(skillReadinessCalls).toBe(0);
     await new Promise<void>((resolve) => window.setTimeout(resolve, 400));
     expect(characterUpdate.mock.calls.some(([updated]) => updated.id === legacyCharacterId)).toBe(false);
     expect(sessionUpdate.mock.calls.some(([updated]) => updated.characterId === legacyCharacterId)).toBe(false);
