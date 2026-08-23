@@ -27,6 +27,7 @@ src/coc7/extensions  内部扩展注册
 src/content          SettingPack 与 Setting Registry
 src/creation         建卡会话、预设与流程 Store
 src/character-sheet  最终人物卡的 presentation 与 workspace metadata
+src/portability      Portable Character Package、Store 与浏览器文件边界
 src/kp               KP 预设 Store
 src/db               Dexie、持久化记录与 Repository
 src/app              Router 与应用级 Store
@@ -80,6 +81,28 @@ Phase 8D 将长期 inventory mutation 拆进 `FinalSheetWealthWorkspace`、`Fina
 最终人物卡技能区通过独立纯 presentation boundary 合并人物自身 Setting 的 SkillRegistry 与稀疏 `Character.skills`。默认未持久化 baseline 只包含 `availability.sheet === "standard"` 且无需专业化的普通技能。由于 `PredefinedSkillSpecialization` 没有 sheet-level availability，required-specialization definition 不默认展开；预定义专业化只在独立浏览开关开启时形成只读 candidate，uncommon parent 还同时受非常规开关约束。custom-only definition 不生成 synthetic UUID。Persisted uncommon、predefined、时代不兼容、custom 与 orphan refs 始终合并回视图；orphan 使用 stored current/Half/Fifth/成长标记的只读 fallback。缺少 Characteristics 时可以省略无法可靠解析的 catalog baseline/candidate，但 persisted rows 继续显示。搜索、两个目录浏览开关和页面加载均不写入；current、成长标记及 custom specialization mutation 只调用 Character Store，首次 mutation 才实例化对应 CharacterSkill。任何 Setting 都不回退 Standard。
 
 武器使用人物自身 Setting 的 WeaponRegistry 与现有 orphan-safe presentation，不回退 Standard。Standard derived values 与 wealth presentation 只在当前 Character 信息足以可靠派生时显示，Half/Fifth、Maximum HP、Initial MP、Maximum SAN、MOV、Damage Bonus、Build 与 spending level 继续不持久化。
+
+## Data portability
+
+Phase 9A 的单人物 JSON 迁移链路是：
+
+```text
+Browser File IO
+      ↓
+Portability Store
+      ↓
+pure Portable Package parser / serializer
+      ↓
+CharacterPortabilityRepository
+      ↓
+Dexie / IndexedDB
+```
+
+Portable Character Package v1 是 strict、Zod-validated domain format，包含完整 `Character` 与 optional `CreationSession`，不是 `CharacterRecord`、`CreationSessionRecord` 或 table row dump。`formatVersion = 1` 是独立文件协议版本；`exportedAt` 仅作文件元信息，不写回 domain。浏览器 Component 只负责 `File.text()` 与 Blob/object URL 下载，不接触 Dexie；Store 不保存第二份 Character 或文件历史。
+
+Repository 在一个只读 Dexie transaction 中读取最新 Character Record 与同 characterId 的 optional Session Record，只向 package 层返回 domain data。导入在进入写事务前完成 JSON、format/version、两份 domain schema 与 cross-object identity 校验；随后在一个 `characters + creationSessions` 写事务中检查 Character/orphan Session collision，并用 import time 创建新的 Record timestamps。Session 写入失败会回滚 Character。Character-only 路径使用同一 import boundary，但不会创建假 Session；Session 的 `presetSnapshot` 不写 `kpPresets`。
+
+导入不解析 Registry 可用性、不回退 Standard、不运行 creation completion rules，也不重算或清洗 legacy/orphan state。Phase 9A 不新增 server、table、index、migration 或 DB version；Character、CreationSession、所有 Record 与 Dexie version 继续为 1。
 
 ## Persistence
 

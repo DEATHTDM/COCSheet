@@ -10,6 +10,18 @@
   box-sizing: border-box;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -1205,6 +1217,10 @@ textarea:disabled {
   list-style: none;
 }
 
+.portability-hint {
+  margin-bottom: 1rem;
+}
+
 .record-card {
   display: flex;
   align-items: center;
@@ -1229,6 +1245,11 @@ textarea:disabled {
   display: grid;
   justify-items: start;
   gap: 0.25rem;
+}
+
+.record-card .actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .status-badge {
@@ -1942,6 +1963,10 @@ textarea:disabled {
 
   .hero {
     padding: 1.5rem;
+  }
+
+  .record-card .actions {
+    justify-content: flex-start;
   }
 
   .stepper {

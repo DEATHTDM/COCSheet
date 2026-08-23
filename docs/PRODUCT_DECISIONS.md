@@ -20,6 +20,16 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 最终人物卡是独立于建卡编辑器与创建期 Review 的长期使用页面，并直接以 `Character` 为数据源。`CreationSession` 只用于判断建卡完成状态以及提供继续／修改建卡入口；不存在 CreationSession 时仍可打开人物卡，且页面加载不得从会话反推数值或自动补写缺失的 Character 字段。
 
+## Data portability
+
+### D001 — Portable Character Package v1
+
+单人物长期备份与迁移使用独立的、严格校验的 domain file format，而不是 IndexedDB table dump 或 Record wrapper。v1 顶层固定为 `format = cocsheet-character` 与 `formatVersion = 1`，包含完整 `Character`、可选的同人物 `CreationSession` 以及只作文件元信息的 `exportedAt`。文件 `formatVersion` 独立于 Character、CreationSession、Record 与 Dexie version；package 不保存本地 Record 的 `createdAt`、`updatedAt`、重复 name 或重复 settingId。
+
+导出在同一个只读数据库事务中取得最新 Character 与 optional CreationSession。导入先完整解析并验证 package、Character、Session 与两者 characterId/settingId 完整性，再在一个写事务中创建新的本地 Record metadata。所有 domain identity，包括 Character ID、背景/Key Connection、资产、物品、武器、custom SkillRef、custom occupation 等 UUID，均原样保留；导入不运行 Registry 修复、创建完成 validator、重算或 normalize writeback。
+
+v1 若本地已经存在相同 Character ID，或存在以该 characterId 为主键的 orphan/existing CreationSession，必须拒绝，不 overwrite、merge、remap 或 import-as-copy。Session 内 `presetSnapshot` 只作为原会话快照迁移，不创建或覆盖全局 KPPreset，也不因同 ID KPPreset 冲突而拒绝。未知或未来 `formatVersion` 明确拒绝，不删除未知字段、静默降级或猜测 migration。
+
 ## Backstory
 
 ### B001 — Character-owned backstory with stable entry identity

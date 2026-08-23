@@ -4,16 +4,24 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 8 — Final Character Sheet UX (Completed)
+Phase 9 — Data Portability (In Progress)
 
-Phase 8A — Final Character Sheet Foundation, Phase 8B — Final Sheet Skills Workspace, Phase 8C — Final Sheet Narrative Workspace, Phase 8D — Final Sheet Inventory Workspace, and Phase 8E — Final Sheet Resource Workspace & Phase 8 Closure are completed. `/characters/:id/sheet` is the independent Character-only long-term sheet, while `/characters/:id` remains the creation editor and `CharacterReviewPanel` remains the creation-completion check. Final Sheet now supports focused HP/MP/SAN/Current Luck, same-Setting sparse skills, long-term identity/backstory narrative, and inventory workspaces through existing Character Store/domain boundaries. CreationSession remains optional and is never mutated by long-term Final Sheet actions. Optional Luck spending/improvement, purchasing, automatic cash deduction, ammunition, combat, recovery, insanity, advancement rolls, import/export, and print remain unimplemented. Phase 8 is completed without treating those later systems as part of the Final Sheet UX closure.
+Phase 9A — Portable Character Package is completed. COCSheet can export one latest persisted Character plus its optional CreationSession as a strict version-1 domain JSON package, then validate and atomically import it with conservative ID-collision rejection and fresh local Record timestamps. Home provides local-only import and per-Character export for complete, incomplete, and no-session Characters, and refreshes both the Character list and session-step index after import. Full-library backup, batch import/export, KP Preset portability/sharing, replace/merge/import-as-copy, file migrations beyond v1, and PDF/printing remain unimplemented.
 
 ## Git baseline
 
-Phase 8E Final Sheet Resource Workspace branch was created from `main` at `efbb1a6b17f893f614baed26d508d79fb54c4442`.
+Phase 9A Portable Character Package branch was created from `main` at `42bd007c3848f57bf36fb12dcba165c48c211d1a`.
 
 ## Implemented
 
+- strict `Portable Character Package v1` with fixed `cocsheet-character` format, independent file `formatVersion`, nonnegative epoch-millisecond `exportedAt`, complete Character and optional complete CreationSession domain data
+- pure BOM-safe parser/serializer with distinct readable errors for empty/malformed/wrong-format/unsupported-version/Character/Session/cross-object failures, strict top-level validation, two-space JSON and trailing newline
+- deterministic safe per-Character `.cocsheet.json` filename plus browser Blob download with object URL revocation and no third-party file library
+- one-read-transaction Character + optional Session export consistency using latest persisted domain data and zero writes, without Record wrappers or timestamps
+- prevalidated atomic import that creates fresh import-time Character/Session Record metadata, preserves every domain identity and currentStep/provenance, rejects Character or orphan Session collisions, and rolls back Character if Session insertion fails
+- legacy/orphan/non-Standard-safe import with no Registry cleanup, Standard fallback, completion validation, recalculation, normalization, fake Session, or unrelated Character mutation
+- Session `presetSnapshot` round-trip without importing or conflicting with the global KPPreset library
+- Home local file import state, readable errors, same-file reselection, immediate Character/session-step refresh, correct complete/incomplete/missing-session badges, and export controls for all three states
 - independent `/characters/:id/sheet` Final Character Sheet route and responsive long-term sheet layout, separate from the seven-step creation editor and creation Review
 - Character-only final-sheet data loading: CreationSession is optional and used only for completion status/navigation; missing sessions, incomplete/legacy Character fields, and missing Character error states do not trigger automatic writeback
 - Home actions that distinguish Open Character Sheet from Continue/Modify Creation, with explicit completed, incomplete, and missing-session status derived from existing `CreationSession.currentStep`
@@ -209,7 +217,8 @@ Merged in the current enum:
 - post-creation HP/MP/SAN recovery, insanity, combat, ammunition, purchasing, automatic cash deduction, and improvement-roll workflows
 - Optional Luck spending/roll-modification and session-end Luck improvement workflows
 - guide overlay
-- import/export and printing/export
+- full-library backup, batch import/export, replace/merge/import-as-copy, and file migrations beyond Portable Character Package v1
+- printing/PDF export
 - URL / Hash preset sharing
 - Setting-specific rules and full Setting content
 - static-host deployment automation
@@ -222,8 +231,8 @@ No Later phase is authorized. Later-item ordering remains unfrozen.
 ## Known technical risks
 
 - IndexedDB and domain Schema migration
-- future import/export compatibility
+- future Portable Package migrations and broader library backup compatibility
 - Setting-specific extension evolution
 - Deprogrammer's former `keeper-approved-single-occupation-skill-replacement` pressure is resolved by an occupation-level singular exact replacement policy with explicit target and target-scoped Keeper approval; there is no active Engine pressure
 - Keeper Criminal's former `choice-pool-with-repeatable-specialization-branch` pressure is resolved by the top-level-only `choice-pool` selector, which separates selected category count from selected SkillRef count
-- browser storage can be cleared, and long-term file backup is not implemented
+- browser storage can be cleared; per-Character backup is available, but broader library backup remains unimplemented
