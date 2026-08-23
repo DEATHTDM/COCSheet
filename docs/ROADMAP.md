@@ -372,7 +372,7 @@ Status: Completed
 - pure exhaustive presentation metadata with concise goals, suggested actions and non-authoritative completion hints
 - default-open, page-local collapse state with no domain, database, Web Storage or portability persistence
 - no duplicate completion validator, workflow state machine or Guide-owned navigation mutation
-- non-Standard-safe placeholder guidance with no Standard rules or catalog fallback
+- contextual Standard guidance; Phase 14 later replaced the former placeholder Guide branches with a pre-workspace unsupported legacy state
 - desktop Guide rail plus current-step focus container, mobile normal-flow stacking, active-step `aria-current`, labelled Guide landmark and accurate collapse semantics
 - unchanged existing step component boundaries, workflow actions, schemas, records, tables, indexes and Dexie version
 
@@ -433,15 +433,24 @@ Status: Completed
 - live production site, static assets, Hash Router home, and nested project-path routes verified
 - Phase 13 formally closed without freezing a Phase 14 name, order, or scope
 
+## Phase 14 — Standard-Only Product Scope Cleanup
+
+Status: Completed
+
+- Standard is the only currently supported product Setting for new Character creation and new/saved KP Presets
+- historical `settingIdSchema` identities remain parseable for Character, CreationSession, CreationPreset, `cocsheet-character v1`, `cocsheet-library v1`, and `cocsheet-kp-preset-share v1` compatibility
+- production `getAvailableSettings()` contains only Standard; display-only historical names and empty same-Setting registries preserve legacy presentation without Standard fallback
+- four non-Standard placeholder content packs removed without schema, Record, Dexie, portability-format, migration, or user-data changes
+- direct Standard Create UX, Creation Store rejection boundary, Standard-only KP Preset editor/save boundary, unsupported shared-link preview, and unsupported historical Creation Editor safe state
+- legacy Character/global Preset Home display, export/backup/import round-trip, Final Sheet/print presentation, and explicit deletion preserved without load-time conversion or writeback
+- product/context/architecture/current-state/README scope narrowed to Standard, with no new future Setting commitment
+- Phase 15 remains unfrozen
+
 ## Later
 
 - richer guided-creation refinements
 - Settings and broader UI preferences
 - shared-Preset local save semantics, QR and short-link refinements
 - advanced import conflict resolution and future file migrations
-- Gaslight
-- Down Darker Trails
-- Dark Ages
-- Regency
 
-Later-item ordering after Phase 8 is not frozen.
+Later-item ordering is not frozen. No Phase 15 name, order, or scope is frozen.

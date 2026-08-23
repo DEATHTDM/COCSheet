@@ -13,13 +13,15 @@ import {
 } from "../coc7/rules/derived";
 import { characteristicIds, type CharacteristicId, type CharacteristicValues } from "../coc7/types/attribute";
 import type { EraId } from "../coc7/types/occupation";
+import { isSupportedSetting } from "../coc7/types/setting";
 import OccupationBrowser from "../components/creation/OccupationBrowser.vue";
 import CreationGuidePanel from "../components/creation/CreationGuidePanel.vue";
 import CharacterReviewPanel from "../components/creation/CharacterReviewPanel.vue";
 import CharacterBackgroundStep from "../components/creation/CharacterBackgroundStep.vue";
 import CharacterPossessionsStep from "../components/creation/CharacterPossessionsStep.vue";
 import SkillRequirementStep from "../components/creation/SkillRequirementStep.vue";
-import { getSettingPackOrThrow } from "../content/registry";
+import { getSettingPack } from "../content/registry";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { AttributeGenerationMethod } from "../creation/types/creationPreset";
@@ -71,11 +73,13 @@ const ageRule = computed(() => getAgeAdjustmentRule(session.value?.draftAge ?? a
 const ageAdjustment = computed(() => attributes.value?.ageAdjustment);
 const completionErrors = computed(() => creationStore.getCompletionErrors());
 const settingName = computed(() =>
-  characterStore.current ? getSettingPackOrThrow(characterStore.current.settingId).name : "",
+  characterStore.current ? getHistoricalSettingLabel(characterStore.current.settingId) : "",
 );
+const supportedSetting = computed(() => characterStore.current !== undefined &&
+  isSupportedSetting(characterStore.current.settingId));
 const availableEras = computed<readonly EraId[]>(() =>
   characterStore.current
-    ? getSettingPackOrThrow(characterStore.current.settingId).eras ?? []
+    ? getSettingPack(characterStore.current.settingId)?.eras ?? []
     : [],
 );
 const reductionAllocated = computed(() =>
@@ -169,7 +173,7 @@ onMounted(async () => {
 });
 
 watch(name, () => {
-  if (!ready.value) return;
+  if (!ready.value || name.value === lastSavedName) return;
   if (saveTimer !== undefined) window.clearTimeout(saveTimer);
   saveStatus.value = "idle";
   saveTimer = window.setTimeout(() => void persistName(), 350);
@@ -345,6 +349,21 @@ async function reconcileSanity(): Promise<void> {
         <p>当前设定：{{ settingName }}</p>
       </div>
 
+      <aside v-if="!supportedSetting" class="panel legacy-warning" role="alert">
+        <strong>当前不支持继续该建卡环境</strong>
+        <p>
+          这份历史 Character 与 CreationSession 会保持原样；页面不会转换为 Standard，
+          也不会用 Standard 的属性、职业、技能、财富或武器规则继续建卡。
+        </p>
+        <div class="actions">
+          <RouterLink class="button primary" :to="`/characters/${characterStore.current.id}/sheet`">
+            打开人物卡
+          </RouterLink>
+          <RouterLink class="button" to="/">返回首页</RouterLink>
+        </div>
+      </aside>
+
+      <template v-else>
       <aside v-if="sanityNeedsReconciliation" class="panel legacy-warning" role="alert">
         <strong>旧版本 SAN 数据需要同步</strong>
         <p>
@@ -372,7 +391,6 @@ async function reconcileSanity(): Promise<void> {
       >
         <CreationGuidePanel
           :current-step="currentStep"
-          :setting-id="characterStore.current.data.settingId"
           :open="guideOpen"
           @update:open="setGuideOpen"
         />
@@ -603,6 +621,7 @@ async function reconcileSanity(): Promise<void> {
       />
         </div>
       </div>
+      </template>
     </template>
     <p v-else>正在读取本地数据……</p>
   </section>

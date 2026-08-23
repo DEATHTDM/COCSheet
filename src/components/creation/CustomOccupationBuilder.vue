@@ -7,6 +7,7 @@ import {
   type EraId,
   type OccupationDefinition,
 } from "../../coc7/types/occupation";
+import type { SettingId } from "../../coc7/types/setting";
 import type { SkillDefinition } from "../../coc7/types/skill";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import {
@@ -26,7 +27,7 @@ import {
 } from "../../creation/presentation/occupationPresentation";
 
 const props = defineProps<{
-  readonly settingId: "standard" | "gaslight" | "down-darker-trails" | "dark-ages" | "regency";
+  readonly settingId: SettingId;
   readonly eraId: EraId | undefined;
   readonly initialDefinition?: OccupationDefinition | undefined;
   readonly hasStructuredSkillDraft?: boolean | undefined;

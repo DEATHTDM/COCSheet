@@ -44,7 +44,7 @@ import {
   type SkillSelector,
 } from "../../coc7/types/occupation";
 import { skillRefSchema, type SkillRef } from "../../coc7/types/skill";
-import type { SettingId } from "../../coc7/types/setting";
+import { isSupportedSetting, type SettingId } from "../../coc7/types/setting";
 import { getOccupationRegistry } from "../../content/occupationRegistry";
 import { getSettingPackOrThrow } from "../../content/registry";
 import { getSkillRegistry } from "../../content/skillRegistry";
@@ -217,6 +217,9 @@ export const useCreationStore = defineStore("creation", () => {
   }
 
   async function start(settingId: SettingId, preset?: CreationPreset): Promise<string> {
+    if (!isSupportedSetting(settingId)) {
+      throw new Error("当前版本不支持该建卡环境。");
+    }
     getSettingPackOrThrow(settingId);
     if (preset && preset.settingId !== settingId) throw new Error("预设与所选建卡环境不一致");
     creating.value = true;

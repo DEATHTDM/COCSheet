@@ -2,7 +2,8 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { getSettingPackOrThrow } from "../content/registry";
+import { isSupportedSetting } from "../coc7/types/setting";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import type { KPPresetRecord } from "../db/records";
 import { encodeKPPresetShareToken } from "../kp/presets/presetShare";
 import { buildKPPresetShareUrl } from "../kp/presets/presetShareUrl";
@@ -88,14 +89,17 @@ function closeShare(): void {
       <li v-for="record in presetStore.records" :key="record.id" class="record-card">
         <div>
           <strong>{{ record.name }}</strong>
-          <p>{{ getSettingPackOrThrow(record.data.settingId).name }}</p>
+          <p>{{ getHistoricalSettingLabel(record.data.settingId) }}</p>
+          <p v-if="!isSupportedSetting(record.data.settingId)" class="warning-message">
+            该建卡环境当前不再支持新建；历史预设保留为只读数据。
+          </p>
         </div>
         <div class="actions">
           <RouterLink class="button" :to="`/kp/presets/${record.id}`">编辑</RouterLink>
           <button
             class="button"
             type="button"
-            :disabled="generatingShareId !== undefined"
+            :disabled="generatingShareId !== undefined || !isSupportedSetting(record.data.settingId)"
             :aria-label="`生成“${record.name}”的分享链接`"
             @click="generateShare(record)"
           >

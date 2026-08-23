@@ -8,7 +8,7 @@ import CreationGuidePanel from "./CreationGuidePanel.vue";
 describe("CreationGuidePanel", () => {
   it("renders controlled open state and emits collapse without owning preference state", async () => {
     const wrapper = mount(CreationGuidePanel, {
-      props: { currentStep: "basic-info", settingId: "standard", open: true },
+      props: { currentStep: "basic-info", open: true },
     });
 
     const panel = wrapper.get("aside");
@@ -30,15 +30,5 @@ describe("CreationGuidePanel", () => {
     await wrapper.setProps({ open: true });
     expect(wrapper.get("h2").text()).toBe("完成技能选择与分配");
     expect(wrapper.get("button").attributes("aria-expanded")).toBe("true");
-  });
-
-  it("renders neutral non-Standard context without requiring Pinia or a workflow Store", () => {
-    const wrapper = mount(CreationGuidePanel, {
-      props: { currentStep: "possessions", settingId: "gaslight", open: true },
-    });
-
-    expect(wrapper.text()).toContain("当前建卡环境的财富与装备内容尚未实现");
-    expect(wrapper.text()).toContain("不会回退到 Standard 规则");
-    expect(wrapper.text()).not.toContain("正资产需要至少一条资产构成说明");
   });
 });

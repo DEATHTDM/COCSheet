@@ -1,4 +1,3 @@
-import type { SettingId } from "../../coc7/types/setting";
 import type { CreationStepId } from "../types/creationSession";
 
 export interface CreationGuideStepContent {
@@ -7,7 +6,6 @@ export interface CreationGuideStepContent {
   readonly summary: string;
   readonly actions: readonly string[];
   readonly completionHint: string;
-  readonly settingNotice?: string;
 }
 
 const sharedGuideContent = {
@@ -94,61 +92,16 @@ const sharedGuideContent = {
   },
 } as const satisfies Readonly<Record<CreationStepId, CreationGuideStepContent>>;
 
-const nonStandardGuideContent = {
-  attributes: {
-    ...sharedGuideContent.attributes,
-    summary: "当前建卡环境的属性规则尚未实现，请只依据页面实际提供的状态操作。",
-    actions: [
-      "查看页面对当前 Setting 的实现状态说明",
-      "保留现有人物与会话数据，等待对应 Setting 规则可用",
-    ],
-    completionHint: "页面不会自动套用 Standard COC7 的属性生成与完成规则。",
-    settingNotice: "当前建卡环境的该部分规则尚未实现；页面不会自动套用 Standard COC7。",
-  },
-  occupation: {
-    ...sharedGuideContent.occupation,
-    summary: "当前建卡环境的职业内容尚未实现，请以页面实际提供的目录与提示为准。",
-    actions: [
-      "查看当前 Setting 是否提供可用职业内容",
-      "遇到占位或缺失提示时保留现有状态",
-    ],
-    completionHint: "页面不会使用 Standard 职业目录或职业假设补全当前 Setting。",
-    settingNotice: "当前建卡环境的职业内容尚未实现；不会回退到 Standard 职业目录。",
-  },
-  skills: {
-    ...sharedGuideContent.skills,
-    summary: "当前建卡环境的技能内容尚未实现，请以页面实际提供的内容与阻断提示为准。",
-    actions: [
-      "查看当前职业与技能页面提供的真实状态",
-      "不要按 Standard 的职业技能或点数假设补全缺失内容",
-    ],
-    completionHint: "页面不会使用 Standard 技能目录或分配规则替代当前 Setting。",
-    settingNotice: "当前建卡环境的技能内容尚未实现；不会回退到 Standard 技能目录。",
-  },
-  possessions: {
-    ...sharedGuideContent.possessions,
-    summary: "当前建卡环境的财富与装备规则尚未实现，请只使用页面明确提供的编辑能力。",
-    actions: [
-      "查看页面对当前 Setting 的财富与装备状态说明",
-      "遇到占位提示时保留现有人物数据",
-    ],
-    completionHint: "页面不会用 Standard 财富、金额或武器目录替代当前 Setting 的缺失内容。",
-    settingNotice: "当前建卡环境的财富与装备内容尚未实现；不会回退到 Standard 规则。",
-  },
-} as const satisfies Readonly<Partial<Record<CreationStepId, CreationGuideStepContent>>>;
-
 export const creationGuideSteps = Object.freeze(
   Object.keys(sharedGuideContent) as CreationStepId[],
 );
 
 export function getCreationGuideStepContent(
   step: CreationStepId,
-  settingId: SettingId,
 ): CreationGuideStepContent {
   const shared = sharedGuideContent[step];
   if (!shared) {
     throw new Error(`未知建卡步骤：${String(step)}`);
   }
-  if (settingId === "standard") return shared;
-  return nonStandardGuideContent[step as keyof typeof nonStandardGuideContent] ?? shared;
+  return shared;
 }

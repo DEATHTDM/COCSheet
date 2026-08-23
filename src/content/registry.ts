@@ -1,22 +1,13 @@
 import type { SettingPack } from "../coc7/types/settingPack";
 import { settingPackSchema } from "../coc7/types/settingPack";
 import { settingIdSchema, type SettingId } from "../coc7/types/setting";
-import { darkAgesSettingPack } from "./dark-ages";
-import { downDarkerTrailsSettingPack } from "./down-darker-trails";
-import { gaslightSettingPack } from "./gaslight";
-import { regencySettingPack } from "./regency";
 import { standardSettingPack } from "./standard";
 
-const settingPacks = [
-  standardSettingPack,
-  gaslightSettingPack,
-  downDarkerTrailsSettingPack,
-  darkAgesSettingPack,
-  regencySettingPack,
-].map((pack) => settingPackSchema.parse(pack));
+const supportedSettingPacks = [standardSettingPack]
+  .map((pack) => settingPackSchema.parse(pack));
 
 const settingRegistry = new Map<SettingId, SettingPack>(
-  settingPacks.map((pack) => [pack.id, pack]),
+  supportedSettingPacks.map((pack) => [pack.id, pack]),
 );
 
 export function getSettingPack(settingId: string): SettingPack | undefined {
@@ -25,17 +16,17 @@ export function getSettingPack(settingId: string): SettingPack | undefined {
 }
 
 export function getAvailableSettings(): readonly SettingPack[] {
-  return settingPacks;
+  return supportedSettingPacks;
 }
 
-export function hasSetting(settingId: string): boolean {
+export function hasSupportedSettingPack(settingId: string): boolean {
   return getSettingPack(settingId) !== undefined;
 }
 
 export function getSettingPackOrThrow(settingId: string): SettingPack {
   const pack = getSettingPack(settingId);
   if (!pack) {
-    throw new Error(`未知建卡环境：${settingId}`);
+    throw new Error(`当前版本不支持该建卡环境：${settingId}`);
   }
 
   return pack;

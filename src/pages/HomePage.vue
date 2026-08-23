@@ -3,7 +3,8 @@ import { onMounted, ref } from "vue";
 
 import { useCharacterStore } from "../app/stores/characterStore";
 import { getCharacterCreationStatus } from "../character-sheet/presentation/finalCharacterSheetPresentation";
-import { getSettingPackOrThrow } from "../content/registry";
+import { isSupportedSetting } from "../coc7/types/setting";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { useCreationStore } from "../creation/stores/creationStore";
 import { downloadJsonFile } from "../portability/browser/downloadJsonFile";
 import { useLibraryPortabilityStore } from "../portability/stores/libraryPortabilityStore";
@@ -157,7 +158,10 @@ async function exportLibrary(): Promise<void> {
         <li v-for="record in characterStore.records" :key="record.id" class="record-card">
           <div>
             <strong>{{ record.name }}</strong>
-            <p>{{ getSettingPackOrThrow(record.settingId).name }}</p>
+            <p>{{ getHistoricalSettingLabel(record.settingId) }}</p>
+            <span v-if="!isSupportedSetting(record.settingId)" class="status-badge">
+              历史建卡环境（当前不支持继续建卡）
+            </span>
             <span
               class="status-badge"
               :class="getCharacterCreationStatus(creationStore.sessionSteps[record.id])"
@@ -173,7 +177,7 @@ async function exportLibrary(): Promise<void> {
           <div class="actions">
             <RouterLink class="button primary" :to="`/characters/${record.id}/sheet`">打开人物卡</RouterLink>
             <RouterLink
-              v-if="getCharacterCreationStatus(creationStore.sessionSteps[record.id]) !== 'missing-session'"
+              v-if="isSupportedSetting(record.settingId) && getCharacterCreationStatus(creationStore.sessionSteps[record.id]) !== 'missing-session'"
               class="button"
               :to="`/characters/${record.id}`"
             >

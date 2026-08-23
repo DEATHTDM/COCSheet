@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, useId } from "vue";
 
-import type { SettingId } from "../../coc7/types/setting";
 import {
   creationGuideSteps,
   getCreationGuideStepContent,
@@ -10,7 +9,6 @@ import type { CreationStepId } from "../../creation/types/creationSession";
 
 const props = defineProps<{
   readonly currentStep: CreationStepId;
-  readonly settingId: SettingId;
   readonly open: boolean;
 }>();
 
@@ -19,7 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const headingId = `creation-guide-${useId()}`;
-const content = computed(() => getCreationGuideStepContent(props.currentStep, props.settingId));
+const content = computed(() => getCreationGuideStepContent(props.currentStep));
 const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) + 1);
 </script>
 
@@ -45,7 +43,6 @@ const stepNumber = computed(() => creationGuideSteps.indexOf(props.currentStep) 
 
     <div :id="`${headingId}-content`" class="creation-guide-content">
       <p>{{ content.summary }}</p>
-      <p v-if="content.settingNotice" class="warning-message">{{ content.settingNotice }}</p>
       <section aria-label="建议操作">
         <h3>建议先做</h3>
         <ol>

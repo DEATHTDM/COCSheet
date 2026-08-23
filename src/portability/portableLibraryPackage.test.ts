@@ -102,6 +102,29 @@ describe("Full Library Backup v1", () => {
     expect(serializePortableLibraryPackage(result)).not.toContain("creationExperienceMode");
   });
 
+  it("历史 non-Standard Character、Session 与 global Preset 保持 v1 原样 round-trip", () => {
+    const historicalCharacter = { ...characterA, settingId: "gaslight" as const };
+    const historicalSession = {
+      ...makeSession(historicalCharacter),
+      presetSnapshot: {
+        ...makePreset("74000000-0000-4000-8000-000000000003", "历史快照"),
+        settingId: "gaslight" as const,
+      },
+    };
+    const historicalPreset = {
+      ...makePreset("75000000-0000-4000-8000-000000000003", "历史全局预设"),
+      settingId: "regency" as const,
+    };
+    const backup = createPortableLibraryPackage(
+      [{ character: historicalCharacter, creationSession: historicalSession }],
+      [historicalPreset],
+      456,
+    );
+
+    expect(parsePortableLibraryPackageText(serializePortableLibraryPackage(backup)))
+      .toEqual(backup);
+  });
+
   it("分别拒绝空文件、malformed JSON、wrong format 与 unsupported version", () => {
     expectPackageError(() => parsePortableLibraryPackageText("\uFEFF \n"), "empty-file");
     expectPackageError(() => parsePortableLibraryPackageText("{broken"), "malformed-json");

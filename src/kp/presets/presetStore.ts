@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
 
+import { isSupportedSetting } from "../../coc7/types/setting";
 import type { CreationPreset } from "../../creation/types/creationPreset";
 import { kpPresetRepository } from "../../db/repositories/kpPresetRepository";
 import type { KPPresetRecord } from "../../db/records";
@@ -39,6 +40,9 @@ export const usePresetStore = defineStore("presets", () => {
   }
 
   async function save(preset: CreationPreset): Promise<KPPresetRecord> {
+    if (!isSupportedSetting(preset.settingId)) {
+      throw new Error("该建卡环境当前不再支持新建，历史预设不能保存修改。");
+    }
     const record = await kpPresetRepository.update(preset);
     current.value = record;
     records.value = records.value.map((item) => (item.id === record.id ? record : item));

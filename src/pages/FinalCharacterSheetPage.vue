@@ -18,7 +18,7 @@ import FinalSheetWealthWorkspace from "../components/FinalSheetWealthWorkspace.v
 import { getFifthValue, getHalfValue } from "../coc7/rules/attributes";
 import { formatDamageBonus } from "../coc7/rules/derived";
 import { characteristicIds } from "../coc7/types/attribute";
-import { getSettingPackOrThrow } from "../content/registry";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { useCreationStore } from "../creation/stores/creationStore";
 
 const route = useRoute();
@@ -36,7 +36,7 @@ const creationStatus = computed(() => getCharacterCreationStatus(
     : undefined,
 ));
 const settingName = computed(() => character.value
-  ? getSettingPackOrThrow(character.value.settingId).name
+  ? getHistoricalSettingLabel(character.value.settingId)
   : "");
 const derived = computed(() => character.value
   ? deriveFinalSheetStandardValues(character.value)

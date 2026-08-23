@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { useSettingStore } from "../app/stores/settingStore";
-import type { SettingId } from "../coc7/types/setting";
+import { isSupportedSetting } from "../coc7/types/setting";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { attributeGenerationMethodSchema, type AttributeGenerationMethod } from "../creation/types/creationPreset";
 import { usePresetStore } from "../kp/presets/presetStore";
 
 const route = useRoute();
 const router = useRouter();
-const settingStore = useSettingStore();
 const presetStore = usePresetStore();
 const name = ref("");
-const settingId = ref<SettingId>("standard");
 const allowedMethods = ref<AttributeGenerationMethod[]>([]);
 const multiCount = ref(3);
 const assignIntMin = ref(40);
@@ -34,13 +32,14 @@ const methodLabels: Readonly<Record<AttributeGenerationMethod, string>> = {
   manual: "手动输入",
 };
 const presetId = String(route.params.id);
+const supportedPreset = computed(() => presetStore.current !== undefined &&
+  isSupportedSetting(presetStore.current.data.settingId));
 
 onMounted(async () => {
   try {
     const record = await presetStore.loadById(presetId);
     if (!record) { errorMessage.value = "找不到该 KP 建卡预设。"; return; }
     name.value = record.data.name;
-    settingId.value = record.data.settingId;
     const config = record.data.attributeGeneration;
     allowedMethods.value = [...config.allowedMethods];
     multiCount.value = config.multiRoll?.count ?? 3;
@@ -64,7 +63,7 @@ async function save(): Promise<void> {
     await presetStore.save({
       ...record.data,
       name: name.value.trim(),
-      settingId: settingId.value,
+      settingId: "standard",
       attributeGeneration: {
         allowedMethods: [...allowedMethods.value],
         multiRoll: { count: multiCount.value },
@@ -91,9 +90,20 @@ async function removePreset(): Promise<void> {
   <section class="page-stack narrow-page">
     <div><p class="eyebrow">KP 建卡预设</p><h1>编辑预设</h1></div>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-    <form v-if="presetStore.current" class="form-stack" @submit.prevent="save">
+    <section v-if="presetStore.current && !supportedPreset" class="panel form-stack" aria-labelledby="unsupported-preset-title">
+      <h2 id="unsupported-preset-title">历史 KP 建卡预设</h2>
+      <p><strong>{{ name }}</strong></p>
+      <p>建卡环境：{{ getHistoricalSettingLabel(presetStore.current.data.settingId) }}</p>
+      <p class="warning-message" role="alert">
+        该建卡环境当前不再支持新建。预设将保持原样，不会转换为 Standard，也不能保存修改。
+      </p>
+      <div class="actions">
+        <button class="button danger" type="button" @click="removePreset">删除</button>
+      </div>
+    </section>
+    <form v-else-if="presetStore.current" class="form-stack" @submit.prevent="save">
       <label class="field"><span>名称</span><input v-model="name" type="text" required /></label>
-      <label class="field"><span>建卡环境</span><select v-model="settingId"><option v-for="setting in settingStore.settings" :key="setting.id" :value="setting.id">{{ setting.name }}</option></select></label>
+      <div class="field"><span>建卡环境</span><strong>Standard CoC 7E</strong></div>
 
       <fieldset class="panel form-stack"><legend>允许的属性生成方式</legend>
         <label v-for="method in methods" :key="method" class="checkbox-field"><input v-model="allowedMethods" type="checkbox" :value="method" />{{ methodLabels[method] }}</label>

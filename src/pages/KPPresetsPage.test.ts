@@ -36,12 +36,12 @@ const record: KPPresetRecord = {
   data: preset,
 };
 
-async function mountPage() {
+async function mountPage(records: readonly KPPresetRecord[] = [record]) {
   window.history.replaceState({}, "", "/COCSheet/#/kp/presets");
   const pinia = createPinia();
   setActivePinia(pinia);
   const presetStore = usePresetStore();
-  presetStore.records = [record];
+  presetStore.records = [...records];
   vi.spyOn(presetStore, "loadList").mockResolvedValue();
   const router = createRouter({
     history: createWebHashHistory(),
@@ -68,6 +68,30 @@ beforeEach(() => {
 });
 
 describe("KPPresetsPage share UI", () => {
+  it("identifies a historical preset, disables sharing, and keeps deletion available", async () => {
+    const historicalRecord: KPPresetRecord = {
+      ...record,
+      id: "b2000000-0000-4000-8000-000000000002",
+      name: "Gaslight 历史预设",
+      data: {
+        ...record.data,
+        id: "b2000000-0000-4000-8000-000000000002",
+        name: "Gaslight 历史预设",
+        settingId: "gaslight",
+      },
+    };
+    const { wrapper, presetStore } = await mountPage([historicalRecord]);
+    const remove = vi.spyOn(presetStore, "remove").mockResolvedValue();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    expect(wrapper.text()).toContain("Cthulhu by Gaslight");
+    expect(wrapper.text()).toContain("历史预设保留为只读数据");
+    expect(wrapper.get('[aria-label="生成“Gaslight 历史预设”的分享链接"]').attributes("disabled"))
+      .toBeDefined();
+    await wrapper.get("button.danger").trigger("click");
+    expect(remove).toHaveBeenCalledWith(historicalRecord.id);
+  });
+
   it("generates one URL from persisted record.data without changing or creating records", async () => {
     const originalRecord = structuredClone(record);
     const { wrapper, presetStore } = await mountPage();

@@ -8,7 +8,8 @@ import {
   type PrintableCharacterSheetPresentation,
 } from "../character-sheet/presentation/printableCharacterSheetPresentation";
 import type { Character } from "../coc7/types/character";
-import { getSettingPackOrThrow } from "../content/registry";
+import { getSettingPack } from "../content/registry";
+import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { getSkillRegistry } from "../content/skillRegistry";
 import {
   weaponAvailabilityLabels,
@@ -29,9 +30,13 @@ let loadRequest = 0;
 const presentation = computed<PrintableCharacterSheetPresentation | undefined>(() => {
   const current = character.value;
   if (!current) return undefined;
+  const eras = getSettingPack(current.settingId)?.eras;
   return presentPrintableCharacterSheet(
     current,
-    getSettingPackOrThrow(current.settingId),
+    {
+      name: getHistoricalSettingLabel(current.settingId),
+      ...(eras ? { eras } : {}),
+    },
     getSkillRegistry(current.settingId),
     getWeaponRegistry(current.settingId),
   );

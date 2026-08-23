@@ -124,7 +124,7 @@ Repository
 Dexie
 ```
 
-Guide 的 completion hint 只是操作文案，不复制 attribute、occupation、skill allocation、background、wealth 或 possessions validator，也不提供第二套 Next / Previous。non-Standard metadata 对当前未实现内容使用中性说明，绝不回退 Standard 特有规则或目录。
+Guide 的 completion hint 只是操作文案，不复制 attribute、occupation、skill allocation、background、wealth 或 possessions validator，也不提供第二套 Next / Previous。当前 Guide 只覆盖正式支持的 Standard 创建流程；unsupported historical Setting 的 Creation Editor 在挂载 Guide 或规则步骤组件前进入明确的只读安全状态。
 
 ## Final character sheet
 
@@ -284,19 +284,25 @@ Phase 7C-2B 只为 Character version 1 新增 optional `weapons` 实例数组。
 
 ## Setting architecture
 
-五个 Setting ID 通过统一 Setting Registry 发现与读取：
+Setting identity 与当前产品支持范围是两个独立边界：
 
 ```text
-standard
-gaslight
-down-darker-trails
-dark-ages
-regency
+settingIdSchema
+  └─ standard / gaslight / down-darker-trails / dark-ages / regency
+     （历史 domain/file identity，可继续解析）
+
+supportedSettingIds + production Setting Registry
+  └─ standard
+     （当前允许新建、保存并运行规则工作流）
 ```
 
-避免在应用各处散布 `if (setting === "gaslight")`。`SettingPack` 是数据与扩展 ID 声明，不能注入或执行任意 JavaScript。特殊人物规则由应用内部 Extension Registry 提供，并随应用代码发布。
+`src/content/registry.ts` 的 production registry 与 `getAvailableSettings()` 当前只包含 `standardSettingPack`。`src/content/settingCompatibility.ts` 只保存历史 ID 的显示名称；它不创建 `SettingPack`，也不使历史环境成为 available/supported。四个旧 placeholder content packs 已删除。
 
-当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition`、必要的 canonical specializations，以及 Phase 7C-2A 的 104 项完整 Standard weapon definitions；其余四个 SettingPack 仍是空内容占位包，不包含技能或武器目录，也不会隐式继承 Standard 内容。`SettingPack.skills` 是每个 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从对应 SettingPack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。新增 Setting 技能只需向对应 SettingPack 提供 `skills`，Registry 不维护 Setting 分派分支。
+same-Setting Skill / Occupation / Weapon Registry 仍按人物自己的 Setting identity 解析：Standard 从唯一 production pack 取得内容，unsupported historical ID 得到空 Registry，因此旧 Character 可以安全呈现 persisted/orphan 数据而不会回退 Standard。Creation Store 的 `start`、KP Preset Store 的 save boundary、Create page 的本地/共享 Preset 入口共同拒绝 unsupported Setting；Creation Editor 在规则组件挂载前显示 unsupported legacy 状态。
+
+`SettingPack` 继续是正式内容与扩展 ID 声明，不能注入或执行任意 JavaScript。特殊人物规则继续由应用内部 Extension Registry 提供并随应用代码发布；未来新增正式 Setting 仍可复用这些抽象，但必须另行授权并有明确规则资料。
+
+当前 Standard SettingPack 包含完整的 54 项核心顶层 `SkillDefinition`、必要的 canonical specializations，以及 Phase 7C-2A 的 104 项完整 Standard weapon definitions。`SettingPack.skills` 是受支持 Setting 技能内容的唯一入口；`src/content/skillRegistry.ts` 从 same-Setting pack 动态创建并缓存 registry，负责按稳定 definition ID 查询目录、解析预定义专业化，并在注册时拒绝重复 ID。
 
 Standard wealth table 是内建的纯规则，不是 mutable Setting catalog。普通 gear / possessions 是 Character 自由文本数据，Standard 不建立普通商品目录。`SettingPack.equipment` 与 `equipmentDefinitionSchema` 当前只是未使用的 foundation hook；weapon definitions 因包含独立战斗 mechanics 而通过 `SettingPack.weapons` 保持独立，不塞入普通 possession entry。Character weapon instance 只保存 definition 引用与实例状态。
 
@@ -314,7 +320,7 @@ Character weapon instances
 Possessions + Review presentation
 ```
 
-`WeaponRegistry` 只读取对应 `SettingPack.weapons ?? []`，按 Setting 缓存，并在注册时验证 Weapon schema、重复 ID、standard skill ref 的非专业化约束与 predefined specialization 的真实存在；它不会回退读取 Standard catalog。Standard 当前注册 104 行 production definitions，完整映射 Keeper 表 17 的 104 个 source rows；其余四个 Setting 的 weapon registry 为空。目录由 `src/content/standard/weapons.ts` 统一导出，并按八个 closed category 拆分到 `src/content/standard/weapons/`；这只是 production content 的维护性拆分，不改变 `standardSettingPack.weapons` 对外语义。
+`WeaponRegistry` 只读取对应 supported `SettingPack.weapons ?? []`，按 Setting identity 缓存，并在注册时验证 Weapon schema、重复 ID、standard skill ref 的非专业化约束与 predefined specialization 的真实存在；它不会回退读取 Standard catalog。Standard 当前注册 104 行 production definitions，完整映射 Keeper 表 17 的 104 个 source rows；unsupported historical Setting identity 的 same-Setting weapon registry 为空。目录由 `src/content/standard/weapons.ts` 统一导出，并按八个 closed category 拆分到 `src/content/standard/weapons/`；这只是 production content 的维护性拆分，不改变 `standardSettingPack.weapons` 对外语义。
 
 这条链路与未使用的 `SettingPack.equipment` hook 及自由文本 `Character.possessions` 互相独立。Character Store 的 add boundary 只要求 definition 存在于人物自身 Setting Registry，不回退 Standard；availability 只用于 presentation，available、rare、unavailable 在明确时代或缺少时代时均可新增。已有实例在时代变化后保持不变并由 presentation 重新标记。Possessions 使用名称搜索与 closed category 筛选，不把 104 项做成长下拉框；Review 单独汇总。异构 damage、range、attacks、capacity、availability 与 reference price 仍是来源显示信息；当前没有武器合法性、购买、Keeper approval、弹药状态或 combat engine。`docs/STANDARD_WEAPON_SOURCES.md` 保存完整 source inventory，Vitest audit 与独立 validator 负责证明 inventory/production 双向闭环、schema/Registry 合法和 `needs-review = 0`。
 

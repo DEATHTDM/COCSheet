@@ -17,8 +17,8 @@ import { decodeKPPresetShareToken, encodeKPPresetShareToken } from "./presetShar
 const sharedPreset: CreationPreset = {
   version: 1,
   id: "b3000000-0000-4000-8000-000000000001",
-  name: "Gaslight 共享建卡预设",
-  settingId: "gaslight",
+  name: "Standard 共享建卡预设",
+  settingId: "standard",
   attributeGeneration: {
     allowedMethods: ["assign-roll", "point-buy"],
     assignRoll: { intMin: 45, sizMin: 45 },
@@ -60,7 +60,7 @@ describe("shared KP Preset real CreationStore workflow", () => {
     expect(await db.characters.count()).toBe(1);
     expect(await db.creationSessions.count()).toBe(1);
     expect(await db.kpPresets.count()).toBe(0);
-    expect(character?.data.settingId).toBe("gaslight");
+    expect(character?.data.settingId).toBe("standard");
     expect(session?.data.presetSnapshot).toEqual(decoded);
     expect(session?.data.presetSnapshot?.id).toBe(sharedPreset.id);
     expect(window.localStorage.getItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY)).toBe("quick");
@@ -86,5 +86,23 @@ describe("shared KP Preset real CreationStore workflow", () => {
     expect(localAfterCreation?.data).toEqual(localPreset);
     expect(session?.data.presetSnapshot).toEqual(sharedPreset);
     expect(session?.data.presetSnapshot).not.toEqual(localPreset);
+  });
+
+  it("decodes a historical non-Standard v1 token but rejects creation with zero writes", async () => {
+    const historicalPreset: CreationPreset = {
+      ...sharedPreset,
+      name: "Gaslight 历史共享预设",
+      settingId: "gaslight",
+    };
+    const decoded = await decodeKPPresetShareToken(
+      await encodeKPPresetShareToken(historicalPreset),
+    );
+
+    expect(decoded).toEqual(historicalPreset);
+    await expect(useCreationStore().start(decoded.settingId, decoded))
+      .rejects.toThrow("当前版本不支持该建卡环境");
+    expect(await db.characters.count()).toBe(0);
+    expect(await db.creationSessions.count()).toBe(0);
+    expect(await db.kpPresets.count()).toBe(0);
   });
 });
