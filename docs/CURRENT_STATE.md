@@ -4,16 +4,28 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 10 — Guided Creation UX (Completed)
+Phase 11 — KP Preset Share Links (Completed)
 
-Phase 10A — Guided Creation Shell & Step Guidance and Phase 10B — Guided / Quick Creation Preference & Phase 10 Closure are completed. Guided remains the first-use default; users can select Guided or Quick on Create Character and persistently hide/show the controlled Guide in CharacterEditorPage. Quick restores the real step content to full workspace width without changing the shared Character, CreationSession, currentStep, draft, KP Preset, workflow or validators. Richer field-level focus and advanced coachmarks remain Later refinements rather than Phase 10 blockers.
+Saved global KP Presets can now generate compressed, versioned, zero-server share links through the existing Hash Router. Opening a link only decodes, validates and previews a transient full CreationPreset; explicit user creation alone creates the Character and CreationSession snapshot. Shared data is not imported into the receiver's global KPPreset library, and same-ID local Presets remain independent.
 
 ## Git baseline
 
-Phase 10B Guided / Quick Creation Preference branch was created from `main` at `77731e2bddd555bc93dd116daede02ee92ee53ab`.
+Phase 11 KP Preset Share Links branch was created from `main` at `6f8ce7414b1b534081bad0a8d619d460f0646c4b`.
 
 ## Implemented
 
+- strict independent `cocsheet-kp-preset-share / formatVersion 1` envelope containing only the full normalized CreationPreset domain data, with no KPPresetRecord metadata, timestamps, Character, CreationSession, exportedAt or creation-experience preference
+- stable `1.<base64url(gzip(UTF8(JSON-envelope)))>` token wire format using browser-native CompressionStream / DecompressionStream, unpadded URL-safe alphabet, typed readable errors and no dependency changes
+- bounded untrusted-input decoding with 12,000-character token, 8 KiB compressed payload and 64 KiB incrementally-read decompressed JSON limits; unsupported browser compression remains non-fatal
+- Hash Router `#/create?kp=...` URL generation through `router.resolve`, preserving origin and GitHub Pages-style base pathname without a second hash or server-visible payload
+- per-saved-Preset KPPresetsPage share action using persisted `record.data`, one active readonly URL panel, accessible controls, successful clipboard feedback and manual-copy fallback that retains the URL on Clipboard API absence/denial/failure
+- CreateCharacterPage transient shared-Preset loading from `route.query.kp`, explicit multiple-query rejection, valid/loading/error states, name/Setting/attribute-method preview, safe invalid-link UX, and router.replace removal that preserves unrelated query values
+- zero-write shared-link opening: no Character, CreationSession, global KPPreset, IndexedDB mutation or Guided / Quick preference mutation occurs before the explicit create action
+- explicit `creationStore.start(sharedPreset.settingId, sharedPreset)` semantics preserving every normalized field and original Preset ID in the new CreationSession.presetSnapshot, without temporary/global Preset records
+- legal same-ID/different-content receiver global KPPreset independence with no collision, overwrite, merge, local substitution or import write
+- request-sequence protection against async route A → B decode races, so only the newest route query can update the preview
+- Guided / Quick browser preference isolation and same-Setting non-Standard creation without Standard fallback or new Setting content
+- unchanged Character/CreationSession/CreationPreset and Record version 1, Dexie version/tables/indexes, `cocsheet-character` v1 and `cocsheet-library` v1
 - seven-step contextual Creation Guide covering Basic Info, Attributes, Occupation, Skills, Background, Possessions and Review through exhaustive pure presentation metadata
 - persistent Guided / Quick browser UI preference with first-use Guided default, versioned `localStorage` key, safe unknown/read-failure fallback, and in-memory switching that survives write failure
 - accessible Create Character mode selector plus persisted CharacterEditor hide/reopen controls shared across Characters, with no mode argument passed into Setting or KP Preset creation
@@ -235,14 +247,13 @@ Merged in the current enum:
 - generic Settings and broader UI preference infrastructure
 - arbitrary multi-file batch import/export, selective restore, replace/merge/import-as-copy, and file migrations beyond current v1 formats
 - printing/PDF export
-- URL / Hash preset sharing
 - Setting-specific rules and full Setting content
 - static-host deployment automation
 - MP natural recovery rules and recovery limits
 
 ## Next intended work
 
-Phase 10 is complete. No next Phase number, name, scope, or ordering is authorized or frozen; Later-item ordering remains unfrozen.
+Phase 11 is complete. No next Phase number, name, scope, or ordering is authorized or frozen; Later-item ordering remains unfrozen.
 
 ## Known technical risks
 
