@@ -4,16 +4,26 @@ Last updated: 2026-08-24
 
 ## Current phase
 
-Phase 15 — Guided Creation Readiness & Progress (Completed)
+Phase 16 — Shared KP Preset Local Save (Completed)
 
-Guided 模式现在以现有七步 workflow 与权威 validators 实时展示当前 blockers、Skills pending approvals / warnings、ready 状态和只读流程位置；Quick、真实步骤导航、Standard-only boundary 与所有 persistence/schema 语义保持不变。
+共享 KP Preset 接收方现在可显式保存 fresh-ID 普通本地副本，同时保持打开链接 zero-write、同 ID 本地数据独立、直接共享建卡 snapshot identity 与所有分享／备份／schema 版本不变。
 
 ## Git baseline
 
-Phase 15 was created from exact `main@5be5350501d41f6baa623c01414c4fce388231a1`, the merged Phase 14 closure baseline.
+Phase 16 was created from exact `main@1d93f5329995b0ec0fbbbba8174c894729af756f`, the merged Phase 15 closure baseline.
 
 ## Implemented
 
+- explicit receiver-local save action for valid supported shared KP Presets, with opening the link remaining zero-write
+- Preset Store-owned fresh UUID creation that preserves every other normalized CreationPreset field without mutating or substituting the shared preview
+- ordinary KPPresetRepository create semantics and Store list refresh, so the saved copy naturally supports existing edit/share/delete/create and `cocsheet-library v1` backup workflows without origin metadata or special badges
+- same-shared-ID local collision independence: an existing global Preset remains untouched while every explicit save creates a distinct fresh-ID copy, with no overwrite, merge, name/content dedupe or fingerprint state
+- page-local idle/saving/saved/error UX that prevents same-instance duplicate clicks, keeps preview and direct creation usable after failure, provides an optional editor link after success, and resets on token change/removal
+- route request-sequence guarding for save completion/error UI, so an already-started A write may finish but cannot publish transient state into token B
+- direct creation after local save continuing to snapshot the original shared Preset ID, while later creation from the ordinary local copy snapshots its fresh local ID
+- unsupported historical and invalid/future shares exposing no save action; Store independently rejects unsupported save before Repository/DB write with no Standard fallback
+- exactly one new KPPreset Record write per successful save, with no Character, CreationSession or Guided / Quick preference write
+- unchanged `cocsheet-kp-preset-share v1` and `cocsheet-library v1` formats; unchanged Character, CreationSession, CreationPreset, Record and Dexie version 1, tables and indexes
 - realtime Guided readiness presentation with `needs-attention`, `ready`, and `ready-with-warning`, plus structurally separate blockers, pending approvals, and warnings
 - Basic Info readiness and `goToAttributes()` sharing one pure precondition helper without adding a name requirement or other new field rule
 - direct Attributes `getCompletionErrors()`, Skills `getSkillFinalizePlan()`, Background `validateCreationBackstory()`, and Possessions `validateCreationWealth()` reuse, with thrown skill-plan preconditions converted to readable Guide blockers instead of page errors
@@ -290,7 +300,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 15 is complete. Phase 16 remains unfrozen and is not authorized by this phase.
+Phase 16 is complete. Phase 17 remains unfrozen and is not authorized by this phase.
 
 ## Known technical risks
 

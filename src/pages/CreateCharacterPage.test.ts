@@ -25,6 +25,7 @@ vi.mock("../kp/presets/presetShare", () => ({
 }));
 
 const characterId = "a0000000-0000-4000-8000-000000000020";
+const savedCopyId = "b0000000-0000-4000-8000-000000000022";
 
 async function mountPage(presetRecord?: KPPresetRecord, initialPath = "/create") {
   const pinia = createPinia();
@@ -33,19 +34,35 @@ async function mountPage(presetRecord?: KPPresetRecord, initialPath = "/create")
   const presetStore = usePresetStore();
   const start = vi.spyOn(creationStore, "start").mockResolvedValue(characterId);
   vi.spyOn(presetStore, "loadList").mockResolvedValue();
+  const createFromSharedPreset = vi.spyOn(presetStore, "createFromSharedPreset")
+    .mockImplementation(async (preset) => ({
+      id: savedCopyId,
+      version: 1,
+      name: preset.name,
+      updatedAt: 2,
+      data: { ...preset, id: savedCopyId },
+    }));
   if (presetRecord) presetStore.records = [presetRecord];
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: "/create", name: "create", component: CreateCharacterPage },
       { path: "/characters/:id", component: { template: "<div />" } },
+      { path: "/kp/presets/:id", name: "preset", component: { template: "<div />" } },
     ],
   });
   await router.push(initialPath);
   await router.isReady();
   const wrapper = mount(CreateCharacterPage, { global: { plugins: [pinia, router] } });
   await flushPromises();
-  return { wrapper, router, start, presetStore, uiPreferenceStore: useUiPreferenceStore() };
+  return {
+    wrapper,
+    router,
+    start,
+    createFromSharedPreset,
+    presetStore,
+    uiPreferenceStore: useUiPreferenceStore(),
+  };
 }
 
 beforeEach(() => {
@@ -156,6 +173,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     expect(wrapper.text()).toContain("不会自动保存到你的 KP 预设库");
     expect(wrapper.text()).toContain("当前版本不支持，不能用于新建调查员");
     expect(wrapper.find(".shared-preset-preview .button.primary").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
     expect(start).not.toHaveBeenCalled();
     expect(presetStore.records).toEqual([localRecord]);
   });
@@ -166,6 +184,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     decodeSharedPresetMock.mockResolvedValue(standardSharedPreset);
     const { wrapper, start, uiPreferenceStore } = await mountPage(undefined, "/create?kp=valid-token");
 
+    expect(wrapper.text()).toContain("保存到我的 KP 预设");
     await wrapper.get(".shared-preset-preview .button.primary").trigger("click");
 
     expect(start).toHaveBeenCalledOnce();
@@ -174,11 +193,55 @@ describe("CreateCharacterPage shared KP Preset", () => {
     expect(window.localStorage.getItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY)).toBe("quick");
   });
 
+  it("saves exactly one fresh local copy without starting creation and exposes the ordinary editor link", async () => {
+    const standardSharedPreset = { ...sharedPreset, settingId: "standard" as const };
+    decodeSharedPresetMock.mockResolvedValue(standardSharedPreset);
+    const { wrapper, start, createFromSharedPreset } = await mountPage(
+      undefined,
+      "/create?kp=valid-token",
+    );
+
+    await wrapper.findAll(".shared-preset-preview .button")
+      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      ?.trigger("click");
+    await flushPromises();
+
+    expect(createFromSharedPreset).toHaveBeenCalledOnce();
+    expect(createFromSharedPreset).toHaveBeenCalledWith(standardSharedPreset);
+    expect(start).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("已保存到你的 KP 预设库。");
+    expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
+    const editorLink = wrapper.get("a.button");
+    expect(editorLink.text()).toBe("查看已保存预设");
+    expect(editorLink.attributes("href")).toBe(`/kp/presets/${savedCopyId}`);
+  });
+
+  it("keeps preview and direct shared creation available after a local-save failure", async () => {
+    const standardSharedPreset = { ...sharedPreset, settingId: "standard" as const };
+    decodeSharedPresetMock.mockResolvedValue(standardSharedPreset);
+    const { wrapper, start, createFromSharedPreset } = await mountPage(
+      undefined,
+      "/create?kp=valid-token",
+    );
+    createFromSharedPreset.mockRejectedValue(new Error("IndexedDB 写入失败"));
+
+    await wrapper.findAll(".shared-preset-preview .button")
+      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      ?.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("链接中的共享预设");
+    expect(wrapper.get('[role="alert"]').text()).toContain("IndexedDB 写入失败");
+    await wrapper.get(".shared-preset-preview .button.primary").trigger("click");
+    expect(start).toHaveBeenCalledWith("standard", standardSharedPreset);
+  });
+
   it("shows an invalid-link error while ordinary Setting creation remains available", async () => {
     decodeSharedPresetMock.mockRejectedValue(new Error("压缩内容已损坏。"));
     const { wrapper, start } = await mountPage(undefined, "/create?kp=broken");
 
     expect(wrapper.get('[role="alert"]').text()).toContain("无法读取共享 KP 预设：压缩内容已损坏。");
+    expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
       .find((button) => button.text().includes("Standard CoC 7E"));
     expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
@@ -227,5 +290,57 @@ describe("CreateCharacterPage shared KP Preset", () => {
     await flushPromises();
     expect(wrapper.text()).toContain("共享预设 B");
     expect(wrapper.text()).not.toContain("过期预设 A");
+  });
+
+  it("does not let an in-flight save for route A publish saved UI into route B", async () => {
+    const presetA = { ...sharedPreset, name: "共享预设 A", settingId: "standard" as const };
+    const presetB = { ...sharedPreset, name: "共享预设 B", settingId: "standard" as const };
+    decodeSharedPresetMock.mockImplementation(async (token: string) => token === "token-a" ? presetA : presetB);
+    const { wrapper, router, createFromSharedPreset } = await mountPage(undefined, "/create?kp=token-a");
+    let resolveSave: ((record: KPPresetRecord) => void) | undefined;
+    createFromSharedPreset.mockImplementation(() => new Promise<KPPresetRecord>((resolve) => {
+      resolveSave = resolve;
+    }));
+
+    await wrapper.findAll(".shared-preset-preview .button")
+      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      ?.trigger("click");
+    await router.push("/create?kp=token-b");
+    await flushPromises();
+    expect(wrapper.text()).toContain("共享预设 B");
+
+    resolveSave?.({
+      id: savedCopyId,
+      version: 1,
+      name: presetA.name,
+      updatedAt: 2,
+      data: { ...presetA, id: savedCopyId },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("已保存到你的 KP 预设库。");
+    expect(wrapper.text()).not.toContain("查看已保存预设");
+    expect(wrapper.text()).toContain("保存到我的 KP 预设");
+  });
+
+  it("clears a route A save error when route B becomes current", async () => {
+    const presetA = { ...sharedPreset, name: "共享预设 A", settingId: "standard" as const };
+    const presetB = { ...sharedPreset, name: "共享预设 B", settingId: "standard" as const };
+    decodeSharedPresetMock.mockImplementation(async (token: string) => token === "token-a" ? presetA : presetB);
+    const { wrapper, router, createFromSharedPreset } = await mountPage(undefined, "/create?kp=token-a");
+    createFromSharedPreset.mockRejectedValue(new Error("A 保存失败"));
+
+    await wrapper.findAll(".shared-preset-preview .button")
+      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      ?.trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("A 保存失败");
+
+    await router.push("/create?kp=token-b");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("共享预设 B");
+    expect(wrapper.text()).not.toContain("A 保存失败");
+    expect(wrapper.text()).toContain("保存到我的 KP 预设");
   });
 });

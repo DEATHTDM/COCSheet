@@ -23,7 +23,13 @@ type SharedPresetState =
   | { readonly status: "loading" }
   | { readonly status: "valid"; readonly preset: CreationPreset }
   | { readonly status: "error"; readonly message: string };
+type SharedPresetSaveState =
+  | { readonly status: "idle" }
+  | { readonly status: "saving" }
+  | { readonly status: "saved"; readonly presetId: string }
+  | { readonly status: "error"; readonly message: string };
 const sharedPresetState = ref<SharedPresetState>({ status: "idle" });
+const sharedPresetSaveState = ref<SharedPresetSaveState>({ status: "idle" });
 const creationError = ref("");
 let sharedPresetRequestSequence = 0;
 const sharedPresetSupported = computed(() => sharedPresetState.value.status === "valid" &&
@@ -43,6 +49,7 @@ watch(
   () => route.query.kp,
   async (queryValue) => {
     const requestSequence = ++sharedPresetRequestSequence;
+    sharedPresetSaveState.value = { status: "idle" };
     if (queryValue === undefined) {
       sharedPresetState.value = { status: "idle" };
       return;
@@ -88,6 +95,30 @@ async function useSharedPreset(): Promise<void> {
   const state = sharedPresetState.value;
   if (state.status !== "valid") return;
   await chooseSetting(state.preset.settingId, state.preset);
+}
+
+async function saveSharedPreset(): Promise<void> {
+  const state = sharedPresetState.value;
+  if (
+    state.status !== "valid" ||
+    !isSupportedSetting(state.preset.settingId) ||
+    sharedPresetSaveState.value.status === "saving" ||
+    sharedPresetSaveState.value.status === "saved"
+  ) return;
+
+  const requestSequence = sharedPresetRequestSequence;
+  sharedPresetSaveState.value = { status: "saving" };
+  try {
+    const record = await presetStore.createFromSharedPreset(state.preset);
+    if (requestSequence !== sharedPresetRequestSequence) return;
+    sharedPresetSaveState.value = { status: "saved", presetId: record.id };
+  } catch (error: unknown) {
+    if (requestSequence !== sharedPresetRequestSequence) return;
+    sharedPresetSaveState.value = {
+      status: "error",
+      message: error instanceof Error ? error.message : "保存共享 KP 预设失败。",
+    };
+  }
 }
 
 async function removeSharedPreset(): Promise<void> {
@@ -158,6 +189,16 @@ async function removeSharedPreset(): Promise<void> {
         <p v-if="!sharedPresetSupported" class="warning-message" role="alert">
           该分享链接使用的建卡环境当前版本不支持，不能用于新建调查员。
         </p>
+        <p
+          v-if="sharedPresetSaveState.status === 'saved'"
+          class="success-message"
+          role="status"
+        >已保存到你的 KP 预设库。</p>
+        <p
+          v-if="sharedPresetSaveState.status === 'error'"
+          class="error-message"
+          role="alert"
+        >保存共享 KP 预设失败：{{ sharedPresetSaveState.message }}</p>
         <div class="actions">
           <button
             v-if="sharedPresetSupported"
@@ -166,6 +207,18 @@ async function removeSharedPreset(): Promise<void> {
             :disabled="creationStore.creating"
             @click="useSharedPreset"
           >使用共享预设创建调查员</button>
+          <button
+            v-if="sharedPresetSupported && sharedPresetSaveState.status !== 'saved'"
+            class="button"
+            type="button"
+            :disabled="sharedPresetSaveState.status === 'saving'"
+            @click="saveSharedPreset"
+          >{{ sharedPresetSaveState.status === "saving" ? "保存中…" : "保存到我的 KP 预设" }}</button>
+          <RouterLink
+            v-if="sharedPresetSaveState.status === 'saved'"
+            class="button"
+            :to="{ name: 'preset', params: { id: sharedPresetSaveState.presetId } }"
+          >查看已保存预设</RouterLink>
           <button class="button" type="button" @click="removeSharedPreset">忽略共享预设</button>
         </div>
       </template>

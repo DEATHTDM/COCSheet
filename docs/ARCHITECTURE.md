@@ -240,13 +240,24 @@ bounded streaming gzip decode
 strict share envelope + creationPresetSchema
       ↓
 transient shared CreationPreset preview (zero writes)
-      ↓ explicit user create
-Creation Store → CreationWorkflowRepository → Dexie
-      ↓
-Character + CreationSession.presetSnapshot
+      ├─ explicit direct create
+      │      ↓
+      │  Creation Store → CreationWorkflowRepository → Dexie
+      │      ↓
+      │  Character + CreationSession.presetSnapshot（保留 shared ID）
+      │
+      └─ explicit save local copy
+             ↓
+         Preset Store（fresh UUID）
+             ↓
+         KPPresetRepository
+             ↓
+         Dexie.kpPresets only
 ```
 
-该边界没有 Share Repository、Dexie table、server、short-link storage、global preset import write 或 preference write。CompressionStream / DecompressionStream 不可用时只禁用对应分享操作并显示可读错误，普通本地 Preset 编辑和建卡继续可用。Character、CreationSession、CreationPreset、所有 Record、Dexie、`cocsheet-character` v1 与 `cocsheet-library` v1 的 schema/version 均不改变。
+打开分享链接仍是 zero-write；本地保存只在接收方显式操作后通过 Preset Store 创建一个 fresh-ID 普通 global KPPreset，不创建 Character / CreationSession，不认领分享方 ID，也不 overwrite、merge、按名称/内容去重或保存 origin metadata。同 ID 本地 Preset 与共享 payload 始终独立。保存后若用户仍点击直接使用共享预设，新 Session snapshot 继续保存原 shared ID；以后从本地副本建卡时才保存 local-copy ID。页面以 route request sequence 隔离 decode 与保存结果，旧 token 已进入 Repository 的明确保存无需取消，但其完成／错误状态不得污染新 token。
+
+该边界没有 Share Repository、新 Dexie table、server、short-link storage 或 preference write。CompressionStream / DecompressionStream 不可用时只禁用对应分享操作并显示可读错误，普通本地 Preset 编辑和建卡继续可用。Character、CreationSession、CreationPreset、所有 Record、Dexie、`cocsheet-character` v1、`cocsheet-library` v1 与 `cocsheet-kp-preset-share` v1 的 schema/version 均不改变。
 
 ## Persistence
 

@@ -268,7 +268,13 @@ KP Preset 分享使用纯前端、版本化的压缩 payload：完整且经 `cre
 
 打开链接只执行有 token／解压大小上限的严格解析与 transient preview，不创建或修改 Character、CreationSession、global KPPreset、IndexedDB 或 browser preference。只有接收者明确点击创建且 Preset Setting 当前受支持时，URL 中的共享 Preset 才原样传给 `creationStore.start` 并进入新 `CreationSession.presetSnapshot`；unsupported historical Setting 仍可被 v1 decoder 安全识别，但页面只显示不可创建状态并允许移除 query。共享 Preset 不自动导入 global KPPreset，同 ID 的接收方本地 Preset 即使内容不同也不冲突、不覆盖、不替代共享内容。
 
-当前不支持把共享 Preset 保存到本地、overwrite、import-as-copy、QR、short link、hosted share ID、analytics、加密或过期语义；这些能力若需要必须另行设计。
+当前不支持 overwrite、QR、short link、hosted share ID、analytics、加密或过期语义；这些能力若需要必须另行设计。
+
+### K006 — Receiver-local shared Preset copy
+
+接收方可以把已经成功解析且当前受支持的共享 CreationPreset 显式保存为普通本地 global KPPreset。保存只由用户点击触发；仅打开分享链接继续 zero-write。Preset Store 生成 fresh local UUID，除 ID 外完整保留 normalized domain 内容，并使用 KPPresetRepository 的普通 create 语义。共享方 Preset ID 不成为接收方 global identity；即使本地已存在相同 ID 的不同 Preset，也仍创建独立 fresh-ID 副本，不 overwrite、merge、按名称／内容去重或保存 source/origin metadata。
+
+本地保存与直接使用共享 Preset 建卡是两个独立动作。保存后继续点击直接创建时，`CreationSession.presetSnapshot` 仍保存原 shared Preset 及其原 ID；只有未来从本地副本建卡时，snapshot 才使用 local-copy ID。保存副本只写一个 KPPreset Record，不创建 Character / CreationSession，不修改 Guided / Quick preference，也不改变 `cocsheet-kp-preset-share v1`、`cocsheet-library v1`、domain schema 或 Dexie version。unsupported historical share 可继续 preview，但不能保存为新的 global Preset。
 
 ## Third-party projects
 

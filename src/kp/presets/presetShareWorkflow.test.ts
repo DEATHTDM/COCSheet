@@ -3,7 +3,7 @@
 import "fake-indexeddb/auto";
 
 import { createPinia, setActivePinia } from "pinia";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CREATION_EXPERIENCE_MODE_STORAGE_KEY } from "../../app/preferences/creationExperiencePreference";
 import { useCreationStore } from "../../creation/stores/creationStore";
@@ -12,7 +12,9 @@ import { db } from "../../db/database";
 import { characterRepository } from "../../db/repositories/characterRepository";
 import { creationSessionRepository } from "../../db/repositories/creationSessionRepository";
 import { kpPresetRepository } from "../../db/repositories/kpPresetRepository";
+import { libraryPortabilityRepository } from "../../db/repositories/libraryPortabilityRepository";
 import { decodeKPPresetShareToken, encodeKPPresetShareToken } from "./presetShare";
+import { usePresetStore } from "./presetStore";
 
 const sharedPreset: CreationPreset = {
   version: 1,
@@ -39,6 +41,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await db.delete();
 });
 
@@ -66,7 +69,7 @@ describe("shared KP Preset real CreationStore workflow", () => {
     expect(window.localStorage.getItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY)).toBe("quick");
   });
 
-  it("treats a different local global Preset with the same ID as independent data", async () => {
+  it("saves a fresh copy beside a same-ID local Preset while direct and later-local creation keep distinct snapshot identities", async () => {
     const localPreset: CreationPreset = {
       ...sharedPreset,
       name: "接收方本地同 ID 预设",
@@ -75,17 +78,43 @@ describe("shared KP Preset real CreationStore workflow", () => {
       allowCustomOccupation: false,
     };
     await kpPresetRepository.create(localPreset);
+    const savedCopyId = "b3000000-0000-4000-8000-000000000002";
+    const sharedCharacterId = "b3000000-0000-4000-8000-000000000003";
+    const localCharacterId = "b3000000-0000-4000-8000-000000000004";
+    vi.spyOn(crypto, "randomUUID")
+      .mockReturnValueOnce(savedCopyId)
+      .mockReturnValueOnce(sharedCharacterId)
+      .mockReturnValueOnce(localCharacterId);
     const token = await encodeKPPresetShareToken(sharedPreset);
     const decoded = await decodeKPPresetShareToken(token);
 
-    const characterId = await useCreationStore().start(decoded.settingId, decoded);
-    const localAfterCreation = await kpPresetRepository.getById(sharedPreset.id);
-    const session = await creationSessionRepository.getByCharacterId(characterId);
+    const savedCopy = await usePresetStore().createFromSharedPreset(decoded);
+    expect(await db.characters.count()).toBe(0);
+    expect(await db.creationSessions.count()).toBe(0);
+    expect(await db.kpPresets.count()).toBe(2);
 
-    expect(await db.kpPresets.count()).toBe(1);
+    const directCharacterId = await useCreationStore().start(decoded.settingId, decoded);
+    const laterLocalCharacterId = await useCreationStore().start(
+      savedCopy.data.settingId,
+      savedCopy.data,
+    );
+    const localAfterCreation = await kpPresetRepository.getById(sharedPreset.id);
+    const savedAfterCreation = await kpPresetRepository.getById(savedCopyId);
+    const libraryData = await libraryPortabilityRepository.readLibraryPackageData();
+    const directSession = await creationSessionRepository.getByCharacterId(directCharacterId);
+    const laterLocalSession = await creationSessionRepository.getByCharacterId(laterLocalCharacterId);
+
+    expect(directCharacterId).toBe(sharedCharacterId);
+    expect(laterLocalCharacterId).toBe(localCharacterId);
+    expect(await db.kpPresets.count()).toBe(2);
     expect(localAfterCreation?.data).toEqual(localPreset);
-    expect(session?.data.presetSnapshot).toEqual(sharedPreset);
-    expect(session?.data.presetSnapshot).not.toEqual(localPreset);
+    expect(savedAfterCreation?.data).toEqual({ ...sharedPreset, id: savedCopyId });
+    expect(libraryData.kpPresets).toHaveLength(2);
+    expect(libraryData.kpPresets).toEqual(expect.arrayContaining([localPreset, savedCopy.data]));
+    expect(directSession?.data.presetSnapshot).toEqual(sharedPreset);
+    expect(directSession?.data.presetSnapshot?.id).toBe(sharedPreset.id);
+    expect(laterLocalSession?.data.presetSnapshot).toEqual(savedCopy.data);
+    expect(laterLocalSession?.data.presetSnapshot?.id).toBe(savedCopyId);
   });
 
   it("decodes a historical non-Standard v1 token but rejects creation with zero writes", async () => {
