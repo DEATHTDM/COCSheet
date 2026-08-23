@@ -39,6 +39,19 @@ export const usePresetStore = defineStore("presets", () => {
     return record;
   }
 
+  async function createFromSharedPreset(preset: CreationPreset): Promise<KPPresetRecord> {
+    if (!isSupportedSetting(preset.settingId)) {
+      throw new Error("该建卡环境当前不支持保存为新的本地预设。");
+    }
+    const localCopy: CreationPreset = {
+      ...preset,
+      id: crypto.randomUUID(),
+    };
+    const record = await kpPresetRepository.create(localCopy);
+    records.value = [record, ...records.value];
+    return record;
+  }
+
   async function save(preset: CreationPreset): Promise<KPPresetRecord> {
     if (!isSupportedSetting(preset.settingId)) {
       throw new Error("该建卡环境当前不再支持新建，历史预设不能保存修改。");
@@ -63,6 +76,7 @@ export const usePresetStore = defineStore("presets", () => {
     loadList,
     loadById,
     createDefault,
+    createFromSharedPreset,
     save,
     remove,
   };

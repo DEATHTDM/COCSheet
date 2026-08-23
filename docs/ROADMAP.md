@@ -454,11 +454,22 @@ Status: Completed
 - no Guide navigation mutation, completion/visited persistence, automatic focus/scroll, schema change, or Standard fallback
 - unchanged Guided / Quick preference semantics and unsupported historical Setting safe boundary
 
+## Phase 16 — Shared KP Preset Local Save
+
+Status: Completed
+
+- explicit receiver-local save for valid supported shared Presets, with a fresh Store-owned UUID and otherwise unchanged normalized domain content
+- opening remains zero-write; successful save writes one ordinary global KPPreset and no Character / CreationSession
+- same-ID local collision independence, no overwrite/merge/name-content dedupe/origin metadata, and page-instance duplicate-click prevention
+- direct shared creation retains the original shared snapshot ID; later creation from the local copy uses its fresh local ID
+- route-race-safe saved/error transient UI and unsupported historical/invalid share guards
+- unchanged share v1, library v1, domain/Record schemas, Dexie tables/indexes/version and Zero Server architecture
+
 ## Later
 
 - field-level coachmarks, automatic focus guidance, and richer visual onboarding
 - Settings and broader UI preferences
-- shared-Preset local save semantics, QR and short-link refinements
+- shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. No Phase 16 name, order, or scope is frozen.
+Later-item ordering is not frozen. No Phase 17 name, order, or scope is frozen.

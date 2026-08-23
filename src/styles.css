@@ -1450,6 +1450,10 @@ textarea:disabled {
   margin: 0;
 }
 
+.shared-preset-preview .actions {
+  flex-wrap: wrap;
+}
+
 .status-badge {
   display: inline-flex;
   padding: 0.2rem 0.5rem;
