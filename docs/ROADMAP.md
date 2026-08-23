@@ -398,13 +398,24 @@ Status: Completed
 - explicit shared creation into Character + CreationSession.presetSnapshot without global KPPreset import or same-ID collision
 - unchanged Guided / Quick preference, non-Standard no-fallback boundary, portability v1 formats, domain/Record schemas and Dexie version 1
 
+## Phase 12 — Printable Character Sheet & Browser PDF
+
+Status: Completed
+
+- independent `/characters/:id/print` route linked from Final Character Sheet, with route reuse reload and Character-name document title
+- Character-only read-only projection of persisted identity, resources, Characteristics, reliable derived values, default Final Sheet skills, backstory, wealth/assets, possessions and owned weapon instances
+- existing sparse skill, Maximum SAN, Standard derived/wealth, same-Setting SkillRegistry and same-Setting orphan-safe WeaponRegistry presentation reused without CreationSession or mutation workspace dependencies
+- explicit unsaved-draft semantics, legacy/incomplete/no-session safety, zero read-time writes and no non-Standard fallback
+- responsive screen preview plus A4 portrait print stylesheet, natural multi-page pagination, hidden App shell controls and black-and-white-readable output
+- browser `window.print()` flow for physical printing or Save as PDF, with no direct PDF binary renderer or runtime dependency
+- unchanged Character/CreationSession/CreationPreset and Record version 1, Dexie tables/indexes/version, portability v1 formats, package dependencies and lockfile
+
 ## Later
 
 - richer guided-creation refinements
 - Settings and broader UI preferences
 - shared-Preset local save semantics, QR and short-link refinements
 - advanced import conflict resolution and future file migrations
-- printing / PDF export
 - Gaslight
 - Down Darker Trails
 - Dark Ages

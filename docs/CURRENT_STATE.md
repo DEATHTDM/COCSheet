@@ -4,16 +4,26 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 11 — KP Preset Share Links (Completed)
+Phase 12 — Printable Character Sheet & Browser PDF (Completed)
 
-Saved global KP Presets can now generate compressed, versioned, zero-server share links through the existing Hash Router. Opening a link only decodes, validates and previews a transient full CreationPreset; explicit user creation alone creates the Character and CreationSession snapshot. Shared data is not imported into the receiver's global KPPreset library, and same-ID local Presets remain independent.
+Final Character Sheet now links to an independent `/characters/:id/print` read-only paper view. It loads only persisted Character data, reuses existing same-Setting Final Sheet resolvers, and delegates real printing or Save as PDF to the browser through `window.print()` without a second PDF renderer or any read-time writeback.
 
 ## Git baseline
 
-Phase 11 KP Preset Share Links branch was created from `main` at `6f8ce7414b1b534081bad0a8d619d460f0646c4b`.
+Phase 12 Printable Character Sheet & Browser PDF branch was created from `main` at `bab946e533e162cbb402510c5f4b74fdf412d3d6`.
 
 ## Implemented
 
+- independent `/characters/:id/print` route and Final Sheet “打印 / PDF” entry, with Character A → B route reuse reload and a Character-name document title suitable for browser Save as PDF
+- Character-only print loading through `CharacterStore.loadById`; complete, incomplete, legacy no-session and optional-field-missing Characters remain printable without CreationSession, presetSnapshot, Review reconstruction or read-time writeback
+- true read-only paper markup instead of mutation workspace reuse, so Final Sheet unsaved input drafts, search/filter controls, catalog browsers, save/delete actions and mutation error state never enter printed output
+- pure print-oriented presentation shaping that reuses existing Standard derived values, Maximum SAN, default sparse-skill resolver, stable backstory order, Standard money formatting, same-Setting SkillRegistry and same-Setting orphan-safe weapon presentation with no Standard fallback
+- complete persisted identity snapshot, resources/references, eight Characteristics with Half/Fifth, reliable Standard MOV/Damage Bonus/Build, default Final Sheet skills with growth marks, non-empty backstory categories and Key Connection marking, current wealth/assets, ordered duplicate-safe possessions and individually preserved owned weapon instances
+- Standard current money plus optional derived Spending Level presentation, while non-Standard legacy wealth stays explicit raw minor-unit data and missing wealth/resources/Characteristics remain visible safe empty states without initialization
+- A4 portrait `@page` output with 12 mm margins, black-and-white-readable borders/labels, hidden site header and screen toolbar, full printable app-shell area, natural multi-page flow, and per-row/card break protection without preventing long Skills or Backstory sections from spanning pages
+- centered readable screen preview at 1280px plus single-column 390px layout with wrapping skill names, backstory, inventory and weapon mechanics and no A4-forced horizontal overflow
+- `window.print()` as the only print / Save as PDF action, with non-fatal fallback guidance if the browser cannot open the print dialog; no Blob, canvas, server conversion or direct PDF binary generation
+- zero schema, table, index, migration, DB version, portability format, dependency, package or lockfile changes; print output adds no settings, history, cache or backup metadata
 - strict independent `cocsheet-kp-preset-share / formatVersion 1` envelope containing only the full normalized CreationPreset domain data, with no KPPresetRecord metadata, timestamps, Character, CreationSession, exportedAt or creation-experience preference
 - stable `1.<base64url(gzip(UTF8(JSON-envelope)))>` token wire format using browser-native CompressionStream / DecompressionStream, unpadded URL-safe alphabet, typed readable errors and no dependency changes
 - bounded untrusted-input decoding with 12,000-character token, 8 KiB compressed payload and 64 KiB incrementally-read decompressed JSON limits; unsupported browser compression remains non-fatal
@@ -246,14 +256,13 @@ Merged in the current enum:
 - richer field-level guided focus, advanced coachmarks, and further Guide overlay refinements
 - generic Settings and broader UI preference infrastructure
 - arbitrary multi-file batch import/export, selective restore, replace/merge/import-as-copy, and file migrations beyond current v1 formats
-- printing/PDF export
 - Setting-specific rules and full Setting content
 - static-host deployment automation
 - MP natural recovery rules and recovery limits
 
 ## Next intended work
 
-Phase 11 is complete. No next Phase number, name, scope, or ordering is authorized or frozen; Later-item ordering remains unfrozen.
+Phase 12 is complete. No next Phase number, name, scope, or ordering is authorized or frozen; Later-item ordering remains unfrozen.
 
 ## Known technical risks
 
