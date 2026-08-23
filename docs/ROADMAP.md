@@ -444,13 +444,21 @@ Status: Completed
 - direct Standard Create UX, Creation Store rejection boundary, Standard-only KP Preset editor/save boundary, unsupported shared-link preview, and unsupported historical Creation Editor safe state
 - legacy Character/global Preset Home display, export/backup/import round-trip, Final Sheet/print presentation, and explicit deletion preserved without load-time conversion or writeback
 - product/context/architecture/current-state/README scope narrowed to Standard, with no new future Setting commitment
-- Phase 15 remains unfrozen
+## Phase 15 — Guided Creation Readiness & Progress
+
+Status: Completed
+
+- realtime current-step blockers from existing authoritative workflow preconditions and validators
+- explicit ready, warning, and pending-approval distinctions without a second validation system
+- compact read-only seven-step orientation derived only from `CreationSession.currentStep` and existing Guide order
+- no Guide navigation mutation, completion/visited persistence, automatic focus/scroll, schema change, or Standard fallback
+- unchanged Guided / Quick preference semantics and unsupported historical Setting safe boundary
 
 ## Later
 
-- richer guided-creation refinements
+- field-level coachmarks, automatic focus guidance, and richer visual onboarding
 - Settings and broader UI preferences
 - shared-Preset local save semantics, QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. No Phase 15 name, order, or scope is frozen.
+Later-item ordering is not frozen. No Phase 16 name, order, or scope is frozen.

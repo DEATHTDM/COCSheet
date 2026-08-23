@@ -22,10 +22,20 @@ import CharacterPossessionsStep from "../components/creation/CharacterPossession
 import SkillRequirementStep from "../components/creation/SkillRequirementStep.vue";
 import { getSettingPack } from "../content/registry";
 import { getHistoricalSettingLabel } from "../content/settingCompatibility";
-import { formatOccupationEraId } from "../creation/presentation/occupationPresentation";
+import {
+  formatOccupationEraId,
+  getOccupationTransitionStatus,
+} from "../creation/presentation/occupationPresentation";
+import {
+  createCreationGuideReadiness,
+  createSkillCreationGuideReadiness,
+  type CreationGuideReadiness,
+} from "../creation/presentation/creationGuideReadiness";
+import { validateBasicInfoTransition } from "../creation/rules/basicInfoTransition";
+import { validateCreationBackstory } from "../creation/rules/creationBackstory";
+import { validateCreationWealth } from "../creation/rules/creationWealth";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { AttributeGenerationMethod } from "../creation/types/creationPreset";
-import type { CreationStepId } from "../creation/types/creationSession";
 
 const route = useRoute();
 const characterStore = useCharacterStore();
@@ -52,16 +62,6 @@ const methodLabels: Readonly<Record<AttributeGenerationMethod, string>> = {
   manual: "手动输入",
 };
 
-const creationSteps: readonly { readonly id: CreationStepId; readonly label: string }[] = [
-  { id: "basic-info", label: "基本信息" },
-  { id: "attributes", label: "属性" },
-  { id: "occupation", label: "职业" },
-  { id: "skills", label: "技能" },
-  { id: "background", label: "背景" },
-  { id: "possessions", label: "财富与物品" },
-  { id: "review", label: "检查" },
-];
-
 const characterId = computed(() => String(route.params.id));
 const session = computed(() => creationStore.current?.data);
 const currentStep = computed(() => session.value?.currentStep ?? "basic-info");
@@ -71,7 +71,6 @@ const generation = computed(() => attributes.value?.generation);
 const baseValues = computed(() => generation.value?.baseCharacteristics);
 const ageRule = computed(() => getAgeAdjustmentRule(session.value?.draftAge ?? age.value));
 const ageAdjustment = computed(() => attributes.value?.ageAdjustment);
-const completionErrors = computed(() => creationStore.getCompletionErrors());
 const settingName = computed(() =>
   characterStore.current ? getHistoricalSettingLabel(characterStore.current.settingId) : "",
 );
@@ -82,6 +81,68 @@ const availableEras = computed<readonly EraId[]>(() =>
     ? getSettingPack(characterStore.current.settingId)?.eras ?? []
     : [],
 );
+const basicInfoTransitionErrors = computed(() => validateBasicInfoTransition({
+  sex: sex.value,
+  residence: residence.value,
+  birthplace: birthplace.value,
+  eraRequired: availableEras.value.length > 0,
+  eraId: characterStore.current?.data.eraId,
+}));
+const completionErrors = computed(() =>
+  supportedSetting.value && currentStep.value === "attributes"
+    ? creationStore.getCompletionErrors()
+    : [],
+);
+const guideReadiness = computed<CreationGuideReadiness>(() => {
+  const character = characterStore.current?.data;
+  const currentSession = session.value;
+  if (!character || !currentSession || !supportedSetting.value) {
+    return createCreationGuideReadiness({ blockers: ["尚未载入受支持的建卡状态。"] });
+  }
+
+  switch (currentStep.value) {
+    case "basic-info":
+      return createCreationGuideReadiness({ blockers: basicInfoTransitionErrors.value });
+    case "attributes":
+      return createCreationGuideReadiness({ blockers: completionErrors.value });
+    case "occupation": {
+      const status = getOccupationTransitionStatus({
+        occupation: currentSession.occupation,
+        presetSnapshot: currentSession.presetSnapshot,
+        eraId: character.eraId,
+        eraRequired: availableEras.value.length > 0,
+      });
+      return createCreationGuideReadiness({
+        blockers: status.canContinue ? [] : [status.reason],
+      });
+    }
+    case "skills":
+      try {
+        return createSkillCreationGuideReadiness(
+          creationStore.getSkillFinalizePlan(character),
+        );
+      } catch (error: unknown) {
+        return createCreationGuideReadiness({
+          blockers: [error instanceof Error ? error.message : "无法读取技能结算状态。"],
+        });
+      }
+    case "background":
+      return createCreationGuideReadiness({
+        blockers: validateCreationBackstory(character.backstory).errors.map(
+          (error) => error.message,
+        ),
+      });
+    case "possessions":
+      return createCreationGuideReadiness({
+        blockers: validateCreationWealth(
+          character,
+          currentSession.wealthInitialization,
+        ).errors.map((error) => error.message),
+      });
+    case "review":
+      return createCreationGuideReadiness();
+  }
+});
 const reductionAllocated = computed(() =>
   characteristicIds.reduce((total, id) => total + (ageAdjustment.value?.reductionAllocation[id] ?? 0), 0),
 );
@@ -198,12 +259,9 @@ async function persistName(): Promise<void> {
 
 async function goToAttributes(): Promise<void> {
   try {
-    if (!sex.value.trim() || !residence.value.trim() || !birthplace.value.trim()) {
-      errorMessage.value = "请填写性别、住所与出身地。";
-      return;
-    }
-    if (availableEras.value.length > 0 && !characterStore.current?.data.eraId) {
-      errorMessage.value = "请选择建卡时代。";
+    const [firstError] = basicInfoTransitionErrors.value;
+    if (firstError) {
+      errorMessage.value = firstError;
       return;
     }
     await persistName();
@@ -376,15 +434,6 @@ async function reconcileSanity(): Promise<void> {
         </button>
       </aside>
 
-      <ol class="stepper" aria-label="建卡步骤">
-        <li
-          v-for="step in creationSteps"
-          :key="step.id"
-          :class="{ active: currentStep === step.id }"
-          :aria-current="currentStep === step.id ? 'step' : undefined"
-        >{{ step.label }}</li>
-      </ol>
-
       <div
         class="creation-workspace"
         :class="{ 'creation-workspace--quick': !guideOpen }"
@@ -392,6 +441,7 @@ async function reconcileSanity(): Promise<void> {
         <CreationGuidePanel
           :current-step="currentStep"
           :open="guideOpen"
+          :readiness="guideReadiness"
           @update:open="setGuideOpen"
         />
 

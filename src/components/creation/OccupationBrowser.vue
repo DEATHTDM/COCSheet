@@ -20,6 +20,7 @@ import {
   getAvailableOccupationCategories,
   getAvailableOccupationTags,
   getOccupationPresetPolicyStatus,
+  getOccupationTransitionStatus,
   sortOccupationsForDisplay,
   type OccupationPresetPolicyStatus,
 } from "../../creation/presentation/occupationPresentation";
@@ -90,36 +91,20 @@ const hasStructuredSkillDraft = computed(() => {
     state.keeperApprovals.length > 0
   ));
 });
-const selectedCatalogIsBanned = computed(() => {
-  const selection = currentSelection.value;
-  return selection?.kind === "catalog" && getOccupationPresetPolicyStatus(
-    selection.selectedOccupationId,
-    session.value?.presetSnapshot,
-  ) === "banned";
-});
 const currentSelectionEraCompatible = computed(() => {
   const selection = currentSelection.value;
   if (!selection) return true;
   if (availableEras.value.length === 0) return true;
   return props.eraId !== undefined && isOccupationAvailableInEra(selection.definitionSnapshot, props.eraId);
 });
-const canContinue = computed(() =>
-  Boolean(currentSelection.value) &&
-  !eraContextMissing.value &&
-  !selectedCatalogIsBanned.value &&
-  !selectedCustomIsBanned.value &&
-  currentSelectionEraCompatible.value,
-);
-const continueReason = computed(() => {
-  if (eraContextMissing.value) return "请先返回基本信息选择建卡时代。";
-  if (!currentSelection.value) return "请先选择一个职业。";
-  if (selectedCatalogIsBanned.value) return "当前已选职业被此 KP 预设禁用，请先更换职业。";
-  if (selectedCustomIsBanned.value) return "当前 KP 预设禁止自定义职业，请先更换职业。";
-  if (!currentSelectionEraCompatible.value && props.eraId) {
-    return `当前职业不适用于${formatOccupationEraId(props.eraId)}`;
-  }
-  return "";
-});
+const transitionStatus = computed(() => getOccupationTransitionStatus({
+  occupation: currentSelection.value,
+  presetSnapshot: session.value?.presetSnapshot,
+  eraId: props.eraId,
+  eraRequired: availableEras.value.length > 0,
+}));
+const canContinue = computed(() => transitionStatus.value.canContinue);
+const continueReason = computed(() => transitionStatus.value.reason);
 
 function policyStatus(occupation: OccupationDefinition): OccupationPresetPolicyStatus {
   return getOccupationPresetPolicyStatus(occupation.id, session.value?.presetSnapshot);

@@ -4,16 +4,26 @@ Last updated: 2026-08-24
 
 ## Current phase
 
-Phase 14 — Standard-Only Product Scope Cleanup (Completed)
+Phase 15 — Guided Creation Readiness & Progress (Completed)
 
-当前 production creation 与 KP Preset workflow 只支持 Standard CoC 7E；历史 non-Standard Setting identity 继续由 version-1 domain/file schemas 解析并安全展示、备份、导入和删除，但不再作为 available SettingPack 或可继续建卡的产品环境。
+Guided 模式现在以现有七步 workflow 与权威 validators 实时展示当前 blockers、Skills pending approvals / warnings、ready 状态和只读流程位置；Quick、真实步骤导航、Standard-only boundary 与所有 persistence/schema 语义保持不变。
 
 ## Git baseline
 
-Phase 14 was created from exact `main@fdb495ae49e6fcac69277df857943e913b9c6607`, the merged Phase 13B closure baseline.
+Phase 15 was created from exact `main@5be5350501d41f6baa623c01414c4fce388231a1`, the merged Phase 14 closure baseline.
 
 ## Implemented
 
+- realtime Guided readiness presentation with `needs-attention`, `ready`, and `ready-with-warning`, plus structurally separate blockers, pending approvals, and warnings
+- Basic Info readiness and `goToAttributes()` sharing one pure precondition helper without adding a name requirement or other new field rule
+- direct Attributes `getCompletionErrors()`, Skills `getSkillFinalizePlan()`, Background `validateCreationBackstory()`, and Possessions `validateCreationWealth()` reuse, with thrown skill-plan preconditions converted to readable Guide blockers instead of page errors
+- Occupation Guide readiness and the real Continue button sharing one transition status for missing era/selection, Preset bans, custom-occupation policy, and era compatibility
+- Review terminal guidance for checking results, returning to edits, or opening the Final Character Sheet without a new Character completion flag
+- compact seven-step Guided progress derived only from `CreationSession.currentStep` plus `creationGuideSteps` ordering; earlier steps are “已走过”, later steps are pending again after a return, with no visited state or clickable navigation
+- reactive Guide updates from existing Vue / Pinia state with zero Guide writes, no automatic scroll/focus/coachmark, and unchanged real action error handling
+- Quick mode hiding all Phase 15 progress/readiness while retaining its existing browser preference and full-width workspace semantics
+- unsupported historical Setting Editor continuing to stop before Guide/readiness or Standard workflow validators, with no Standard fallback
+- unchanged Character / CreationSession / CreationPreset and Record version 1, unchanged Dexie version/tables/indexes, and unchanged `cocsheet-character` / `cocsheet-library` / `cocsheet-kp-preset-share` v1 formats
 - independent supported Setting boundary with `supportedSettingIds = ["standard"]` and `isSupportedSetting(...)`, while `settingIdSchema` deliberately retains all five historical IDs as a backward-compatible domain/file identity enum
 - production Setting Registry and `getAvailableSettings()` containing only `standardSettingPack`; four empty non-Standard placeholder packs removed, with a separate display-only historical label map that does not expose content or imply support
 - same-Setting Skill / Occupation / Weapon registries returning empty content for historical unsupported IDs, preserving orphan presentation and proving no Standard catalog or rules fallback
@@ -280,7 +290,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 14 is complete. Phase 15 remains unfrozen and is not authorized by this cleanup.
+Phase 15 is complete. Phase 16 remains unfrozen and is not authorized by this phase.
 
 ## Known technical risks
 

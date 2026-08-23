@@ -178,6 +178,11 @@ h2 {
   font-size: 1rem;
 }
 
+.creation-guide-content h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
 .creation-guide-content ol {
   display: grid;
   gap: 0.5rem;
@@ -188,6 +193,88 @@ h2 {
 .creation-guide-completion {
   padding-top: 1rem;
   border-top: 1px solid #ded6c7;
+}
+
+.creation-guide-progress {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ded6c7;
+}
+
+.creation-guide-progress ol {
+  gap: 0.35rem;
+  padding: 0;
+  list-style: none;
+}
+
+.creation-guide-progress li {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid #cfc6b3;
+  color: #695f52;
+}
+
+.creation-guide-progress li span,
+.creation-guide-progress li small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.creation-guide-progress li.creation-guide-progress--completed {
+  border-color: #879b91;
+}
+
+.creation-guide-progress li.creation-guide-progress--current {
+  border-color: #315649;
+  background: #edf4f0;
+  color: #25211e;
+  font-weight: 800;
+}
+
+.creation-guide-progress li.creation-guide-progress--pending {
+  opacity: 0.78;
+}
+
+.creation-guide-readiness {
+  padding-top: 1rem;
+  border-top: 1px solid #ded6c7;
+}
+
+.creation-guide-readiness-summary {
+  padding: 0.65rem 0.75rem;
+  border-left: 4px solid #315649;
+  background: #edf4f0;
+  overflow-wrap: anywhere;
+}
+
+.creation-guide-readiness--needs-attention .creation-guide-readiness-summary {
+  border-color: #8c2e2e;
+  background: #fff1ef;
+}
+
+.creation-guide-readiness--ready-with-warning .creation-guide-readiness-summary {
+  border-color: #9a6518;
+  background: #fff7e6;
+}
+
+.creation-guide-readiness-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #8c2e2e;
+}
+
+.creation-guide-readiness-list li {
+  overflow-wrap: anywhere;
+}
+
+.creation-guide-readiness-approvals,
+.creation-guide-readiness-warnings {
+  color: #7a5319;
 }
 
 .creation-guide-toolbar {
@@ -1095,6 +1182,8 @@ h2 {
 }
 
 .allocation-table-wrap {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
 }
 
@@ -2468,6 +2557,31 @@ textarea:disabled {
     grid-template-columns: 1fr;
   }
 
+  .interest-candidate {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .interest-candidate input {
+    width: 100%;
+  }
+
+  .approval-card,
+  .saved-approval-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .approval-card > div,
+  .saved-approval-row > div,
+  .finalization-block {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .approval-card .compact-field {
+    min-width: 0;
+  }
+
   .weapon-filter-bar {
     grid-template-columns: 1fr;
   }
@@ -2614,6 +2728,13 @@ textarea:disabled {
 @media (max-width: 840px) {
   .creation-workspace {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .creation-step-focus .page-stack,
+  .creation-step-focus .page-stack > *,
+  .creation-step-focus .form-stack > * {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .creation-guide-shell {

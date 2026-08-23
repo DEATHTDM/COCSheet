@@ -2,6 +2,7 @@ import type { CreationStepId } from "../types/creationSession";
 
 export interface CreationGuideStepContent {
   readonly step: CreationStepId;
+  readonly label: string;
   readonly title: string;
   readonly summary: string;
   readonly actions: readonly string[];
@@ -11,6 +12,7 @@ export interface CreationGuideStepContent {
 const sharedGuideContent = {
   "basic-info": {
     step: "basic-info",
+    label: "基本信息",
     title: "完善调查员基本信息",
     summary: "先确定这位调查员是谁，并补齐后续建卡需要的基本上下文。",
     actions: [
@@ -22,6 +24,7 @@ const sharedGuideContent = {
   },
   attributes: {
     step: "attributes",
+    label: "属性",
     title: "生成并确认属性",
     summary: "按当前 KP 配置选择生成方式，完成年龄调整并确定 Luck。",
     actions: [
@@ -34,6 +37,7 @@ const sharedGuideContent = {
   },
   occupation: {
     step: "occupation",
+    label: "职业",
     title: "选择调查员职业",
     summary: "从当前 Setting 与人物时代可用的职业中选择一个职业。",
     actions: [
@@ -46,6 +50,7 @@ const sharedGuideContent = {
   },
   skills: {
     step: "skills",
+    label: "技能",
     title: "完成技能选择与分配",
     summary: "完成职业技能需求，并分配职业点与兴趣点。",
     actions: [
@@ -58,6 +63,7 @@ const sharedGuideContent = {
   },
   background: {
     step: "background",
+    label: "背景",
     title: "建立背景与关键连接",
     summary: "用少量条目勾勒调查员，并选出最重要的一条连接。",
     actions: [
@@ -69,6 +75,7 @@ const sharedGuideContent = {
   },
   possessions: {
     step: "possessions",
+    label: "财富与物品",
     title: "复核财富、物品与武器",
     summary: "根据当前创建状态复核财富，并分别维护资产说明、普通物品和武器。",
     actions: [
@@ -81,6 +88,7 @@ const sharedGuideContent = {
   },
   review: {
     step: "review",
+    label: "检查",
     title: "检查并完成建卡",
     summary: "检查已经写入 Character 的建卡结果，再决定进入最终人物卡或返回修改。",
     actions: [
@@ -104,4 +112,30 @@ export function getCreationGuideStepContent(
     throw new Error(`未知建卡步骤：${String(step)}`);
   }
   return shared;
+}
+
+export type CreationGuideProgressState = "completed" | "current" | "pending";
+
+export interface CreationGuideProgressItem {
+  readonly step: CreationStepId;
+  readonly label: string;
+  readonly state: CreationGuideProgressState;
+}
+
+export function getCreationGuideProgress(
+  currentStep: CreationStepId,
+): readonly CreationGuideProgressItem[] {
+  const currentIndex = creationGuideSteps.indexOf(currentStep);
+  if (currentIndex < 0) {
+    throw new Error(`未知建卡步骤：${String(currentStep)}`);
+  }
+  return Object.freeze(creationGuideSteps.map((step, index) => Object.freeze({
+    step,
+    label: getCreationGuideStepContent(step).label,
+    state: index < currentIndex
+      ? "completed" as const
+      : index === currentIndex
+        ? "current" as const
+        : "pending" as const,
+  })));
 }

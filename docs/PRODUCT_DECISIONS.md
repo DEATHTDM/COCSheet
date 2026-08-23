@@ -30,9 +30,11 @@ Printable presentation 只做纸面分组与格式化，并复用现有 Final Sh
 
 ### G001 — Creation Guide is presentation-only
 
-创建引导以真实 `CreationSession.currentStep` 作为当前步骤的唯一来源，不保存独立 workflow state，也不进入 `Character`、`CreationSession`、`CreationPreset` 或其他 domain / portability schema。Guide metadata 只提供当前步骤的目标、建议操作与完成提示，不复制 completion validator，不判断是否可以继续，也不调用流程推进 mutation；真实的继续、返回与完成仍由各 step UI 和现有 workflow 负责。
+创建引导以真实 `CreationSession.currentStep` 作为当前步骤的唯一来源，不保存独立 workflow、visited 或 completion state，也不进入 `Character`、`CreationSession`、`CreationPreset` 或其他 domain / portability schema。七步 progress 只按既有步骤顺序与当前 `currentStep` 推导已走过／当前／待进行；它不可点击，不形成第二套导航。
 
-Guide 可以在当前建卡页面实例内收起，但 Phase 10A 不把该 UI 偏好写入 IndexedDB、Web Storage 或 Pinia persistence，刷新后重新默认展开。当前 Guide 只服务正式支持的 Standard 创建流程；unsupported historical Setting 的 Creation Editor 在进入 Guide 或规则工作区前显示安全阻断状态。未来若需要更细粒度引导或持久化 UI preference，应另行设计，同时保持 domain 数据与业务 validator 的单一来源。
+Guide readiness 只展示现有 authoritative validator 与 workflow precondition 的结果。Basic Info / Occupation 的真实 transition 与 Guide 必须共用单一纯判断来源；Attributes、Skills、Background 与 Possessions 继续直接复用各自既有 validator / finalize plan，并明确区分 skill errors、pending approvals 与 warnings。Guide 不调用流程推进或其他 domain mutation；真实的继续、返回、完成与 warning acknowledgement 仍由各 step UI 和现有 workflow 负责。
+
+Guide 可以在当前建卡页面实例内收起；Guided / Quick 的 browser preference 仍只使用 G002 的独立存储边界，readiness 与 progress 本身不持久化。当前 Guide 只服务正式支持的 Standard 创建流程；unsupported historical Setting 的 Creation Editor 在进入 Guide、readiness 或规则工作区前显示安全阻断状态。Guide 不自动 scroll、focus、focus trap 或用 DOM selector 定位字段。未来若需要 field-level coachmark 或更丰富视觉 onboarding，应另行设计，同时保持 domain 数据与业务 validator 的单一来源。
 
 ### G002 — Guided / Quick is a browser UI preference
 
