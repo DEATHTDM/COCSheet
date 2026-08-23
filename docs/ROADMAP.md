@@ -410,6 +410,21 @@ Status: Completed
 - browser `window.print()` flow for physical printing or Save as PDF, with no direct PDF binary renderer or runtime dependency
 - unchanged Character/CreationSession/CreationPreset and Record version 1, Dexie tables/indexes/version, portability v1 formats, package dependencies and lockfile
 
+## Phase 13 — Production Delivery
+
+Status: In Progress
+
+### Phase 13A — CI & GitHub Pages Pipeline
+
+Status: Completed
+
+- Pull Request, `main`, and manual validation through tests, build, committed-diff whitespace checking, occupation audit, and Standard weapon audit
+- Node.js 22 plus frozen, pinned pnpm installation with no dependency or lockfile upgrade
+- validated-`main`-only Pages production build from the exact commit, with `dist/` as the complete static artifact boundary
+- GitHub official Pages actions, job-scoped least privilege, `github-pages` environment URL, and serialized production deployment concurrency
+- unchanged Hash Router and relative Vite base for GitHub Pages project paths and other nested static hosts
+- production Pages deployment and URL remain pending post-merge `main` workflow verification, so Phase 13 is not complete
+
 ## Later
 
 - richer guided-creation refinements

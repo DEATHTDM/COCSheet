@@ -16,6 +16,34 @@
 
 项目使用 `GPL-3.0-only` 许可证。Vite 使用相对 `base`，构建产物不依赖服务器 Rewrite。
 
+## Static delivery
+
+Phase 13A 建立统一的 GitHub Actions validation 与 GitHub Pages 静态交付边界：
+
+```text
+Pull Request
+      ↓
+GitHub Actions validate
+      ├─ tests
+      ├─ Vite build + static artifact check
+      ├─ occupation audit
+      └─ weapon audit
+
+main push
+      ↓
+same validation
+      ↓ success only
+Vite dist artifact
+      ↓
+GitHub Pages deployment
+```
+
+Pull Request、main push 与手动运行都执行 validation；Pull Request 永远不会进入 production Pages build 或 deploy。Pages production build 只接受 `main` push 的精确 commit，使用与 validation 相同的 Node / frozen-pnpm toolchain，并且只能在 validation 成功后运行。部署 job 再由 GitHub Pages environment、最小化 `pages: write` / `id-token: write` 权限与 production concurrency 保护。
+
+交付 artifact 的唯一来源是 Vite `dist/`，只包含静态应用文件；repository root、source tree、dependencies、测试 fixtures、环境文件与任何浏览器数据都不上传。Character、CreationSession、CreationPreset、IndexedDB 与 localStorage 用户偏好仍只存在于用户浏览器，不属于 build 或 deployment 输入。
+
+Hash Router 与 Vite relative `base: "./"` 继续保证同一份 `dist/` 可运行在 GitHub Pages project path 或其他普通子目录 static host，不依赖 origin、固定仓库路径或服务器 rewrite。Phase 13A 只建立 delivery pipeline；production Pages 的真实 URL 与 repository-level Pages setting 必须在 workflow 合并到 `main` 后单独验证。
+
 ## Domain separation
 
 当前已落地的主要目录是：
