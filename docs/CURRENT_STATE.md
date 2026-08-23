@@ -4,13 +4,17 @@ Last updated: 2026-08-23
 
 ## Current phase
 
-Phase 13 — Production Delivery (In Progress)
+Phase 13 — Production Delivery (Completed)
 
-Phase 13A — CI & GitHub Pages Pipeline is completed in the delivery branch: Pull Requests and `main` run the same validation, while only a validated `main` push can build the static `dist/` artifact and deploy it through the GitHub Pages environment. Production Pages has not yet received the required post-merge deployment verification, so Phase 13 remains in progress.
+Phase 13A — CI & GitHub Pages Pipeline: Completed
+
+Phase 13B — Production Verification & Phase Closure: Completed
+
+The production `main` push workflow completed validation, built the GitHub Pages artifact from `dist/`, and deployed through the `github-pages` environment. The live endpoint at <https://deathtdm.github.io/COCSheet/> was verified under the nested project path with the Hash Router home, `/create`, and missing-Character routes working without server-side rewrites.
 
 ## Git baseline
 
-Phase 13A CI & GitHub Pages Pipeline branch was created from `main` at `9a5c408c113f965c24ed1e6a097bfdb010f38561`.
+Phase 13B production closure documentation was created from the validated production `main` baseline at `e9f0f65e2c7dc35d9f42fc9ec3cc68071a2efa4f`. This documentation branch is not yet merged, so no future closure-PR squash SHA is recorded.
 
 ## Implemented
 
@@ -21,7 +25,8 @@ Phase 13A CI & GitHub Pages Pipeline branch was created from `main` at `9a5c408c
 - standard `github-pages` environment deployment with the action-produced Page URL, validation/build dependency gating, and `github-pages` concurrency cancellation to prevent competing production deployments
 - retained Hash Router plus relative Vite base portability, verified under a nested `/COCSheet/` static path without hardcoded owner, repository path, production origin, history-router rewrite, or 404 fallback
 - application-code-only deployment boundary: no IndexedDB, localStorage preference, Character, CreationSession, CreationPreset, portability file, test fixture, dependency tree, environment file, or other user/local data enters the Pages artifact
-- production Pages URL and repository-level GitHub Pages deployment remain intentionally unverified until the workflow is merged to `main`; Phase 13 is not closed by Phase 13A
+- production `main` push run [32646779385](https://github.com/DEATHTDM/COCSheet/actions/runs/32646779385), rerun attempt 2, completed successfully at `e9f0f65e2c7dc35d9f42fc9ec3cc68071a2efa4f`: Validate, Build Pages artifact, and Deploy GitHub Pages all succeeded, with the artifact produced from `dist/` and deployment through the `github-pages` environment
+- live production endpoint <https://deathtdm.github.io/COCSheet/> verified with root, JavaScript, and CSS HTTP 200 responses, successful application startup, working Hash Router `#/` and `#/create` routes, an application-level missing-Character state instead of a server 404, and zero browser console errors
 - independent `/characters/:id/print` route and Final Sheet “打印 / PDF” entry, with Character A → B route reuse reload and a Character-name document title suitable for browser Save as PDF
 - Character-only print loading through `CharacterStore.loadById`; complete, incomplete, legacy no-session and optional-field-missing Characters remain printable without CreationSession, presetSnapshot, Review reconstruction or read-time writeback
 - true read-only paper markup instead of mutation workspace reuse, so Final Sheet unsaved input drafts, search/filter controls, catalog browsers, save/delete actions and mutation error state never enter printed output
@@ -269,7 +274,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 13A implementation is complete, while Phase 13 remains in progress until the post-merge `main` workflow, Pages artifact, deployment URL, and production page are verified. Any follow-up Phase 13B scope depends on that evidence and is not yet authorized; Phase 14 is not frozen.
+Phase 13 is complete after the production `main` workflow, Pages artifact, deployment, live endpoint, and nested-path Hash Router behavior were verified. Phase 14 remains unfrozen and is not authorized by this closure.
 
 ## Known technical risks
 
