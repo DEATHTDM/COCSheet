@@ -51,15 +51,28 @@ jobs:
         run: corepack pnpm test
 
       - name: Build application
+        env:
+          VITE_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: corepack pnpm build
 
       - name: Verify static build artifact
+        env:
+          EXPECTED_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           test -f dist/index.html
           if grep -Eq '(src|href)="/assets/' dist/index.html; then
             echo "dist/index.html contains a root-relative asset URL."
             exit 1
           fi
+          grep -R -F "$EXPECTED_BUILD_SHA" dist/assets >/dev/null
+
+      - name: Install Playwright Chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: Run production-preview E2E
+        env:
+          VITE_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: corepack pnpm test:e2e
 
       - name: Validate occupation audit
         run: node scripts/validate-occupation-audit.mjs
@@ -94,15 +107,20 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
 
       - name: Build application
+        env:
+          VITE_BUILD_SHA: ${{ github.sha }}
         run: corepack pnpm build
 
       - name: Verify static build artifact
+        env:
+          EXPECTED_BUILD_SHA: ${{ github.sha }}
         run: |
           test -f dist/index.html
           if grep -Eq '(src|href)="/assets/' dist/index.html; then
             echo "dist/index.html contains a root-relative asset URL."
             exit 1
           fi
+          grep -R -F "$EXPECTED_BUILD_SHA" dist/assets >/dev/null
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6

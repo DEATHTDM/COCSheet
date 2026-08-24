@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: COCSheet 在线使用
+    url: https://deathtdm.github.io/COCSheet/
+    about: 先确认问题是否能在当前公开版本复现。

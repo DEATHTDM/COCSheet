@@ -1,0 +1,47 @@
+{
+  "format": "cocsheet-library",
+  "formatVersion": 1,
+  "exportedAt": 1700000000000,
+  "characterEntries": [
+    {
+      "character": {
+        "version": 1,
+        "id": "d2000000-0000-4000-8000-000000000002",
+        "name": "历史兼容测试调查员",
+        "settingId": "gaslight"
+      },
+      "creationSession": {
+        "version": 1,
+        "characterId": "d2000000-0000-4000-8000-000000000002",
+        "settingId": "gaslight",
+        "currentStep": "basic-info",
+        "presetSnapshot": {
+          "version": 1,
+          "id": "d2100000-0000-4000-8000-000000000002",
+          "name": "历史兼容测试快照",
+          "settingId": "gaslight",
+          "attributeGeneration": {
+            "allowedMethods": [
+              "manual"
+            ]
+          },
+          "allowCustomOccupation": "keeper-approval"
+        }
+      }
+    }
+  ],
+  "kpPresets": [
+    {
+      "version": 1,
+      "id": "d2200000-0000-4000-8000-000000000002",
+      "name": "历史兼容测试预设",
+      "settingId": "regency",
+      "attributeGeneration": {
+        "allowedMethods": [
+          "manual"
+        ]
+      },
+      "allowCustomOccupation": "keeper-approval"
+    }
+  ]
+}

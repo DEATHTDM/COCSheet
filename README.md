@@ -1,56 +1,63 @@
 # COCSheet
 
-中文 Call of Cthulhu 7th Edition 建卡工具。
-
-COCSheet 是纯前端、本地优先的调查员人物卡与建卡器工程骨架：不需要账号，不依赖自建服务器，正式人物与 KP 建卡预设保存在浏览器 IndexedDB 中。
-
-COCSheet 当前正式支持 Standard CoC 7E 调查员建卡、长期人物卡维护、本地备份与迁移、KP 预设分享，以及打印 / PDF 输出。自定义职业与自定义技能可用于更自由的人物配置。
+COCSheet 是面向中文玩家的 Call of Cthulhu 7th Edition 调查员建卡工具与长期电子人物卡。它是纯前端、Local First、Zero Server 应用：无需账号，也不会把人物资料自动上传到服务器。
 
 ## 在线使用
 
 <https://deathtdm.github.io/COCSheet/>
 
-人物与 KP 建卡预设仍只保存在当前浏览器本地，不会同步到服务器。
+## 当前功能
 
-## 开发
+- CoC 7版标准规则建卡
+- 新手引导与快速建卡
+- 长期人物卡，以及背景故事、财富、物品与武器维护
+- 打印版人物卡与浏览器打印 / 保存 PDF
+- 单人物文件导入与导出
+- 完整资料库备份与恢复
+- 建卡预设与纯前端链接分享
 
-需要 Node.js 与 pnpm。
+## 本地数据与备份
+
+> 人物资料、建卡进度和建卡预设默认只保存在当前浏览器与当前设备，不会自动同步。清理网站数据、使用无痕模式、更换设备、卸载或重置浏览器资料，都可能导致本地资料无法继续使用。请定期导出完整备份，并把备份文件保存在可靠位置。
+
+浏览器持久存储保护只能降低浏览器自动回收站点数据的可能，不等于备份，也不能抵抗主动清理、浏览器资料删除、设备损坏或换设备。
+
+## 当前支持范围与浏览器
+
+当前正式产品只支持 CoC 7版标准规则。历史文件中的旧建卡环境 identity 可以安全读取、显示和备份，但不能用于新建调查员，也不会回退套用标准规则内容。
+
+建议使用较新的现代浏览器。CI 会自动运行 Chromium production smoke；打印、剪贴板与持久存储能力可能因浏览器支持和权限设置而不同。项目目前不宣称未经验证的全面浏览器兼容。
+
+## 本地开发
+
+需要 Node.js 22。项目固定使用 Corepack 与 pnpm 11.21.0。
 
 ```bash
-pnpm install
-pnpm dev
-pnpm build
-pnpm test
+corepack enable
+corepack pnpm install --frozen-lockfile
+corepack pnpm dev
 ```
 
-开发服务器默认由 Vite 提供。生产构建位于 `dist/`，使用 Hash Router，可部署到 GitHub Pages、Cloudflare Pages或普通静态托管。
+生产构建位于 `dist/`，使用 Hash Router 与相对资源路径，可部署到普通静态托管。
 
-## 架构边界
+## 测试与验证
 
-- `src/coc7/rules`：不依赖 Vue 的纯规则函数
-- `src/coc7/types`：COC7 领域类型与 Zod Schema
-- `src/content`：Standard content、Setting Registry 与历史 identity 显示兼容边界
-- `src/creation`：建卡会话、KP 预设及流程状态
-- `src/db`：Dexie 数据库、记录 Schema 与 Repository
-- `src/app`：路由与全局 Pinia Store
-- `src/pages`：极简页面，仅负责交互与展示
+```bash
+corepack pnpm test
+corepack pnpm build
+corepack pnpm exec playwright install chromium
+corepack pnpm test:e2e
+node scripts/validate-occupation-audit.mjs
+node scripts/validate-standard-weapons.mjs
+git diff --check
+```
 
-`Character` 是最终调查员数据源；`CreationSession` 只保存创建流程状态。SettingPack 是数据与内部扩展声明，不允许从 JSON 注入或执行任意 JavaScript。
+Playwright 运行 production build + Vite preview 的 Chromium desktop/mobile smoke，而不是开发服务器。
 
-## 当前支持范围
+## 贡献与反馈
 
-当前正式产品环境只有 Standard CoC 7E。历史文件中的旧 Setting identity 仍可安全读取、备份和显示，但不属于当前可新建的产品环境，也不会回退套用 Standard 内容。
+提交代码前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。Bug 与功能建议可通过 [GitHub Issues](https://github.com/DEATHTDM/COCSheet/issues/new/choose) 提交；请勿公开上传未经脱敏的人物文件、完整资料库备份或分享链接 token。
 
-## Project documentation
+## 许可证
 
-- [Project context](docs/PROJECT_CONTEXT.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Product decisions](docs/PRODUCT_DECISIONS.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Current state](docs/CURRENT_STATE.md)
-
-## 许可证与第三方代码
-
-项目代码以 `GPL-3.0-only` 授权。
-
-本轮未直接复用第三方业务代码。项目依赖 Vue、Vue Router、Pinia、Dexie、Zod、Vite、Vitest 等开源软件，各依赖遵循其自身许可证。
+项目以 [GPL-3.0-only](LICENSE) 授权。第三方依赖分别遵循其自身许可证。

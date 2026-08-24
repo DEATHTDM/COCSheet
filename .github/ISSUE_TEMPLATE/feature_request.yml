@@ -1,0 +1,36 @@
+name: 功能建议
+description: 说明真实用户问题与希望改善的工作流
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请从实际用户问题出发，而不是仅因为其他工具存在某项功能。涉及 CoC 规则时请提供明确来源。
+  - type: textarea
+    id: user_problem
+    attributes:
+      label: 用户遇到的问题
+      description: 谁在什么场景下遇到了什么困难？
+    validations:
+      required: true
+  - type: textarea
+    id: desired_behavior
+    attributes:
+      label: 希望的行为
+      description: 理想情况下，COCSheet 应该如何帮助用户完成这件事？
+    validations:
+      required: true
+  - type: textarea
+    id: current_gap
+    attributes:
+      label: 为什么现有流程不足
+      description: 请说明目前的替代操作，以及它为什么不能解决问题。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围、规则来源或兼容性考虑
+      description: 如涉及规则、文件格式、本地数据或移动端，请补充相关约束。
