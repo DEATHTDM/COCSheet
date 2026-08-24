@@ -390,14 +390,14 @@ function submit(): void {
             >
               <option value="">请选择技能</option>
               <option v-for="skill in availableSkills" :key="skill.id" :value="skill.id">
-                {{ skill.name.zh }} / {{ skill.name.en }}
+                {{ skill.name.zh }}
               </option>
             </select>
           </label>
 
           <template v-if="getSkill(slot)?.specialization.type === 'required'">
             <label class="field">
-              <span>专业形式</span>
+              <span>技能专攻形式</span>
               <select
                 :value="slot.mode"
                 :aria-label="`栏位 ${index + 1} 技能专攻形式`"
@@ -412,12 +412,12 @@ function submit(): void {
                 >
                   固定自定义技能专攻
                 </option>
-                <option value="specialization-of">建卡技能步骤再决定具体专业</option>
+                <option value="specialization-of">建卡技能步骤再决定具体技能专攻</option>
               </select>
             </label>
 
             <label v-if="slot.mode === 'predefined'" class="field">
-              <span>预定义专业</span>
+              <span>预定义技能专攻</span>
               <select
                 :value="slot.specializationId"
                 :aria-label="`栏位 ${index + 1} 预定义技能专攻`"
@@ -428,13 +428,13 @@ function submit(): void {
                   :key="specialization.id"
                   :value="specialization.id"
                 >
-                  {{ specialization.name.zh }} / {{ specialization.name.en }}
+                  {{ specialization.name.zh }}
                 </option>
               </select>
             </label>
 
             <label v-else-if="slot.mode === 'named-custom'" class="field">
-              <span>具体专业名称</span>
+              <span>具体技能专攻名称</span>
               <input
                 type="text"
                 :value="slot.customName"
@@ -445,9 +445,9 @@ function submit(): void {
 
             <p v-else-if="slot.mode === 'specialization-of'" class="muted">
               <template v-if="slot.definitionId === 'fighting' || slot.definitionId === 'firearms'">
-                此栏位保持通用格斗／射击语义：至少选择 1 个专业，不设置上限。
+                此栏位保持通用格斗／射击语义：至少选择 1 个技能专攻，不设置上限。
               </template>
-              <template v-else>将在下一步选择 1 个具体专业。</template>
+              <template v-else>将在下一步选择 1 个具体技能专攻。</template>
             </p>
           </template>
         </li>
