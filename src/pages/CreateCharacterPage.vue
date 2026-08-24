@@ -57,7 +57,7 @@ watch(
     if (Array.isArray(queryValue)) {
       sharedPresetState.value = {
         status: "error",
-        message: "链接包含多个 kp 参数，无法确定要使用的共享预设。",
+        message: "分享链接中包含多份预设信息，无法确定要使用哪一份。",
       };
       return;
     }
@@ -116,7 +116,7 @@ async function saveSharedPreset(): Promise<void> {
     if (requestSequence !== sharedPresetRequestSequence) return;
     sharedPresetSaveState.value = {
       status: "error",
-      message: error instanceof Error ? error.message : "保存共享 KP 预设失败。",
+      message: error instanceof Error ? error.message : "保存共享建卡预设失败。",
     };
   }
 }
@@ -133,7 +133,7 @@ async function removeSharedPreset(): Promise<void> {
     <div>
       <p class="eyebrow">第一步</p>
       <h1>创建调查员</h1>
-      <p>当前支持 CoC 7版标准规则；未选择守秘人建卡预设时使用默认属性配置。</p>
+      <p>当前支持 CoC 7版标准规则；未选择建卡预设时使用默认属性配置。</p>
     </div>
 
     <fieldset class="panel creation-experience-selector">
@@ -173,7 +173,7 @@ async function removeSharedPreset(): Promise<void> {
     >
       <div>
         <p class="eyebrow">来自链接</p>
-        <h2 id="shared-preset-title">共享 KP 建卡预设</h2>
+        <h2 id="shared-preset-title">共享建卡预设</h2>
       </div>
       <p v-if="sharedPresetState.status === 'loading'" role="status">正在读取共享预设…</p>
       <template v-else-if="sharedPresetState.status === 'valid'">
@@ -185,7 +185,7 @@ async function removeSharedPreset(): Promise<void> {
             <dd>{{ sharedPresetState.preset.attributeGeneration.allowedMethods.map((method) => methodLabels[method]).join("、") }}</dd>
           </div>
         </dl>
-        <p>此预设来自分享链接，不会自动保存到你的 KP 预设库。</p>
+        <p>此预设来自分享链接，不会自动保存到你的建卡预设库。</p>
         <p v-if="!sharedPresetSupported" class="warning-message" role="alert">
           该分享链接使用的建卡环境暂不支持新建调查员；你可以移除这份共享预设。
         </p>
@@ -193,12 +193,12 @@ async function removeSharedPreset(): Promise<void> {
           v-if="sharedPresetSaveState.status === 'saved'"
           class="success-message"
           role="status"
-        >已保存到你的 KP 预设库。</p>
+        >已保存到你的建卡预设库。</p>
         <p
           v-if="sharedPresetSaveState.status === 'error'"
           class="error-message"
           role="alert"
-        >保存共享 KP 预设失败：{{ sharedPresetSaveState.message }}</p>
+        >保存共享建卡预设失败：{{ sharedPresetSaveState.message }}</p>
         <div class="actions">
           <button
             v-if="sharedPresetSupported"
@@ -213,7 +213,7 @@ async function removeSharedPreset(): Promise<void> {
             type="button"
             :disabled="sharedPresetSaveState.status === 'saving'"
             @click="saveSharedPreset"
-          >{{ sharedPresetSaveState.status === "saving" ? "保存中…" : "保存到我的 KP 预设" }}</button>
+          >{{ sharedPresetSaveState.status === "saving" ? "保存中…" : "保存到建卡预设库" }}</button>
           <RouterLink
             v-if="sharedPresetSaveState.status === 'saved'"
             class="button"
@@ -223,7 +223,7 @@ async function removeSharedPreset(): Promise<void> {
         </div>
       </template>
       <template v-else-if="sharedPresetState.status === 'error'">
-        <p class="error-message" role="alert">无法读取共享 KP 预设：{{ sharedPresetState.message }}</p>
+        <p class="error-message" role="alert">无法读取共享建卡预设：{{ sharedPresetState.message }}</p>
         <button class="button" type="button" @click="removeSharedPreset">移除共享预设</button>
       </template>
     </section>
@@ -240,7 +240,7 @@ async function removeSharedPreset(): Promise<void> {
     </div>
 
     <section v-if="presetStore.records.length" class="form-stack">
-      <h2>或使用 KP 建卡预设</h2>
+      <h2>或使用建卡预设</h2>
       <button
         v-for="record in presetStore.records"
         :key="record.id"
