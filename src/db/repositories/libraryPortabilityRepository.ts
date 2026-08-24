@@ -30,7 +30,7 @@ export class LibraryCollisionError extends Error {
     const messages: Record<LibraryCollisionKind, string> = {
       character: "本地已经有备份中的一张调查员人物卡。为保护现有资料，整份完整备份未导入。",
       "orphan-session": "本地已有一份无法对应到人物卡的建卡进度。为保护现有资料，整份完整备份未导入。",
-      "kp-preset": "本地已经有备份中的一个 KP 建卡预设。为保护现有资料，整份完整备份未导入。",
+      "kp-preset": "本地已经有备份中的一个建卡预设。为保护现有资料，整份完整备份未导入。",
     };
     super(messages[kind]);
     this.name = "LibraryCollisionError";
@@ -49,7 +49,7 @@ export class LibraryRecordValidationError extends Error {
     const labels = {
       character: "调查员",
       "creation-session": "建卡进度",
-      "kp-preset": "KP 预设",
+      "kp-preset": "建卡预设",
     } as const;
     super(`本地存在无法验证的${labels[recordKind]}记录，无法生成完整备份。`);
     this.name = "LibraryRecordValidationError";
