@@ -105,7 +105,8 @@ describe("Library Portability Store", () => {
 
     expect(summary).toEqual({ characterCount: 1, sessionCount: 1, kpPresetCount: 1 });
     expect(store.importStatus).toBe("success");
-    expect(store.importMessage).toBe("已导入 1 名调查员、1 份建卡进度和 1 个 KP 建卡预设。");
+    expect(store.importMessage).toBe("已导入 1 名调查员、1 份建卡进度和 1 个建卡预设。");
+    expect(store.importMessage).not.toContain("KP");
     expect(loadCharacters).toHaveBeenCalledTimes(1);
     expect(loadSessions).toHaveBeenCalledTimes(1);
     expect(loadPresets).toHaveBeenCalledTimes(1);
