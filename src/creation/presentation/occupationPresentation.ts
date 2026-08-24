@@ -80,6 +80,13 @@ export function formatSkillRefForOccupation(ref: SkillRef, skills: SkillRegistry
   return `${definitionName}（${specialization.name.zh}）`;
 }
 
+export function formatPlayerFacingOccupationText(text: string): string {
+  return text
+    .replaceAll("职业技能", "本职技能")
+    .replaceAll("Keeper", "守秘人")
+    .replaceAll("KP", "守秘人");
+}
+
 function formatCardinality(cardinality: SelectorCardinality, noun = "项"): string {
   if (cardinality.max === cardinality.min) return `选择 ${cardinality.min} ${noun}`;
   if (cardinality.max === undefined) return `至少 ${cardinality.min} ${noun}`;
@@ -93,7 +100,7 @@ function formatBranch(
 ): string {
   const label = formatSkillSelectorForOccupation(selector, skills);
   if (cardinality.min === 1 && cardinality.max === 1) return label;
-  const noun = selector.type === "specialization-of" ? "个专业" : "项";
+  const noun = selector.type === "specialization-of" ? "个技能专攻" : "项";
   const cardinalityLabel = formatCardinality(cardinality, noun);
   return selector.type === "specialization-of" && label.endsWith("）")
     ? `${label.slice(0, -1)}；${cardinalityLabel}）`
@@ -118,7 +125,7 @@ export function formatSkillSelectorForOccupation(
       const specializationPrompt = selector.definitionId === "language-own" ||
         selector.definitionId === "language-other"
         ? "自选具体语言"
-        : "自选专业";
+        : "自选技能专攻";
       const exclusion = selector.exclude?.length
         ? `；不含 ${selector.exclude.map((ref) => formatSkillRefForOccupation(ref, skills)).join("、")}`
         : "";
@@ -188,8 +195,8 @@ export function formatOccupationRequirement(
   skills: SkillRegistry,
 ): string {
   const notes = [
-    requirement.guidance?.zh,
-    requirement.keeperReview ? "需 KP 确认" : undefined,
+    requirement.guidance?.zh ? formatPlayerFacingOccupationText(requirement.guidance.zh) : undefined,
+    requirement.keeperReview ? "需守秘人确认" : undefined,
   ].filter((note): note is string => Boolean(note));
   const selection = formatRequirementSelection(requirement, skills);
   return notes.length > 0 ? `${selection}（${notes.join("；")}）` : selection;
@@ -246,10 +253,10 @@ export function getOccupationTransitionStatus(
     input.occupation.selectedOccupationId,
     input.presetSnapshot,
   ) === "banned") {
-    return { canContinue: false, reason: "当前已选职业被此 KP 预设禁用，请先更换职业。" };
+    return { canContinue: false, reason: "当前已选职业被此守秘人建卡预设禁用，请先更换职业。" };
   }
   if (input.occupation.kind === "custom" && input.presetSnapshot?.allowCustomOccupation === false) {
-    return { canContinue: false, reason: "当前 KP 预设禁止自定义职业，请先更换职业。" };
+    return { canContinue: false, reason: "当前守秘人建卡预设禁止自定义职业，请先更换职业。" };
   }
   if (input.eraRequired && input.eraId && !isOccupationAvailableInEra(
     input.occupation.definitionSnapshot,

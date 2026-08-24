@@ -325,7 +325,7 @@ describe("Character wealth persistence", () => {
     const store = useCharacterStore();
 
     await expect(store.initializeCurrentWealth(character.id, 100, 200))
-      .rejects.toThrow("当前 Setting 尚未实现长期财富金额编辑规则");
+      .rejects.toThrow("当前建卡环境尚未提供长期财富金额编辑规则");
     expect((await characterRepository.getById(character.id))?.data.wealth).toBeUndefined();
   });
 

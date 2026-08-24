@@ -503,25 +503,25 @@ export function finalizeSkillAllocation(
   }
 
   if (preset?.occupationPolicy?.bannedOccupationIds?.includes(occupation.selectedOccupationId)) {
-    errors.push({ code: "preset-occupation-banned", message: "当前 Preset 禁止该职业" });
+    errors.push({ code: "preset-occupation-banned", message: "当前守秘人建卡预设不允许该职业" });
   }
   if (preset?.occupationPolicy?.approvalRequiredOccupationIds?.includes(occupation.selectedOccupationId) &&
     !hasApproval(state.keeperApprovals, "preset-occupation-policy", occupation.selectedOccupationId)) {
     addApproval(approvals, {
       reason: "preset-occupation-policy",
       subjectId: occupation.selectedOccupationId,
-      message: "当前 Preset 要求 Keeper 批准该职业",
+      message: "当前守秘人建卡预设要求守秘人确认该职业",
     });
   }
   if (occupation.kind === "custom") {
     if (preset?.allowCustomOccupation === false) {
-      errors.push({ code: "preset-occupation-banned", message: "当前 Preset 禁止自定义职业" });
+      errors.push({ code: "preset-occupation-banned", message: "当前守秘人建卡预设不允许自定义职业" });
     } else if (preset?.allowCustomOccupation === "keeper-approval" &&
       !hasApproval(state.keeperApprovals, "custom-occupation", occupation.selectedOccupationId)) {
       addApproval(approvals, {
         reason: "custom-occupation",
         subjectId: occupation.selectedOccupationId,
-        message: "当前 Preset 要求 Keeper 批准自定义职业",
+        message: "当前守秘人建卡预设要求守秘人确认自定义职业",
       });
     }
   }
@@ -530,7 +530,7 @@ export function finalizeSkillAllocation(
     addApproval(approvals, {
       reason: "occupation-definition",
       subjectId: occupation.selectedOccupationId,
-      message: "职业定义本身要求 Keeper 批准",
+      message: "该职业需要守秘人确认",
     });
   }
 
@@ -586,7 +586,7 @@ export function finalizeSkillAllocation(
         addApproval(approvals, {
           reason: "occupation-skill-replacement",
           subjectId: approvalSubject,
-          message: `职业技能 replacement ${policy.id} 需要 Keeper 批准目标 ${replacementTargetRequirementId}`,
+          message: "这项本职技能替换需要守秘人确认",
         });
       }
     }
@@ -642,7 +642,7 @@ export function finalizeSkillAllocation(
       addApproval(approvals, {
         reason: "fuzzy-requirement",
         subjectId: approvalSubject,
-        message: `职业需求 ${requirement.id} 需要 Keeper review`,
+        message: "这项本职技能需求需要守秘人确认",
       });
     }
   }
@@ -699,7 +699,7 @@ export function finalizeSkillAllocation(
       addApproval(approvals, {
         reason,
         subjectId: key,
-        message: `${key} 的创建期点数需要 Keeper 批准`,
+        message: "这项技能的创建期点数需要守秘人确认",
       });
     }
   }

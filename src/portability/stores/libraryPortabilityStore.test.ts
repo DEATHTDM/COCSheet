@@ -105,7 +105,8 @@ describe("Library Portability Store", () => {
 
     expect(summary).toEqual({ characterCount: 1, sessionCount: 1, kpPresetCount: 1 });
     expect(store.importStatus).toBe("success");
-    expect(store.importMessage).toBe("已导入 1 名调查员、1 个建卡会话和 1 个 KP 预设。");
+    expect(store.importMessage).toBe("已导入 1 名调查员、1 份建卡进度和 1 个建卡预设。");
+    expect(store.importMessage).not.toContain("KP");
     expect(loadCharacters).toHaveBeenCalledTimes(1);
     expect(loadSessions).toHaveBeenCalledTimes(1);
     expect(loadPresets).toHaveBeenCalledTimes(1);
@@ -137,7 +138,7 @@ describe("Library Portability Store", () => {
     ));
     const store = useLibraryPortabilityStore();
     await expect(store.importLibraryText(text)).rejects.toThrow("整份完整备份未导入");
-    expect(store.importMessage).toContain("相同 ID");
+    expect(store.importMessage).toContain("本地已经有备份中的一张调查员人物卡");
     expect(await db.characters.count()).toBe(1);
     expect(await db.kpPresets.count()).toBe(0);
     store.resetImportStatus();
@@ -149,7 +150,7 @@ describe("Library Portability Store", () => {
     const missing = makeCharacter("Missing");
     await creationSessionRepository.create(makeSession(missing));
     await expect(useLibraryPortabilityStore().exportLibrary()).rejects.toThrow(
-      "本地存在没有对应调查员的建卡会话",
+      "本地存在没有对应人物卡的建卡进度",
     );
     expect(await db.creationSessions.count()).toBe(1);
   });

@@ -451,7 +451,7 @@ describe("requirement selection store API", () => {
       "personal-or-era",
       "language-own",
       "粤语",
-    )).rejects.toThrow("母语只允许一个专业化实例");
+    )).rejects.toThrow("母语只允许一个技能专攻实例");
 
     await store.createCustomRequirementSpecialization("language", "language-other", "英语");
     expect(store.current?.data.skills?.requirementSelections.find(
@@ -489,7 +489,7 @@ describe("requirement selection store API", () => {
       "technical-drawing",
       "art-craft",
       "随意名称",
-    )).rejects.toThrow("不符合当前职业技能需求");
+    )).rejects.toThrow("不符合当前本职技能需求");
     await store.createCustomRequirementSpecialization(
       "technical-drawing",
       "art-craft",
@@ -541,7 +541,7 @@ describe("requirement selection store API", () => {
     await expect(store.setRequirementSelection("history", [{
       type: "standard",
       definitionId: "history",
-    }])).rejects.toThrow("已被替换的职业技能需求不能保存普通 selection");
+    }])).rejects.toThrow("已被替换的本职技能需求不能保存普通选择");
 
     await store.setOccupationSkillReplacementTarget("drive-auto");
     expect(store.current?.data.skills?.requirementSelections).toEqual(expect.arrayContaining([{
@@ -1137,7 +1137,7 @@ describe("Phase 7A wealth and possessions workflow", () => {
 
     await store.completeBackground();
     expect(store.current?.data.currentStep).toBe("possessions");
-    await expect(store.completePossessions()).rejects.toThrow("请先按当前 Credit Rating 初始化财富");
+    await expect(store.completePossessions()).rejects.toThrow("请先按当前信用评级建立财富记录");
 
     const beforeWealthPossession = await characterStore.addPossessionEntry(characterId, {
       name: "莱卡相机",
@@ -1219,7 +1219,7 @@ describe("Phase 7A wealth and possessions workflow", () => {
       (skill) => skill.ref.type === "standard" && skill.ref.definitionId === "credit-rating",
     )?.currentValue).toBe(30);
     await expect(restoredCreationStore.completePossessions()).rejects.toThrow(
-      "当前财富基于旧的时代或 Credit Rating，请重新初始化财富。",
+      "当前财富基于旧的时代或信用评级，请重新建立财富记录。",
     );
     expect((await characterRepository.getById(characterId))?.data.possessions).toEqual([{
       id: possessionId,

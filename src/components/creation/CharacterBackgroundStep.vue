@@ -107,7 +107,7 @@ async function completeBackground(): Promise<void> {
   <section class="page-stack background-step">
     <header class="panel form-stack compact-stack">
       <div>
-        <p class="eyebrow">Background</p>
+        <p class="eyebrow">背景故事</p>
         <h2>调查员背景</h2>
       </div>
       <p>

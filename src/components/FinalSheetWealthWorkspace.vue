@@ -79,14 +79,14 @@ async function saveCash(): Promise<void> {
   await run("cash", () => characterStore.setCurrentCash(
     props.character.id,
     parseStandardMoneyInput(cashInput.value),
-  ), "Current Cash 已保存。");
+  ), "现金已保存。");
 }
 
 async function saveAssets(): Promise<void> {
   await run("assets", () => characterStore.setCurrentAssets(
     props.character.id,
     parseStandardMoneyInput(assetsInput.value),
-  ), "Current Assets 已保存。");
+  ), "资产总额已保存。");
 }
 
 async function addAsset(): Promise<void> {
@@ -98,7 +98,7 @@ async function addAsset(): Promise<void> {
     });
     newDescription.value = "";
     newValue.value = "";
-  }, "资产条目已添加；Current Assets 总额未改变。");
+  }, "资产条目已添加；资产总额未改变。");
 }
 
 function beginEditing(entry: CharacterAssetEntry): void {
@@ -127,15 +127,15 @@ async function saveAsset(entryId: string): Promise<void> {
     editingEntryId.value = undefined;
     editingDescription.value = "";
     editingValue.value = "";
-  }, "资产条目已保存；Current Assets 总额未改变。");
+  }, "资产条目已保存；资产总额未改变。");
 }
 
 async function removeAsset(entry: CharacterAssetEntry): Promise<void> {
-  if (!window.confirm(`删除资产“${entry.description}”？Current Assets 总额不会改变。`)) return;
+  if (!window.confirm(`删除资产“${entry.description}”？资产总额不会改变。`)) return;
   await run(`asset:remove:${entry.id}`, async () => {
     await characterStore.removeAssetEntry(props.character.id, entry.id);
     if (editingEntryId.value === entry.id) cancelEditing();
-  }, "资产条目已删除；Current Assets 总额未改变。");
+  }, "资产条目已删除；资产总额未改变。");
 }
 </script>
 
@@ -143,16 +143,16 @@ async function removeAsset(entry: CharacterAssetEntry): Promise<void> {
   <section class="panel final-inventory-workspace final-wealth-workspace">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Wealth</p>
+        <p class="eyebrow">人物卡长期资料</p>
         <h2>财富与资产</h2>
-        <p class="muted">Current Cash 与 Assets 是长期状态；Spending Level 只读派生且不会自动扣款。</p>
+        <p class="muted">现金与资产是人物卡的长期状态；消费水平只作查阅，不会自动扣款。</p>
       </div>
     </div>
 
     <dl v-if="isStandard" class="sheet-fact-grid final-wealth-rules">
-      <div><dt>Credit Rating</dt><dd>{{ creditRating ?? '—' }}</dd></div>
-      <div><dt>Lifestyle</dt><dd>{{ wealthRule ? standardLifestyleLabels[wealthRule.lifestyle] : '—' }}</dd></div>
-      <div><dt>Spending Level</dt><dd>{{ wealthRule ? formatStandardMoney(wealthRule.spendingLevelMinorUnits) : '—' }}</dd></div>
+      <div><dt>信用评级</dt><dd>{{ creditRating ?? '—' }}</dd></div>
+      <div><dt>生活水平</dt><dd>{{ wealthRule ? standardLifestyleLabels[wealthRule.lifestyle] : '—' }}</dd></div>
+      <div><dt>消费水平</dt><dd>{{ wealthRule ? formatStandardMoney(wealthRule.spendingLevelMinorUnits) : '—' }}</dd></div>
     </dl>
 
     <p v-if="actionError" class="error-message" role="alert">{{ actionError }}</p>
@@ -162,15 +162,15 @@ async function removeAsset(entry: CharacterAssetEntry): Promise<void> {
       <form v-if="!character.wealth" class="final-inventory-form" data-wealth-initializer @submit.prevent="initializeWealth">
         <div>
           <h3>建立当前财富记录</h3>
-          <p class="muted">请明确输入当前金额；不会从 Credit Rating、时代或建卡会话预填。</p>
+          <p class="muted">请明确输入当前金额；不会根据信用评级、时代或旧建卡进度自动填写。</p>
         </div>
         <div class="wealth-edit-grid">
           <label class="field">
-            <span>Current Cash（美元）</span>
+            <span>现金（美元）</span>
             <input v-model="initializationCash" name="initial-cash" inputmode="decimal" autocomplete="off" placeholder="例如：125.00" />
           </label>
           <label class="field">
-            <span>Current Assets（美元）</span>
+            <span>资产（美元）</span>
             <input v-model="initializationAssets" name="initial-assets" inputmode="decimal" autocomplete="off" placeholder="例如：25000.00" />
           </label>
         </div>
@@ -181,26 +181,26 @@ async function removeAsset(entry: CharacterAssetEntry): Promise<void> {
         <div class="wealth-edit-grid final-current-wealth-editors">
           <form class="final-money-editor" @submit.prevent="saveCash">
             <label class="field">
-              <span>Current Cash（美元）</span>
+              <span>现金（美元）</span>
               <input v-model="cashInput" name="current-cash" inputmode="decimal" autocomplete="off" />
               <small>{{ formatStandardMoney(character.wealth.cashMinorUnits) }}</small>
             </label>
-            <button class="button" type="submit" :disabled="busyAction !== undefined">保存 Cash</button>
+            <button class="button" type="submit" :disabled="busyAction !== undefined">保存现金</button>
           </form>
           <form class="final-money-editor" @submit.prevent="saveAssets">
             <label class="field">
-              <span>Current Assets（美元）</span>
+              <span>资产（美元）</span>
               <input v-model="assetsInput" name="current-assets" inputmode="decimal" autocomplete="off" />
               <small>{{ formatStandardMoney(character.wealth.assetsMinorUnits) }}</small>
             </label>
-            <button class="button" type="submit" :disabled="busyAction !== undefined">保存 Assets</button>
+            <button class="button" type="submit" :disabled="busyAction !== undefined">保存资产</button>
           </form>
         </div>
 
         <section class="final-inventory-subsection" aria-labelledby="final-assets-heading">
           <header>
             <h3 id="final-assets-heading">资产构成</h3>
-            <p class="muted">单项估值可留空；估值总和不必等于 Current Assets，条目变更也不会调整总额。</p>
+            <p class="muted">单项估值可留空；估值总和不必等于资产总额，条目变更也不会调整总额。</p>
           </header>
           <ul v-if="character.wealth.assetEntries.length" class="final-inventory-entry-list">
             <li v-for="entry in character.wealth.assetEntries" :key="entry.id" :data-asset-entry-id="entry.id">
@@ -237,22 +237,22 @@ async function removeAsset(entry: CharacterAssetEntry): Promise<void> {
     </template>
 
     <template v-else>
-      <p class="warning-message" role="status">当前 Setting 尚未实现长期财富金额编辑规则；不会套用 Standard 美元规则。</p>
+      <p class="warning-message" role="status">当前规则环境暂不支持编辑财富金额；现有原始金额会保持不变。</p>
       <template v-if="character.wealth">
         <dl class="sheet-fact-grid">
-          <div><dt>Current Cash</dt><dd>{{ character.wealth.cashMinorUnits }} raw minor units</dd></div>
-          <div><dt>Current Assets</dt><dd>{{ character.wealth.assetsMinorUnits }} raw minor units</dd></div>
+          <div><dt>现金原始值</dt><dd>{{ character.wealth.cashMinorUnits }}</dd></div>
+          <div><dt>资产原始值</dt><dd>{{ character.wealth.assetsMinorUnits }}</dd></div>
         </dl>
         <ul v-if="character.wealth.assetEntries.length" class="final-inventory-entry-list readonly">
           <li v-for="entry in character.wealth.assetEntries" :key="entry.id">
             <div class="final-inventory-entry-copy">
               <strong>{{ entry.description }}</strong>
-              <span>{{ entry.valueMinorUnits === undefined ? '未记录估值' : `${entry.valueMinorUnits} raw minor units` }}</span>
+              <span>{{ entry.valueMinorUnits === undefined ? '未记录估值' : entry.valueMinorUnits }}</span>
             </div>
           </li>
         </ul>
       </template>
-      <p v-else class="empty-state">当前人物没有财富记录；此 Setting 下不会自动创建。</p>
+      <p v-else class="empty-state">这张人物卡没有财富记录，当前规则环境也无法自动创建。</p>
     </template>
   </section>
 </template>

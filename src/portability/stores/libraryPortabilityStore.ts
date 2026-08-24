@@ -32,7 +32,7 @@ function readableError(error: unknown, fallback: string): string {
 }
 
 function summaryMessage(summary: LibraryImportSummary): string {
-  return `已导入 ${summary.characterCount} 名调查员、${summary.sessionCount} 个建卡会话和 ${summary.kpPresetCount} 个 KP 预设。`;
+  return `已导入 ${summary.characterCount} 名调查员、${summary.sessionCount} 份建卡进度和 ${summary.kpPresetCount} 个建卡预设。`;
 }
 
 export const useLibraryPortabilityStore = defineStore("library-portability", () => {

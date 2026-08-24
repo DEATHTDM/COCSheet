@@ -143,7 +143,7 @@ function presentWealth(character: Character): PrintableWealth | undefined {
   const rule = standard ? deriveFinalSheetStandardWealth(character) : undefined;
   const formatAmount = (amount: number): string => standard
     ? formatStandardMoney(amount)
-    : `${amount} raw minor units`;
+    : `原始金额 ${amount}（当前规则环境暂不支持格式化）`;
   return {
     cashLabel: formatAmount(character.wealth.cashMinorUnits),
     assetsLabel: formatAmount(character.wealth.assetsMinorUnits),

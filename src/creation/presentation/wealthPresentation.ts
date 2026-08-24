@@ -14,7 +14,7 @@ export const standardLifestyleLabels: Readonly<Record<StandardLifestyleId, strin
 
 function requireMinorUnits(amountMinorUnits: number): void {
   if (!Number.isInteger(amountMinorUnits) || amountMinorUnits < 0) {
-    throw new RangeError("金额必须为非负整数 minor units");
+    throw new RangeError("金额必须是非负整数");
   }
 }
 

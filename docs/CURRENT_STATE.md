@@ -4,15 +4,23 @@ Last updated: 2026-08-24
 
 ## Current phase
 
-Phase 16 — Shared KP Preset Local Save (Completed)
+Phase 17A — Player-facing UX & Terminology Audit (Completed)
 
-共享 KP Preset 接收方现在可显式保存 fresh-ID 普通本地副本，同时保持打开链接 zero-write、同 ID 本地数据独立、直接共享建卡 snapshot identity 与所有分享／备份／schema 版本不变。
+玩家可见界面现在以自然中文和统一 CoC 术语呈现，并通过桌面／手机 production-preview 实操覆盖现有建卡、人物卡、打印与 KP 建卡预设工作流；domain、rules、schema 与 portability/share 格式保持不变。
 
 ## Git baseline
 
-Phase 16 was created from exact `main@1d93f5329995b0ec0fbbbba8174c894729af756f`, the merged Phase 15 closure baseline.
+Phase 17A was created from exact `main@25edc5b00a3bc31371bced407ac8b9c0ec4d84fd`, the merged Phase 16 closure baseline.
 
 ## Implemented
+
+- durable player-facing terminology contract in `docs/UI_TERMINOLOGY.md`, including the strict separation of 本职技能 and 技能专攻
+- concise reusable desktop/mobile browser acceptance contract in `docs/UX_QA_CHECKLIST.md` plus matching `AGENTS.md` requirements
+- Chinese-first player presentation across Home, creation, occupations, skills, background, wealth/possessions, Review, Final Sheet, print, KP Presets and shared-Preset reception
+- readable compatibility and missing-catalog messages that explain available actions without exposing snapshot, orphan, definition, validator, provenance, stale or similar implementation vocabulary
+- semantic regression coverage for 本职技能、兴趣技能、技能专攻、本职技能点、兴趣技能点、信用评级与守秘人确认
+- production-like 1280 × 900 and 390 × 844 browser acceptance with real workflow actions, route reuse, console and document-overflow checks
+- unchanged Character, CreationSession, CreationPreset and Record schemas; unchanged Dexie version/tables/indexes and all version-1 portability/share envelopes; no dependency or rules-mechanics change
 
 - explicit receiver-local save action for valid supported shared KP Presets, with opening the link remaining zero-write
 - Preset Store-owned fresh UUID creation that preserves every other normalized CreationPreset field without mutating or substituting the shared preview
@@ -300,7 +308,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 16 is complete. Phase 17 remains unfrozen and is not authorized by this phase.
+Phase 17A is complete. Phase 17 remains in progress; Phase 17B is not authorized by this phase.
 
 ## Known technical risks
 

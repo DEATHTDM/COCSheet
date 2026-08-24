@@ -23,7 +23,7 @@ export interface ImportedPortableCharacterRecords {
 
 export class PortableCharacterCollisionError extends Error {
   constructor() {
-    super("本地已经存在相同 ID 的调查员；当前版本不会自动覆盖或合并。");
+    super("本地已经有这张调查员人物卡。为保护现有资料，本次没有导入；请保留其中一份后再重试。");
     this.name = "PortableCharacterCollisionError";
   }
 }

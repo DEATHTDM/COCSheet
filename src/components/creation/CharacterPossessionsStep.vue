@@ -360,10 +360,10 @@ async function completePossessions(): Promise<void> {
   <section class="page-stack possessions-step">
     <header class="panel form-stack compact-stack">
       <div>
-        <p class="eyebrow">Possessions</p>
+        <p class="eyebrow">财富与物品</p>
         <h2>财富与物品</h2>
       </div>
-      <p>财富、普通随身物品与武器分别保存；武器规则数据始终来自当前 Setting 的目录。</p>
+      <p>财富、普通随身物品与武器分别保存；武器规则数据来自人物卡所属的规则环境。</p>
     </header>
 
     <p v-if="actionError" class="error-message" role="alert">{{ actionError }}</p>
@@ -371,32 +371,32 @@ async function completePossessions(): Promise<void> {
     <section class="panel form-stack">
       <h3>当前规则基准</h3>
       <dl class="review-summary-grid">
-        <div><dt>Credit Rating</dt><dd>{{ creditRating ?? '—' }}</dd></div>
-        <div><dt>Lifestyle</dt><dd>{{ officialWealth ? standardLifestyleLabels[officialWealth.lifestyle] : '—' }}</dd></div>
-        <div><dt>Spending Level</dt><dd>{{ officialWealth ? formatStandardMoney(officialWealth.spendingLevelMinorUnits) : '—' }}</dd></div>
-        <div><dt>官方初始 Cash</dt><dd>{{ officialWealth ? formatStandardMoney(officialWealth.cashMinorUnits) : '—' }}</dd></div>
-        <div><dt>官方初始 Assets</dt><dd>{{ officialWealth ? formatStandardInitialAssets(officialWealth.assets) : '—' }}</dd></div>
+        <div><dt>信用评级</dt><dd>{{ creditRating ?? '—' }}</dd></div>
+        <div><dt>生活水平</dt><dd>{{ officialWealth ? standardLifestyleLabels[officialWealth.lifestyle] : '—' }}</dd></div>
+        <div><dt>消费水平</dt><dd>{{ officialWealth ? formatStandardMoney(officialWealth.spendingLevelMinorUnits) : '—' }}</dd></div>
+        <div><dt>初始现金</dt><dd>{{ officialWealth ? formatStandardMoney(officialWealth.cashMinorUnits) : '—' }}</dd></div>
+        <div><dt>初始资产</dt><dd>{{ officialWealth ? formatStandardInitialAssets(officialWealth.assets) : '—' }}</dd></div>
       </dl>
     </section>
 
     <section v-if="isStale" class="panel form-stack legacy-warning" role="alert">
-      <strong>当前财富已失效</strong>
-      <p>当前财富基于旧的时代或 Credit Rating，请重新初始化财富。</p>
-      <p>重新初始化会重置 Cash / Assets 总额，但会保留资产构成说明，请随后重新核对。</p>
+      <strong>财富需要重新核对</strong>
+      <p>建卡时代或信用评级已经改变，请按新结果重新计算财富。</p>
+      <p>重新计算会重置现金与资产总额，但会保留资产构成说明，请随后重新核对。</p>
       <button class="button danger" type="button" @click="initializeWealth">
-        重新按当前 Credit Rating 初始化
+        按当前信用评级重新计算
       </button>
     </section>
 
     <section v-else-if="!character.wealth" class="panel form-stack">
       <h3>初始化财富</h3>
-      <p>财富不会在载入页面时自动生成。请确认当前最终 Credit Rating 后显式初始化。</p>
+      <p>请先确认最终信用评级，再计算调查员的初始财富。</p>
       <button
         class="button primary"
         type="button"
         :disabled="!officialWealth"
         @click="initializeWealth"
-      >按当前 Credit Rating 初始化财富</button>
+      >按当前信用评级计算财富</button>
     </section>
 
     <template v-if="character.wealth">
@@ -404,17 +404,17 @@ async function completePossessions(): Promise<void> {
         <div class="section-heading">
           <div>
             <h3>当前财富</h3>
-            <p v-if="initializationIsCurrent" class="success-message">与当前时代及 Credit Rating 一致。</p>
+            <p v-if="initializationIsCurrent" class="success-message">与当前时代及信用评级一致。</p>
           </div>
         </div>
         <div class="wealth-edit-grid">
           <label class="field">
-            <span>Cash（美元）</span>
+            <span>现金（美元）</span>
             <input v-model="cashInput" inputmode="decimal" autocomplete="off" @change="saveCash" />
             <small>{{ formatStandardMoney(character.wealth.cashMinorUnits) }}</small>
           </label>
           <label class="field">
-            <span>Assets（美元）</span>
+            <span>资产（美元）</span>
             <input v-model="assetsInput" inputmode="decimal" autocomplete="off" @change="saveAssets" />
             <small>{{ formatStandardMoney(character.wealth.assetsMinorUnits) }}</small>
           </label>
@@ -427,7 +427,7 @@ async function completePossessions(): Promise<void> {
           <h3>资产构成</h3>
           <p class="muted">
             说明资产的具体形式，例如“波士顿公寓”“福特汽车”“银行投资”或“家族地产”。
-            单项估值可留空，条目估值总和不必等于 Assets 总额。
+            单项估值可留空，条目估值总和不必等于资产总额。
           </p>
         </header>
 
@@ -569,7 +569,7 @@ async function completePossessions(): Promise<void> {
             <div>
               <h4>{{ item.name }}</h4>
               <p v-if="item.orphaned" class="warning-message">
-                当前 Setting 的武器目录中找不到 definition：{{ item.instance.definitionId }}。
+                这件武器的规则资料已不在当前目录中；你仍可修改备注或删除它。
                 实例仍被保留，可以编辑备注或删除。
               </p>
               <div v-else class="weapon-badges">
@@ -621,9 +621,9 @@ async function completePossessions(): Promise<void> {
 
       <section class="weapon-catalog form-stack" aria-label="武器目录">
         <header>
-          <h4>从当前 Setting 目录添加</h4>
+          <h4>从当前规则环境的目录添加</h4>
           <p v-if="!weaponRegistry.definitions.length" class="empty-state">
-            当前 Setting 尚未提供武器目录，不会显示 Standard 武器。
+            当前规则环境没有可用的武器目录。
           </p>
         </header>
 
@@ -635,11 +635,11 @@ async function completePossessions(): Promise<void> {
                 v-model="weaponSearch"
                 type="search"
                 autocomplete="off"
-                placeholder="搜索中文名、英文名、技能或 ID"
+                placeholder="搜索武器名称或关联技能"
               />
             </label>
             <label class="field">
-              <span>Category</span>
+              <span>类别</span>
               <select v-model="weaponCategory">
                 <option value="">全部类别</option>
                 <option v-for="category in weaponCategoryIds" :key="category" :value="category">
@@ -660,7 +660,6 @@ async function completePossessions(): Promise<void> {
               <header class="section-heading">
                 <div>
                   <h4>{{ definition.name.zh }}</h4>
-                  <p v-if="definition.name.en" class="muted">{{ definition.name.en }}</p>
                 </div>
                 <button
                   class="button"

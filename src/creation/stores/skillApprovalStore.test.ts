@@ -69,7 +69,7 @@ describe("Keeper approval store lifecycle", () => {
       reason: "occupation-definition",
       subjectId: "stale-occupation",
       message: "伪造批准",
-    })).rejects.toThrow("已失效或并非当前待批准项目");
+    })).rejects.toThrow("已失效或并非当前待确认项目");
 
     await store.approvePendingSkillApproval(character, pending, "  已与玩家确认  ");
     expect(store.current?.data.skills?.keeperApprovals).toContainEqual({
@@ -189,7 +189,7 @@ describe("Keeper approval store lifecycle", () => {
     const removal = store.setSkillAllocationPoint(mythos, "interestPoints", 0);
     const staleApproval = store.approvePendingSkillApproval(character, stalePending);
     await removal;
-    await expect(staleApproval).rejects.toThrow("已失效或并非当前待批准项目");
+    await expect(staleApproval).rejects.toThrow("已失效或并非当前待确认项目");
     expect(store.current?.data.skills?.keeperApprovals).not.toContainEqual(
       expect.objectContaining({ reason: "cthulhu-mythos-allocation" }),
     );
@@ -223,7 +223,7 @@ describe("Credit Rating override store lifecycle", () => {
     if (!pending) throw new Error("缺少 Credit Rating pending approval");
 
     await expect(store.approvePendingSkillApproval(character, pending))
-      .rejects.toThrow("独立批准操作");
+      .rejects.toThrow("独立确认操作");
     await store.approveCreditRatingOverride(character, "  KP 同意超出范围  ");
     expect(store.current?.data.skills?.creditRatingOverride).toEqual({
       occupationId: "accountant",
@@ -306,7 +306,7 @@ describe("completeSkills blockers and background transition", () => {
       { type: "standard", definitionId: "history" },
       { type: "standard", definitionId: "medicine" },
     ]);
-    await expect(store.completeSkills(character, true)).rejects.toThrow("需要 Keeper review");
+    await expect(store.completeSkills(character, true)).rejects.toThrow("需要守秘人确认");
   });
 
   it("warning 未确认时拒绝，确认后原子写入并推进 background", async () => {

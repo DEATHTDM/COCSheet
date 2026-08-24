@@ -17,7 +17,7 @@ import FinalSheetWeaponWorkspace from "../components/FinalSheetWeaponWorkspace.v
 import FinalSheetWealthWorkspace from "../components/FinalSheetWealthWorkspace.vue";
 import { getFifthValue, getHalfValue } from "../coc7/rules/attributes";
 import { formatDamageBonus } from "../coc7/rules/derived";
-import { characteristicIds } from "../coc7/types/attribute";
+import { characteristicIds, type CharacteristicId } from "../coc7/types/attribute";
 import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { useCreationStore } from "../creation/stores/creationStore";
 
@@ -44,6 +44,16 @@ const derived = computed(() => character.value
 const maximumSanity = computed(() => character.value
   ? getFinalSheetMaximumSanity(character.value)
   : 99);
+const characteristicLabels: Readonly<Record<CharacteristicId, string>> = {
+  STR: "力量（STR）",
+  CON: "体质（CON）",
+  SIZ: "体型（SIZ）",
+  DEX: "敏捷（DEX）",
+  APP: "外貌（APP）",
+  INT: "智力（INT）",
+  POW: "意志（POW）",
+  EDU: "教育（EDU）",
+};
 
 async function loadCharacterSheet(id: string): Promise<void> {
   ready.value = false;
@@ -79,7 +89,7 @@ watch(characterId, (id) => void loadCharacterSheet(id), { immediate: true });
     <template v-else-if="character">
       <header class="sheet-heading">
         <div>
-          <p class="eyebrow">Final Character Sheet</p>
+          <p class="eyebrow">人物卡</p>
           <h1>{{ character.name || '未命名调查员' }}</h1>
           <p>{{ character.occupation?.displayNameSnapshot.zh ?? '职业未记录' }} · {{ settingName }}</p>
         </div>
@@ -96,12 +106,12 @@ watch(characterId, (id) => void loadCharacterSheet(id), { immediate: true });
 
       <aside v-if="creationStatus === 'incomplete'" class="panel incomplete-sheet-notice">
         <strong>建卡尚未完成</strong>
-        <p>这是当前已持久化 Character 数据的预览；缺失内容不会在打开人物卡时自动补写。</p>
+        <p>这里显示目前已经保存的人物资料；尚未完成的内容不会自动补齐。</p>
         <RouterLink class="button primary" :to="`/characters/${character.id}`">继续建卡</RouterLink>
       </aside>
       <aside v-else-if="creationStatus === 'missing-session'" class="panel incomplete-sheet-notice">
-        <strong>此人物没有建卡会话</strong>
-        <p>人物卡仍直接读取并显示 Character；无法返回已经不存在的建卡流程。</p>
+        <strong>这张人物卡没有可继续的建卡进度</strong>
+        <p>你仍然可以查看和维护人物卡，但无法返回原建卡流程。</p>
       </aside>
       <p v-if="sessionWarning" class="warning-message" role="status">{{ sessionWarning }}</p>
 
@@ -113,25 +123,25 @@ watch(characterId, (id) => void loadCharacterSheet(id), { immediate: true });
 
       <section class="panel">
         <div class="section-heading">
-          <div><p class="eyebrow">Characteristics</p><h2>属性与派生值</h2></div>
+          <div><p class="eyebrow">调查员属性</p><h2>属性与派生值</h2></div>
         </div>
         <div v-if="character.characteristics" class="sheet-characteristic-grid">
           <article v-for="id in characteristicIds" :key="id" class="sheet-characteristic-card">
-            <span>{{ id }}</span>
+            <span>{{ characteristicLabels[id] }}</span>
             <strong>{{ character.characteristics[id] }}</strong>
-            <small>Half {{ getHalfValue(character.characteristics[id]) }} · Fifth {{ getFifthValue(character.characteristics[id]) }}</small>
+            <small>困难 {{ getHalfValue(character.characteristics[id]) }} · 极难 {{ getFifthValue(character.characteristics[id]) }}</small>
           </article>
         </div>
         <p v-else class="empty-state">尚无最终属性。</p>
         <dl v-if="derived" class="derived-strip">
-          <div><dt>Maximum HP</dt><dd>{{ derived.maxHp }}</dd></div>
-          <div><dt>Initial MP</dt><dd>{{ derived.initialMp }}</dd></div>
-          <div><dt>Maximum SAN</dt><dd>{{ maximumSanity }}</dd></div>
-          <div><dt>MOV</dt><dd>{{ derived.movement.status === 'value' ? derived.movement.value : '需 KP 裁定' }}</dd></div>
-          <div><dt>Damage Bonus</dt><dd>{{ formatDamageBonus(derived.damageBonus) }}</dd></div>
-          <div><dt>Build</dt><dd>{{ derived.build }}</dd></div>
+          <div><dt>生命值上限（HP）</dt><dd>{{ derived.maxHp }}</dd></div>
+          <div><dt>起始魔法值（MP）</dt><dd>{{ derived.initialMp }}</dd></div>
+          <div><dt>理智上限（SAN）</dt><dd>{{ maximumSanity }}</dd></div>
+          <div><dt>移动力</dt><dd>{{ derived.movement.status === 'value' ? derived.movement.value : '需守秘人裁定' }}</dd></div>
+          <div><dt>伤害加值</dt><dd>{{ formatDamageBonus(derived.damageBonus) }}</dd></div>
+          <div><dt>体格</dt><dd>{{ derived.build }}</dd></div>
         </dl>
-        <p v-else-if="character.characteristics" class="muted">当前资料不足，或此 Setting 尚无可可靠派生的 Standard 数值。</p>
+        <p v-else-if="character.characteristics" class="muted">现有资料不足，或这套规则环境暂时无法可靠计算派生数值。</p>
       </section>
 
       <FinalSheetSkillWorkspace :character="character" />

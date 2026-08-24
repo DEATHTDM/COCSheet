@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CREATION_EXPERIENCE_MODE_STORAGE_KEY } from "../app/preferences/creationExperiencePreference";
 import type { Character } from "../coc7/types/character";
+import { getOccupationRegistry } from "../content/occupationRegistry";
 import { useCreationStore } from "../creation/stores/creationStore";
 import type { CreationSession, CreationStepId } from "../creation/types/creationSession";
 import { db } from "../db/database";
@@ -92,7 +93,7 @@ async function mountExistingPage(
   const wrapper = mount(CharacterEditorPage, { global: { plugins: [pinia, router] } });
   await vi.waitFor(() => expect(
     wrapper.find(".creation-step-focus").exists() ||
-    wrapper.text().includes("当前不支持继续该建卡环境"),
+    wrapper.text().includes("暂时无法继续建卡"),
   ).toBe(true));
   return { wrapper, router };
 }
@@ -269,7 +270,7 @@ describe("CharacterEditorPage guided creation integration", () => {
     await creationStore.setCurrentStep("possessions");
     await flushPromises();
     expect(wrapper.get(".creation-guide-readiness").text())
-      .toContain("请先按当前 Credit Rating 初始化财富。");
+      .toContain("请先按当前信用评级建立财富记录。");
 
     await creationStore.setCurrentStep("review");
     await flushPromises();
@@ -311,6 +312,38 @@ describe("CharacterEditorPage guided creation integration", () => {
     }
   });
 
+  it("uses distinct player terminology for occupation, interest, and specialization semantics", async () => {
+    const editor = getOccupationRegistry("standard").get("editor");
+    if (!editor) throw new Error("缺少编辑职业测试资料");
+    const session: CreationSession = {
+      ...makeSession("standard", "skills"),
+      occupation: {
+        kind: "catalog",
+        selectedOccupationId: editor.id,
+        definitionSnapshot: editor,
+      },
+      skills: { requirementSelections: [], allocations: [], keeperApprovals: [] },
+    };
+    const { wrapper } = await mountPage(makeCharacter(), session);
+    await flushPromises();
+
+    const skills = wrapper.get(".skill-requirement-step").text();
+    expect(skills).toContain("本职技能");
+    expect(skills).toContain("兴趣技能");
+    expect(skills).toContain("本职技能点");
+    expect(skills).toContain("兴趣技能点");
+    expect(skills).toContain("技能专攻");
+    expect(skills).toContain("守秘人确认");
+    expect(skills).not.toContain("专业化技能");
+
+    await useCreationStore().setCurrentStep("occupation");
+    await flushPromises();
+    const occupation = wrapper.get(".occupation-browser").text();
+    expect(occupation).toContain("信用评级");
+    expect(occupation).toContain("本职技能点");
+    expect(occupation).not.toContain("专业化技能");
+  });
+
   it("blocks an unsupported legacy workflow without writes or Standard rule components", async () => {
     const legacyCharacterId = "a0000000-0000-4000-8000-000000000099";
     const character = makeCharacter("gaslight", legacyCharacterId);
@@ -328,8 +361,8 @@ describe("CharacterEditorPage guided creation integration", () => {
     });
 
     expect(wrapper.text()).toContain("Cthulhu by Gaslight");
-    expect(wrapper.text()).toContain("当前不支持继续该建卡环境");
-    expect(wrapper.text()).toContain("不会用 Standard 的属性、职业、技能、财富或武器规则");
+    expect(wrapper.text()).toContain("暂时无法继续建卡");
+    expect(wrapper.text()).toContain("原有数据会保持不变");
     expect(wrapper.find(".creation-workspace").exists()).toBe(false);
     expect(wrapper.find(".skill-requirement-step").exists()).toBe(false);
     expect(skillReadinessCalls).toBe(0);

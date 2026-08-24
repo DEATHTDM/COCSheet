@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createCreationGuideReadiness,
   createSkillCreationGuideReadiness,
+  formatPlayerFacingSkillMessage,
 } from "./creationGuideReadiness";
 
 describe("creation Guide readiness presentation", () => {
@@ -16,9 +17,9 @@ describe("creation Guide readiness presentation", () => {
       warnings: [{ code: "unused-interest-points", message: "仍有未使用的兴趣点" }],
     })).toEqual({
       state: "needs-attention",
-      blockers: ["缺少职业技能选择"],
-      approvals: ["克苏鲁神话点数需要 KP 批准"],
-      warnings: ["仍有未使用的兴趣点"],
+      blockers: ["还有本职技能需求尚未完成。"],
+      approvals: ["该技能的创建期点数需要守秘人确认。"],
+      warnings: ["仍有未使用的兴趣技能点"],
     });
   });
 
@@ -31,7 +32,7 @@ describe("creation Guide readiness presentation", () => {
       state: "ready-with-warning",
       blockers: [],
       approvals: [],
-      warnings: ["仍有未使用的职业点"],
+      warnings: ["仍有未使用的本职技能点"],
     });
 
     expect(createSkillCreationGuideReadiness({
@@ -50,5 +51,10 @@ describe("creation Guide readiness presentation", () => {
       approvals: [],
       warnings: [],
     });
+  });
+
+  it("renders the credit-rating approval as natural player-facing Chinese", () => {
+    expect(formatPlayerFacingSkillMessage("最终 Credit Rating 0 超出职业范围 10～30"))
+      .toBe("最终信用评级 0 超出职业范围 10～30");
   });
 });

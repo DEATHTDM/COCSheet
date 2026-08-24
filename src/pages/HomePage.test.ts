@@ -133,7 +133,7 @@ describe("HomePage portable Character integration", () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain("导入完成调查员"));
     const card = wrapper.get(".record-card");
     expect(card.text()).toContain("建卡已完成");
-    expect(wrapper.get('[role="status"]').text()).toContain("及建卡会话");
+    expect(wrapper.get('[role="status"]').text()).toContain("恢复建卡进度");
   });
 
   it("导入 no-session Character 后立即显示无建卡会话且不创建假的 Session", async () => {
@@ -149,7 +149,7 @@ describe("HomePage portable Character integration", () => {
     await selectFile(wrapper, { text: vi.fn().mockResolvedValue(text) });
 
     await vi.waitFor(() => expect(wrapper.text()).toContain("无会话调查员"));
-    expect(wrapper.get(".record-card").text()).toContain("无建卡会话");
+    expect(wrapper.get(".record-card").text()).toContain("仅有人物卡资料");
     expect(wrapper.find(`a[href="/characters/${importedCharacter.id}"]`).exists()).toBe(false);
     expect(await db.creationSessions.get(importedCharacter.id)).toBeUndefined();
   });
@@ -224,7 +224,7 @@ describe("HomePage portable Character integration", () => {
 
     await selectFile(wrapper, file);
 
-    expect(wrapper.get('[role="alert"]').text()).toContain("不会自动覆盖或合并");
+    expect(wrapper.get('[role="alert"]').text()).toContain("为保护现有资料，本次没有导入");
     expect(await db.characters.count()).toBe(1);
     expect((await characterRepository.getById(character.id))?.data).toEqual(character);
   });

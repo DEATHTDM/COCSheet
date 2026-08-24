@@ -42,7 +42,7 @@ async function addEntry(): Promise<void> {
     });
     newName.value = "";
     newNotes.value = "";
-  }, "随身物品已添加；Cash 与 Assets 未改变。");
+  }, "随身物品已添加；现金与资产未改变。");
 }
 
 function beginEditing(entry: CharacterPossessionEntry): void {
@@ -68,7 +68,7 @@ async function saveEntry(entryId: string): Promise<void> {
     editingId.value = undefined;
     editingName.value = "";
     editingNotes.value = "";
-  }, "随身物品已保存；Cash 与 Assets 未改变。");
+  }, "随身物品已保存；现金与资产未改变。");
 }
 
 async function removeEntry(entry: CharacterPossessionEntry): Promise<void> {
@@ -76,7 +76,7 @@ async function removeEntry(entry: CharacterPossessionEntry): Promise<void> {
   await run(`remove:${entry.id}`, async () => {
     await characterStore.removePossessionEntry(props.character.id, entry.id);
     if (editingId.value === entry.id) cancelEditing();
-  }, "随身物品已删除；Cash 与 Assets 未改变。");
+  }, "随身物品已删除；现金与资产未改变。");
 }
 </script>
 
@@ -84,7 +84,7 @@ async function removeEntry(entry: CharacterPossessionEntry): Promise<void> {
   <section class="panel final-inventory-workspace final-possessions-workspace">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Possessions</p>
+        <p class="eyebrow">人物卡长期资料</p>
         <h2>随身物品</h2>
         <p class="muted">自由记录长期物品；不建立商品目录、价格、数量或自动扣款。</p>
       </div>

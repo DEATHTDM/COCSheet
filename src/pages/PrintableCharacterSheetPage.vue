@@ -10,6 +10,7 @@ import {
 import type { Character } from "../coc7/types/character";
 import { getSettingPack } from "../content/registry";
 import { getHistoricalSettingLabel } from "../content/settingCompatibility";
+import type { CharacteristicId } from "../coc7/types/attribute";
 import { getSkillRegistry } from "../content/skillRegistry";
 import {
   weaponAvailabilityLabels,
@@ -41,6 +42,16 @@ const presentation = computed<PrintableCharacterSheetPresentation | undefined>((
     getWeaponRegistry(current.settingId),
   );
 });
+const characteristicLabels: Readonly<Record<CharacteristicId, string>> = {
+  STR: "力量（STR）",
+  CON: "体质（CON）",
+  SIZ: "体型（SIZ）",
+  DEX: "敏捷（DEX）",
+  APP: "外貌（APP）",
+  INT: "智力（INT）",
+  POW: "意志（POW）",
+  EDU: "教育（EDU）",
+};
 
 async function loadCharacter(id: string): Promise<void> {
   const request = ++loadRequest;
@@ -101,11 +112,11 @@ onBeforeUnmount(() => {
     <article v-else-if="character && presentation" class="printable-sheet" aria-label="可打印人物卡">
       <header class="print-sheet-header">
         <div>
-          <p class="print-kicker">COCSheet · Investigator Record</p>
+          <p class="print-kicker">COCSheet · 打印版人物卡</p>
           <h1>{{ presentation.titleName }}</h1>
           <p>{{ presentation.identity.occupation }} · {{ presentation.identity.setting }}</p>
         </div>
-        <p class="print-save-note">Persisted Character · Read Only</p>
+        <p class="print-save-note">已保存资料 · 只读</p>
       </header>
 
       <section class="print-section" aria-labelledby="print-identity-heading">
@@ -113,8 +124,8 @@ onBeforeUnmount(() => {
         <dl class="print-fact-grid print-identity-grid">
           <div><dt>调查员姓名</dt><dd>{{ presentation.identity.name }}</dd></div>
           <div><dt>职业</dt><dd>{{ presentation.identity.occupation }}</dd></div>
-          <div><dt>Setting</dt><dd>{{ presentation.identity.setting }}</dd></div>
-          <div><dt>Era</dt><dd>{{ presentation.identity.era }}</dd></div>
+          <div><dt>规则环境</dt><dd>{{ presentation.identity.setting }}</dd></div>
+          <div><dt>时代</dt><dd>{{ presentation.identity.era }}</dd></div>
           <div><dt>年龄</dt><dd>{{ presentation.identity.age }}</dd></div>
           <div><dt>性别</dt><dd>{{ presentation.identity.sex }}</dd></div>
           <div><dt>居住地</dt><dd>{{ presentation.identity.residence }}</dd></div>
@@ -125,33 +136,33 @@ onBeforeUnmount(() => {
       <section class="print-section" aria-labelledby="print-resources-heading">
         <h2 id="print-resources-heading">资源与核心数值</h2>
         <dl class="print-fact-grid print-resource-grid">
-          <div><dt>Current HP</dt><dd>{{ presentation.resources.currentHp }}</dd><small>Maximum {{ presentation.resources.maximumHp }}</small></div>
-          <div><dt>Current MP</dt><dd>{{ presentation.resources.currentMp }}</dd><small>Initial {{ presentation.resources.initialMp }}</small></div>
-          <div><dt>Current SAN</dt><dd>{{ presentation.resources.currentSan }}</dd><small>Maximum {{ presentation.resources.maximumSan }}</small></div>
-          <div><dt>Current Luck</dt><dd>{{ presentation.resources.currentLuck }}</dd></div>
+          <div><dt>当前生命值（HP）</dt><dd>{{ presentation.resources.currentHp }}</dd><small>上限 {{ presentation.resources.maximumHp }}</small></div>
+          <div><dt>当前魔法值（MP）</dt><dd>{{ presentation.resources.currentMp }}</dd><small>起始 {{ presentation.resources.initialMp }}</small></div>
+          <div><dt>当前理智（SAN）</dt><dd>{{ presentation.resources.currentSan }}</dd><small>上限 {{ presentation.resources.maximumSan }}</small></div>
+          <div><dt>当前幸运</dt><dd>{{ presentation.resources.currentLuck }}</dd></div>
         </dl>
       </section>
 
       <section class="print-section" aria-labelledby="print-characteristics-heading">
-        <h2 id="print-characteristics-heading">Characteristics</h2>
+        <h2 id="print-characteristics-heading">属性</h2>
         <div v-if="presentation.characteristics" class="print-characteristic-grid">
           <article v-for="item in presentation.characteristics" :key="item.id" class="print-characteristic-card">
-            <span>{{ item.id }}</span>
+            <span>{{ characteristicLabels[item.id] }}</span>
             <strong>{{ item.currentValue }}</strong>
-            <small>Half {{ item.halfValue }} · Fifth {{ item.fifthValue }}</small>
+            <small>困难 {{ item.halfValue }} · 极难 {{ item.fifthValue }}</small>
           </article>
         </div>
         <p v-else class="print-empty">最终属性未记录。</p>
 
         <template v-if="presentation.derived">
-          <h3>Derived</h3>
+          <h3>派生值</h3>
           <dl class="print-fact-grid print-derived-grid">
-            <div><dt>MOV</dt><dd>{{ presentation.derived.movement }}</dd></div>
-            <div><dt>Damage Bonus</dt><dd>{{ presentation.derived.damageBonus }}</dd></div>
-            <div><dt>Build</dt><dd>{{ presentation.derived.build }}</dd></div>
+            <div><dt>移动力</dt><dd>{{ presentation.derived.movement }}</dd></div>
+            <div><dt>伤害加值</dt><dd>{{ presentation.derived.damageBonus }}</dd></div>
+            <div><dt>体格</dt><dd>{{ presentation.derived.build }}</dd></div>
           </dl>
         </template>
-        <p v-else class="print-muted">当前 Setting 暂无可可靠派生数据。</p>
+        <p v-else class="print-muted">当前规则环境暂无可可靠计算的派生数据。</p>
       </section>
 
       <section class="print-section" aria-labelledby="print-skills-heading">
@@ -169,17 +180,17 @@ onBeforeUnmount(() => {
           >
             <div class="print-skill-name">
               <strong>{{ skill.nameZh }}</strong>
-              <small v-if="skill.orphaned">Orphan · {{ skill.key }}</small>
+              <small v-if="skill.orphaned">技能规则资料缺失</small>
             </div>
             <dl>
-              <div><dt>Current</dt><dd>{{ skill.currentValue }}</dd></div>
-              <div><dt>Half</dt><dd>{{ skill.halfValue }}</dd></div>
-              <div><dt>Fifth</dt><dd>{{ skill.fifthValue }}</dd></div>
+              <div><dt>当前</dt><dd>{{ skill.currentValue }}</dd></div>
+              <div><dt>困难</dt><dd>{{ skill.halfValue }}</dd></div>
+              <div><dt>极难</dt><dd>{{ skill.fifthValue }}</dd></div>
             </dl>
             <span v-if="skill.improvementChecked" class="print-improvement-mark" aria-label="成长标记">✓ 成长</span>
           </article>
         </div>
-        <p v-else class="print-empty">技能未记录，且当前 Setting 没有可可靠显示的默认技能。</p>
+        <p v-else class="print-empty">技能未记录，且当前规则环境没有可可靠显示的默认技能。</p>
       </section>
 
       <section v-if="presentation.backstory.length" class="print-section" aria-labelledby="print-backstory-heading">
@@ -189,7 +200,7 @@ onBeforeUnmount(() => {
             <h3>{{ group.label }}</h3>
             <ul>
               <li v-for="entry in group.entries" :key="entry.id" class="print-backstory-entry">
-                <strong v-if="entry.keyConnection">★ 关键联结</strong>
+                <strong v-if="entry.keyConnection">★ 关键连接</strong>
                 <span>{{ entry.text }}</span>
               </li>
             </ul>
@@ -201,10 +212,10 @@ onBeforeUnmount(() => {
         <h2 id="print-wealth-heading">财富与资产</h2>
         <template v-if="presentation.wealth">
           <dl class="print-fact-grid print-wealth-grid">
-            <div><dt>Current Cash</dt><dd>{{ presentation.wealth.cashLabel }}</dd></div>
-            <div><dt>Current Assets</dt><dd>{{ presentation.wealth.assetsLabel }}</dd></div>
-            <div v-if="presentation.wealth.lifestyleLabel"><dt>Lifestyle</dt><dd>{{ presentation.wealth.lifestyleLabel }}</dd></div>
-            <div v-if="presentation.wealth.spendingLevelLabel"><dt>Spending Level</dt><dd>{{ presentation.wealth.spendingLevelLabel }}</dd></div>
+            <div><dt>现金</dt><dd>{{ presentation.wealth.cashLabel }}</dd></div>
+            <div><dt>资产</dt><dd>{{ presentation.wealth.assetsLabel }}</dd></div>
+            <div v-if="presentation.wealth.lifestyleLabel"><dt>生活水平</dt><dd>{{ presentation.wealth.lifestyleLabel }}</dd></div>
+            <div v-if="presentation.wealth.spendingLevelLabel"><dt>消费水平</dt><dd>{{ presentation.wealth.spendingLevelLabel }}</dd></div>
           </dl>
           <ul v-if="presentation.wealth.entries.length" class="print-entry-list print-asset-list">
             <li v-for="item in presentation.wealth.entries" :key="item.entry.id">
@@ -242,14 +253,14 @@ onBeforeUnmount(() => {
               <span v-if="item.definition">{{ weaponCategoryLabels[item.definition.category] }}</span>
               <span v-if="item.eraAvailability">{{ weaponAvailabilityLabels[item.eraAvailability] }}</span>
             </header>
-            <p v-if="item.orphaned">当前 Setting 找不到 definition：{{ item.instance.definitionId }}</p>
+            <p v-if="item.orphaned">这件武器的规则资料已不在当前目录中。</p>
             <dl v-else-if="item.definition" class="print-weapon-mechanics">
               <div><dt>关联技能</dt><dd>{{ item.skillLabel }}</dd></div>
-              <div><dt>Damage</dt><dd>{{ item.definition.damage }}</dd></div>
-              <div><dt>Range</dt><dd>{{ item.definition.baseRange }}</dd></div>
-              <div><dt>Attacks</dt><dd>{{ item.definition.attacksPerRound }}</dd></div>
-              <div><dt>Capacity</dt><dd>{{ item.definition.capacity ?? '—' }}</dd></div>
-              <div v-if="item.definition.malfunction"><dt>Malfunction</dt><dd>{{ item.definition.malfunction }}</dd></div>
+              <div><dt>伤害</dt><dd>{{ item.definition.damage }}</dd></div>
+              <div><dt>射程</dt><dd>{{ item.definition.baseRange }}</dd></div>
+              <div><dt>每轮攻击</dt><dd>{{ item.definition.attacksPerRound }}</dd></div>
+              <div><dt>弹容量</dt><dd>{{ item.definition.capacity ?? '—' }}</dd></div>
+              <div v-if="item.definition.malfunction"><dt>故障值</dt><dd>{{ item.definition.malfunction }}</dd></div>
             </dl>
             <p v-if="item.instance.notes" class="print-weapon-notes"><strong>备注：</strong>{{ item.instance.notes }}</p>
           </article>

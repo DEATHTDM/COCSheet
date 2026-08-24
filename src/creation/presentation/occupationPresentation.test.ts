@@ -77,11 +77,11 @@ describe("occupation presentation", () => {
       type: "specialization-of",
       definitionId: "fighting",
       exclude: [{ type: "predefined", definitionId: "fighting", specializationId: "brawl" }],
-    }, skills)).toBe("格斗（自选专业；不含 格斗（斗殴））");
+    }, skills)).toBe("格斗（自选技能专攻；不含 格斗（斗殴））");
     expect(formatSkillSelectorForOccupation({
       type: "specialization-of",
       definitionId: "firearms",
-    }, skills)).toBe("射击（自选专业）");
+    }, skills)).toBe("射击（自选技能专攻）");
     expect(formatSkillSelectorForOccupation({
       type: "named-custom-specialization",
       definitionId: "language-other",
@@ -110,7 +110,7 @@ describe("occupation presentation", () => {
         },
       ],
     }, skills)).toBe(
-      "选择一个类别：格斗（自选专业；至少 1 个专业）；或 射击（自选专业；至少 1 个专业）",
+      "选择一个类别：格斗（自选技能专攻；至少 1 个技能专攻）；或 射击（自选技能专攻；至少 1 个技能专攻）",
     );
   });
 
@@ -164,7 +164,7 @@ describe("occupation presentation", () => {
           cardinality: { min: 2, max: 2 },
         },
       ],
-    }, skills)).toBe("同时选择：历史；科学（自选专业；选择 2 个专业）");
+    }, skills)).toBe("同时选择：历史；科学（自选技能专攻；选择 2 个技能专攻）");
     expect(formatOccupationRequirement(
       requirement(
         { type: "any-skill" },
@@ -173,7 +173,7 @@ describe("occupation presentation", () => {
         { guidance: { zh: "个人或时代特长", en: "personal or era specialty" }, keeperReview: true },
       ),
       skills,
-    )).toBe("任意 2 项技能（个人或时代特长；需 KP 确认）");
+    )).toBe("任意 2 项技能（个人或时代特长；需守秘人确认）");
   });
 
   it("覆盖分类标签、动态 filters、稳定排序与 Preset 优先级", () => {

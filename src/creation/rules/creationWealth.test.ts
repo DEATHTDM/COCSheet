@@ -45,8 +45,26 @@ describe("creation wealth provenance", () => {
     });
     expect(stale.errors).toContainEqual({
       code: "stale-wealth-initialization",
-      message: "当前财富基于旧的时代或 Credit Rating，请重新初始化财富。",
+      message: "当前财富基于旧的时代或信用评级，请重新建立财富记录。",
     });
+  });
+
+  it("玩家可见的环境与时代错误使用自然中文，不泄漏 Standard 实现词", () => {
+    const result = validateCreationWealth(makeCharacter({
+      settingId: "gaslight",
+      eraId: undefined,
+      wealth: undefined,
+    }), undefined);
+
+    expect(result.errors).toContainEqual({
+      code: "standard-required",
+      message: "当前建卡环境暂不支持创建期财富规则。",
+    });
+    expect(result.errors).toContainEqual({
+      code: "missing-era",
+      message: "请先选择建卡时代。",
+    });
+    expect(result.errors.map(({ message }) => message).join(" ")).not.toContain("Standard");
   });
 
   it("有资产时要求说明，无资产时不要求", () => {

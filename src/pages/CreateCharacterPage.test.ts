@@ -97,7 +97,7 @@ describe("CreateCharacterPage creation experience preference", () => {
     window.localStorage.setItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY, "quick");
     const { wrapper, start } = await mountPage();
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
-      .find((button) => button.text().includes("Standard CoC 7E"));
+      .find((button) => button.text().includes("开始创建调查员"));
 
     expect(standardButton).toBeDefined();
     expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
@@ -166,14 +166,15 @@ describe("CreateCharacterPage shared KP Preset", () => {
     };
     const { wrapper, start, presetStore } = await mountPage(localRecord, "/create?kp=valid-token");
 
-    expect(wrapper.get("#shared-preset-title").text()).toBe("共享 KP 建卡预设");
+    expect(wrapper.get("#shared-preset-title").text()).toBe("共享建卡预设");
     expect(wrapper.text()).toContain("链接中的共享预设");
     expect(wrapper.text()).toContain("Cthulhu by Gaslight");
     expect(wrapper.text()).toContain("手动输入、购点");
-    expect(wrapper.text()).toContain("不会自动保存到你的 KP 预设库");
-    expect(wrapper.text()).toContain("当前版本不支持，不能用于新建调查员");
+    expect(wrapper.text()).toContain("不会自动保存到你的建卡预设库");
+    expect(wrapper.text()).toContain("暂不支持新建调查员");
+    expect(wrapper.text()).not.toContain("KP 预设库");
     expect(wrapper.find(".shared-preset-preview .button.primary").exists()).toBe(false);
-    expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
+    expect(wrapper.text()).not.toContain("保存到建卡预设库");
     expect(start).not.toHaveBeenCalled();
     expect(presetStore.records).toEqual([localRecord]);
   });
@@ -184,7 +185,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     decodeSharedPresetMock.mockResolvedValue(standardSharedPreset);
     const { wrapper, start, uiPreferenceStore } = await mountPage(undefined, "/create?kp=valid-token");
 
-    expect(wrapper.text()).toContain("保存到我的 KP 预设");
+    expect(wrapper.text()).toContain("保存到建卡预设库");
     await wrapper.get(".shared-preset-preview .button.primary").trigger("click");
 
     expect(start).toHaveBeenCalledOnce();
@@ -202,15 +203,15 @@ describe("CreateCharacterPage shared KP Preset", () => {
     );
 
     await wrapper.findAll(".shared-preset-preview .button")
-      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      .find((button) => button.text().includes("保存到建卡预设库"))
       ?.trigger("click");
     await flushPromises();
 
     expect(createFromSharedPreset).toHaveBeenCalledOnce();
     expect(createFromSharedPreset).toHaveBeenCalledWith(standardSharedPreset);
     expect(start).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain("已保存到你的 KP 预设库。");
-    expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
+    expect(wrapper.text()).toContain("已保存到你的建卡预设库。");
+    expect(wrapper.text()).not.toContain("保存到建卡预设库");
     const editorLink = wrapper.get("a.button");
     expect(editorLink.text()).toBe("查看已保存预设");
     expect(editorLink.attributes("href")).toBe(`/kp/presets/${savedCopyId}`);
@@ -226,7 +227,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     createFromSharedPreset.mockRejectedValue(new Error("IndexedDB 写入失败"));
 
     await wrapper.findAll(".shared-preset-preview .button")
-      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      .find((button) => button.text().includes("保存到建卡预设库"))
       ?.trigger("click");
     await flushPromises();
 
@@ -240,10 +241,10 @@ describe("CreateCharacterPage shared KP Preset", () => {
     decodeSharedPresetMock.mockRejectedValue(new Error("压缩内容已损坏。"));
     const { wrapper, start } = await mountPage(undefined, "/create?kp=broken");
 
-    expect(wrapper.get('[role="alert"]').text()).toContain("无法读取共享 KP 预设：压缩内容已损坏。");
-    expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
+    expect(wrapper.get('[role="alert"]').text()).toContain("无法读取共享建卡预设：压缩内容已损坏。");
+    expect(wrapper.text()).not.toContain("保存到建卡预设库");
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
-      .find((button) => button.text().includes("Standard CoC 7E"));
+      .find((button) => button.text().includes("开始创建调查员"));
     expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
     await standardButton?.trigger("click");
     expect(start).toHaveBeenCalledWith("standard", undefined);
@@ -252,7 +253,8 @@ describe("CreateCharacterPage shared KP Preset", () => {
   it("rejects multiple kp query values without decoding either one", async () => {
     const { wrapper } = await mountPage(undefined, "/create?kp=one&kp=two");
 
-    expect(wrapper.get('[role="alert"]').text()).toContain("多个 kp 参数");
+    expect(wrapper.get('[role="alert"]').text()).toContain("多份预设信息");
+    expect(wrapper.get('[role="alert"]').text()).not.toContain("kp 参数");
     expect(decodeSharedPresetMock).not.toHaveBeenCalled();
   });
 
@@ -303,7 +305,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     }));
 
     await wrapper.findAll(".shared-preset-preview .button")
-      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      .find((button) => button.text().includes("保存到建卡预设库"))
       ?.trigger("click");
     await router.push("/create?kp=token-b");
     await flushPromises();
@@ -318,9 +320,9 @@ describe("CreateCharacterPage shared KP Preset", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("已保存到你的 KP 预设库。");
+    expect(wrapper.text()).not.toContain("已保存到你的建卡预设库。");
     expect(wrapper.text()).not.toContain("查看已保存预设");
-    expect(wrapper.text()).toContain("保存到我的 KP 预设");
+    expect(wrapper.text()).toContain("保存到建卡预设库");
   });
 
   it("clears a route A save error when route B becomes current", async () => {
@@ -331,7 +333,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     createFromSharedPreset.mockRejectedValue(new Error("A 保存失败"));
 
     await wrapper.findAll(".shared-preset-preview .button")
-      .find((button) => button.text().includes("保存到我的 KP 预设"))
+      .find((button) => button.text().includes("保存到建卡预设库"))
       ?.trigger("click");
     await flushPromises();
     expect(wrapper.text()).toContain("A 保存失败");
@@ -341,6 +343,6 @@ describe("CreateCharacterPage shared KP Preset", () => {
 
     expect(wrapper.text()).toContain("共享预设 B");
     expect(wrapper.text()).not.toContain("A 保存失败");
-    expect(wrapper.text()).toContain("保存到我的 KP 预设");
+    expect(wrapper.text()).toContain("保存到建卡预设库");
   });
 });

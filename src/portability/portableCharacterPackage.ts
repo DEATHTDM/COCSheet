@@ -37,13 +37,13 @@ function validateIntegrity(character: Character, creationSession?: CreationSessi
   if (creationSession.characterId !== character.id) {
     throw new PortableCharacterPackageError(
       "character-session-id-mismatch",
-      "人物文件中的调查员与建卡会话 ID 不一致。",
+      "人物文件中的人物卡与建卡进度不属于同一名调查员。",
     );
   }
   if (creationSession.settingId !== character.settingId) {
     throw new PortableCharacterPackageError(
       "character-session-setting-mismatch",
-      "人物文件中的调查员与建卡会话 Setting 不一致。",
+      "人物文件中的人物卡与建卡进度使用了不同的建卡环境。",
     );
   }
 }
@@ -61,7 +61,7 @@ export function createPortableCharacterPackage(
     ? undefined
     : creationSessionSchema.safeParse(creationSession);
   if (parsedSession && !parsedSession.success) {
-    throw new PortableCharacterPackageError("invalid-creation-session", "建卡会话数据无效。");
+    throw new PortableCharacterPackageError("invalid-creation-session", "建卡进度数据无效。");
   }
   const session = parsedSession?.data;
   validateIntegrity(parsedCharacter.data, session);
@@ -108,7 +108,7 @@ export function parsePortableCharacterPackageText(text: string): PortableCharact
   if (raw.formatVersion !== 1) {
     throw new PortableCharacterPackageError(
       "unsupported-version",
-      "当前版本 COCSheet 无法导入该人物文件版本。",
+      "这个人物文件使用了尚不支持的文件格式版本。",
     );
   }
 
@@ -121,7 +121,7 @@ export function parsePortableCharacterPackageText(text: string): PortableCharact
     ? creationSessionSchema.safeParse(raw.creationSession)
     : undefined;
   if (parsedSession && !parsedSession.success) {
-    throw new PortableCharacterPackageError("invalid-creation-session", "建卡会话数据无效。");
+    throw new PortableCharacterPackageError("invalid-creation-session", "建卡进度数据无效。");
   }
   validateIntegrity(parsedCharacter.data, parsedSession?.data);
 

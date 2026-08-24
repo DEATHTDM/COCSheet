@@ -370,7 +370,7 @@ export const useCharacterStore = defineStore("characters", () => {
 
   async function setCurrentLuck(id: string, value: number): Promise<CharacterRecord> {
     if (!Number.isInteger(value) || value < 0 || value > 99) {
-      throw new RangeError("Current Luck 必须为 0～99 的整数");
+      throw new RangeError("当前幸运必须为 0～99 的整数");
     }
     const existing = await requireCharacter(id);
     return synchronize(await characterRepository.update({
@@ -398,7 +398,7 @@ export const useCharacterStore = defineStore("characters", () => {
     requireNonNegativeInteger(assetsMinorUnits, "当前资产总额");
     const existing = await requireCharacter(id);
     if (existing.settingId !== "standard") {
-      throw new Error("当前 Setting 尚未实现长期财富金额编辑规则");
+      throw new Error("当前建卡环境尚未提供长期财富金额编辑规则");
     }
     if (existing.data.wealth) {
       throw new Error("调查员财富已经存在，不能覆盖");
@@ -640,9 +640,9 @@ export const useCharacterStore = defineStore("characters", () => {
     const definition = requireSkillDefinition(existing, definitionId);
     const normalizedName = displayName.trim();
     if (definition.specialization.type !== "required" || !definition.specialization.allowCustom) {
-      throw new Error(`技能 ${definition.name.zh} 不允许自定义专业化`);
+      throw new Error(`技能 ${definition.name.zh} 不允许自定义技能专攻`);
     }
-    if (!normalizedName) throw new Error("自定义专业化名称不能为空");
+    if (!normalizedName) throw new Error("自定义技能专攻名称不能为空");
 
     const ref: SkillRef = {
       type: "custom",
@@ -664,14 +664,14 @@ export const useCharacterStore = defineStore("characters", () => {
   ): Promise<CharacterRecord> {
     const existing = await requireCharacter(id);
     const normalizedName = displayName.trim();
-    if (!normalizedName) throw new Error("自定义专业化名称不能为空");
+    if (!normalizedName) throw new Error("自定义技能专攻名称不能为空");
     const skills = [...(existing.data.skills ?? [])];
     const index = skills.findIndex(
       (skill) => skill.ref.type === "custom" && skill.ref.specializationId === specializationId,
     );
-    if (index < 0) throw new Error(`找不到自定义专业化：${specializationId}`);
+    if (index < 0) throw new Error(`找不到自定义技能专攻：${specializationId}`);
     const current = skills[index];
-    if (!current || current.ref.type !== "custom") throw new Error("自定义专业化状态无效");
+    if (!current || current.ref.type !== "custom") throw new Error("自定义技能专攻状态无效");
     skills[index] = {
       ...current,
       ref: { ...current.ref, displayName: normalizedName },
@@ -688,7 +688,7 @@ export const useCharacterStore = defineStore("characters", () => {
     const target = skills.find(
       (skill) => skill.ref.type === "custom" && skill.ref.specializationId === specializationId,
     );
-    if (!target) throw new Error(`找不到自定义专业化：${specializationId}`);
+    if (!target) throw new Error(`找不到自定义技能专攻：${specializationId}`);
     return persistSkills(
       existing,
       skills.filter((skill) => skill !== target),

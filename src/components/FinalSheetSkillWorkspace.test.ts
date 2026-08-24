@@ -80,8 +80,8 @@ describe("Final Sheet skill workspace rendered interactions", () => {
     await wrapper.vm.$nextTick();
 
     const updatedRow = skillRow(wrapper, "skill:library-use");
-    expect(updatedRow.text()).toContain("Half22");
-    expect(updatedRow.text()).toContain("Fifth9");
+    expect(updatedRow.text()).toContain("困难22");
+    expect(updatedRow.text()).toContain("极难9");
     expect(updatedRow.text()).not.toContain("目录基础值");
     expect(updateSpy).toHaveBeenCalledTimes(1);
     expect((await characterRepository.getById(baseCharacter.id))?.data.skills).toEqual([{
@@ -132,16 +132,16 @@ describe("Final Sheet skill workspace rendered interactions", () => {
     expect(skillRow(wrapper, brawlKey).exists()).toBe(false);
     expect(wrapper.find('[data-skill-key^="skill:science:predefined:"]').exists()).toBe(false);
 
-    await skillToggle(wrapper, "显示专业化技能").setValue(true);
+    await skillToggle(wrapper, "显示技能专攻").setValue(true);
     expect(skillRow(wrapper, brawlKey).text()).toContain("格斗（斗殴）");
     expect(skillRow(wrapper, brawlKey).text()).toContain("目录基础值");
     expect((await characterRepository.getById(baseCharacter.id))?.data.skills).toBeUndefined();
     expect(updateSpy).not.toHaveBeenCalled();
 
-    await skillToggle(wrapper, "显示专业化技能").setValue(false);
+    await skillToggle(wrapper, "显示技能专攻").setValue(false);
     expect(skillRow(wrapper, brawlKey).exists()).toBe(false);
 
-    await skillToggle(wrapper, "显示专业化技能").setValue(true);
+    await skillToggle(wrapper, "显示技能专攻").setValue(true);
     const brawl = skillRow(wrapper, brawlKey);
     await brawl.find('input[aria-label="格斗（斗殴） 当前值"]').setValue("41");
     await brawl.find('input[aria-label="格斗（斗殴） 当前值"]').trigger("blur");
@@ -162,7 +162,7 @@ describe("Final Sheet skill workspace rendered interactions", () => {
       improvementChecked: true,
     }]);
 
-    await skillToggle(wrapper, "显示专业化技能").setValue(false);
+    await skillToggle(wrapper, "显示技能专攻").setValue(false);
     expect(skillRow(wrapper, brawlKey).text()).toContain("格斗（斗殴）");
     expect(skillRow(wrapper, brawlKey).text()).not.toContain("目录基础值");
   });
@@ -217,10 +217,10 @@ describe("Final Sheet skill workspace rendered interactions", () => {
     expect(skillRow(wrapper, key).text()).toContain("科学（天体生物学）");
 
     await skillRow(wrapper, key)
-      .find('input[aria-label="科学（天体生物学） 专业化名称"]')
+      .find('input[aria-label="科学（天体生物学） 技能专攻名称"]')
       .setValue("宇宙学");
     await skillRow(wrapper, key)
-      .find('input[aria-label="科学（天体生物学） 专业化名称"]')
+      .find('input[aria-label="科学（天体生物学） 技能专攻名称"]')
       .trigger("blur");
     await flushPromises();
     persisted = await characterRepository.getById(baseCharacter.id);

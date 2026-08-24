@@ -276,6 +276,12 @@ KP Preset 分享使用纯前端、版本化的压缩 payload：完整且经 `cre
 
 本地保存与直接使用共享 Preset 建卡是两个独立动作。保存后继续点击直接创建时，`CreationSession.presetSnapshot` 仍保存原 shared Preset 及其原 ID；只有未来从本地副本建卡时，snapshot 才使用 local-copy ID。保存副本只写一个 KPPreset Record，不创建 Character / CreationSession，不修改 Guided / Quick preference，也不改变 `cocsheet-kp-preset-share v1`、`cocsheet-library v1`、domain schema 或 Dexie version。unsupported historical share 可继续 preview，但不能保存为新的 global Preset。
 
+## Player-facing UI
+
+### U001 — Player-facing language and terminology
+
+COCSheet 的普通玩家界面默认面向中文 CoC 玩家；developer implementation vocabulary 不直接进入玩家文案。玩家可见术语遵守 `docs/UI_TERMINOLOGY.md`，其中 occupation skill 固定为“本职技能”，并与 skill specialization／“技能专攻”严格区分。CoC、HP、MP、SAN 等通行游戏缩写可在合适场景保留；面向新玩家的 Keeper 表达优先使用“守秘人”，必要时写“守秘人（KP）”。presentation 文案调整不得反向改写 domain／rules identifier 或持久化 identity。
+
 ## Third-party projects
 
 ### T001 — trpg-saikou reference

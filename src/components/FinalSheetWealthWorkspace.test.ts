@@ -67,7 +67,7 @@ describe("Final Sheet wealth workspace rendered interactions", () => {
     const updateSpy = vi.spyOn(characterRepository, "update");
 
     expect(wrapper.text()).toContain("建立当前财富记录");
-    expect(wrapper.text()).toContain("Spending Level");
+    expect(wrapper.text()).toContain("消费水平");
     expect(wrapper.get('input[name="initial-cash"]').element.getAttribute("value") ?? "").toBe("");
     expect(updateSpy).not.toHaveBeenCalled();
     expect((await characterRepository.getById(baseCharacter.id))?.data.wealth).toBeUndefined();
@@ -163,7 +163,7 @@ describe("Final Sheet wealth workspace rendered interactions", () => {
     expect(persisted?.data.wealth?.assetsMinorUnits).toBe(125_000);
   });
 
-  it("non-Standard 缺失 wealth 不显示美元 initializer/editor；legacy wealth 只读显示 raw minor units", async () => {
+  it("non-Standard 缺失 wealth 不显示美元 initializer/editor；legacy wealth 只读显示原始金额", async () => {
     let wrapper = await mountCharacter({
       ...baseCharacter,
       id: "85000000-0000-4000-8000-000000000008",
@@ -171,9 +171,9 @@ describe("Final Sheet wealth workspace rendered interactions", () => {
       eraId: undefined,
       skills: undefined,
     });
-    expect(wrapper.text()).toContain("当前 Setting 尚未实现长期财富金额编辑规则");
+    expect(wrapper.text()).toContain("当前规则环境暂不支持编辑财富金额");
     expect(wrapper.find("[data-wealth-initializer]").exists()).toBe(false);
-    expect(wrapper.text()).not.toContain("Current Cash（美元）");
+    expect(wrapper.text()).not.toContain("当前现金（美元）");
     expect(wrapper.text()).not.toContain("$");
     wrapper.unmount();
 
@@ -192,9 +192,9 @@ describe("Final Sheet wealth workspace rendered interactions", () => {
         assetEntries: [{ id: crypto.randomUUID(), description: "旧资产", valueMinorUnits: 123 }],
       },
     });
-    expect(wrapper.text()).toContain("321 raw minor units");
-    expect(wrapper.text()).toContain("654 raw minor units");
-    expect(wrapper.text()).toContain("123 raw minor units");
+    expect(wrapper.text()).toContain("现金原始值321");
+    expect(wrapper.text()).toContain("资产原始值654");
+    expect(wrapper.text()).toContain("旧资产123");
     expect(wrapper.find('input[name="current-cash"]').exists()).toBe(false);
   });
 });
