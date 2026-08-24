@@ -74,7 +74,7 @@ function validateUniqueIds(
     if (presetIds.has(preset.id)) {
       throw new PortableLibraryPackageError(
         "duplicate-kp-preset-id",
-        "完整备份中重复包含了同一个 KP 建卡预设。",
+        "完整备份中重复包含了同一个建卡预设。",
       );
     }
     presetIds.add(preset.id);
@@ -120,7 +120,7 @@ export function createPortableLibraryPackage(
   const parsedPresets = kpPresets.map((preset) => {
     const parsed = creationPresetSchema.safeParse(preset);
     if (!parsed.success) {
-      throw new PortableLibraryPackageError("invalid-kp-preset", "完整备份中的 KP 预设数据无效。");
+      throw new PortableLibraryPackageError("invalid-kp-preset", "完整备份中的建卡预设数据无效。");
     }
     return parsed.data;
   });
@@ -203,7 +203,7 @@ export function parsePortableLibraryPackageText(text: string): PortableLibraryPa
   const kpPresets = raw.kpPresets.map((preset) => {
     const parsed = creationPresetSchema.safeParse(preset);
     if (!parsed.success) {
-      throw new PortableLibraryPackageError("invalid-kp-preset", "完整备份中的 KP 预设数据无效。");
+      throw new PortableLibraryPackageError("invalid-kp-preset", "完整备份中的建卡预设数据无效。");
     }
     return parsed.data;
   });
