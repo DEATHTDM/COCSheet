@@ -229,7 +229,7 @@ async function exportLibrary(): Promise<void> {
         @change="handleLibraryImportFile"
       >
       <p class="muted">
-        完整备份包含全部调查员、对应建卡进度与 KP 建卡预设，仅在当前浏览器本地处理。
+        完整备份包含全部调查员、对应建卡进度与建卡预设，仅在当前浏览器本地处理。
         它与单个人物文件不同，导入只会安全追加且不会覆盖已有数据。
       </p>
       <p
@@ -247,7 +247,7 @@ async function exportLibrary(): Promise<void> {
 
     <section>
       <div class="section-heading">
-        <h2>KP 建卡预设</h2>
+        <h2>建卡预设</h2>
         <RouterLink to="/kp/presets">管理预设</RouterLink>
       </div>
     </section>
