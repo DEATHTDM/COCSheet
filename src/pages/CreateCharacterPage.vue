@@ -133,7 +133,7 @@ async function removeSharedPreset(): Promise<void> {
     <div>
       <p class="eyebrow">第一步</p>
       <h1>创建调查员</h1>
-      <p>当前正式支持 Standard CoC 7E；未选择 KP 预设时使用默认属性配置。</p>
+      <p>当前支持 CoC 7版标准规则；未选择守秘人建卡预设时使用默认属性配置。</p>
     </div>
 
     <fieldset class="panel creation-experience-selector">
@@ -187,7 +187,7 @@ async function removeSharedPreset(): Promise<void> {
         </dl>
         <p>此预设来自分享链接，不会自动保存到你的 KP 预设库。</p>
         <p v-if="!sharedPresetSupported" class="warning-message" role="alert">
-          该分享链接使用的建卡环境当前版本不支持，不能用于新建调查员。
+          该分享链接使用的建卡环境暂不支持新建调查员；你可以移除这份共享预设。
         </p>
         <p
           v-if="sharedPresetSaveState.status === 'saved'"
@@ -236,7 +236,7 @@ async function removeSharedPreset(): Promise<void> {
         type="button"
         :disabled="creationStore.creating"
         @click="chooseSetting('standard')"
-      ><strong>开始创建 Standard CoC 7E 调查员</strong></button>
+      ><strong>开始创建调查员</strong></button>
     </div>
 
     <section v-if="presetStore.records.length" class="form-stack">

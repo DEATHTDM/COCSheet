@@ -14,6 +14,7 @@ import { getSkillRegistry } from "../../content/skillRegistry";
 import {
   formatOccupationEraId,
   formatOccupationRequirement,
+  formatPlayerFacingOccupationText,
   formatSkillRefForOccupation,
 } from "../../creation/presentation/occupationPresentation";
 import {
@@ -185,14 +186,14 @@ function hasSingleInstanceConflict(definitionId: string): boolean {
 }
 
 function singleInstanceMessage(definitionId: string): string {
-  return `${customParentLabel(definitionId)}只允许一个专业化实例`;
+  return `${customParentLabel(definitionId)}只允许一个技能专攻实例`;
 }
 
 function replacementTargetLabel(targetRequirementId: string): string {
   const definition = occupation.value;
   const policy = definition?.skillReplacement;
   const requirement = definition?.skillRequirements.find(({ id }) => id === targetRequirementId);
-  if (!definition || !policy || !requirement) return "未知职业技能需求";
+  if (!definition || !policy || !requirement) return "未知本职技能需求";
   const label = formatOccupationRequirement(requirement, skills.value);
   const matchingTargetIds = policy.targetRequirementIds.filter((candidateId) => {
     const candidate = definition.skillRequirements.find(({ id }) => id === candidateId);
@@ -220,7 +221,7 @@ function formatRef(ref: SkillRef): string {
   if (!definition) return ref.type === "custom" ? `未知技能（${ref.displayName}）` : "未知技能";
   if (ref.type === "predefined" &&
     !skills.value.resolvePredefined(ref.definitionId, ref.specializationId)) {
-    return `${definition.name.zh}（未知专业化）`;
+    return `${definition.name.zh}（未知技能专攻）`;
   }
   return formatSkillRefForOccupation(ref, skills.value);
 }
@@ -258,7 +259,7 @@ function isCandidateDisabled(requirement: OccupationRequirement, ref: SkillRef):
 
 function candidateDisabledReason(requirement: OccupationRequirement, ref: SkillRef): string | undefined {
   if (isSelected(requirement.id, ref)) return undefined;
-  if (usedByOtherCurrentRequirement(requirement.id, ref)) return "已用于其他职业技能需求";
+  if (usedByOtherCurrentRequirement(requirement.id, ref)) return "已用于其他本职技能需求";
   const maximum = requirement.cardinality.max;
   return maximum !== undefined && maximum > 1 && selectionFor(requirement.id).length >= maximum
     ? "已达到选择上限"
@@ -275,7 +276,7 @@ async function setSelection(requirementId: string, refs: readonly SkillRef[]): P
     await creationStore.setRequirementSelection(requirementId, refs);
     errorMessage.value = "";
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : "保存职业技能需求失败。";
+    errorMessage.value = error instanceof Error ? error.message : "保存本职技能需求失败。";
   }
 }
 
@@ -313,7 +314,7 @@ async function createOpenCustom(requirement: OccupationRequirement): Promise<voi
     customDisplayNames.value[requirement.id] = "";
     errorMessage.value = "";
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : "创建自定义专业化失败。";
+    errorMessage.value = error instanceof Error ? error.message : "创建自定义技能专攻失败。";
   }
 }
 
@@ -329,7 +330,7 @@ async function createNamedCustom(
     );
     errorMessage.value = "";
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : "创建固定专业化失败。";
+    errorMessage.value = error instanceof Error ? error.message : "创建技能专攻失败。";
   }
 }
 
@@ -339,7 +340,7 @@ async function setReplacementTarget(event: Event): Promise<void> {
     await creationStore.setOccupationSkillReplacementTarget(value || undefined);
     errorMessage.value = "";
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : "保存职业技能替换失败。";
+    errorMessage.value = error instanceof Error ? error.message : "保存本职技能替换失败。";
   }
 }
 
@@ -359,7 +360,7 @@ onMounted(async () => {
       <div class="section-heading">
         <div>
           <p class="eyebrow">第 4 步</p>
-          <h2>职业技能需求</h2>
+          <h2>本职技能需求</h2>
         </div>
         <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">
           返回职业
@@ -367,13 +368,13 @@ onMounted(async () => {
       </div>
       <p>当前职业：<strong>{{ occupation?.name.zh ?? "尚未选择" }}</strong></p>
       <p v-if="occupation && occupationEraCompatible" class="muted">
-        职业技能需求选择进度：{{ completedRequirementCount }} / {{ occupation.skillRequirements.length }}
+        本职技能需求选择进度：{{ completedRequirementCount }} / {{ occupation.skillRequirements.length }}
       </p>
       <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
     </header>
 
     <section v-if="!occupation || !skillState" class="panel form-stack">
-      <p class="warning-message" role="alert">尚未选择职业，无法进行职业技能需求选择。</p>
+      <p class="warning-message" role="alert">尚未选择职业，无法进行本职技能需求选择。</p>
       <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">返回职业</button>
     </section>
 
@@ -398,10 +399,10 @@ onMounted(async () => {
       <section v-if="occupation.skillReplacement" class="panel form-stack replacement-panel">
         <div>
           <p class="eyebrow">特殊职业规则</p>
-          <h3>职业技能替换</h3>
+          <h3>本职技能替换</h3>
         </div>
         <p>
-          经 KP 批准，可以用【{{ formatRef(occupation.skillReplacement.replacement.ref) }}】替换其中一项职业技能。
+          经守秘人确认，可以用【{{ formatRef(occupation.skillReplacement.replacement.ref) }}】替换其中一项本职技能。
         </p>
         <label class="field">
           <span>替换目标</span>
@@ -417,7 +418,7 @@ onMounted(async () => {
           </select>
         </label>
         <p v-if="activeReplacement" class="warning-message">
-          此替换需要 KP 批准，将在后续批准步骤处理。
+          此替换需要守秘人确认，将在后续确认步骤处理。
         </p>
       </section>
 
@@ -438,7 +439,7 @@ onMounted(async () => {
           class="selected-requirement-skills"
         >
           <strong>本需求由【{{ formatRef(activeReplacement.replacementRef) }}】替换</strong>
-          <p class="warning-message">此替换需要 KP 批准，将在后续批准步骤处理。</p>
+          <p class="warning-message">此替换需要守秘人确认，将在后续确认步骤处理。</p>
         </div>
 
         <p
@@ -457,7 +458,7 @@ onMounted(async () => {
             <li v-for="ref in selectionFor(requirement.id)" :key="getSkillRefKey(ref)">
               <span>{{ formatRef(ref) }}</span>
               <small v-if="usedByOtherCurrentRequirement(requirement.id, ref)" class="warning-message">
-                已用于其他职业技能需求
+                已用于其他本职技能需求
               </small>
               <small v-if="eraId && skills.get(ref.definitionId) && !isSkillAvailableInEra(skills.get(ref.definitionId)!, eraId)" class="warning-message">
                 不适用于当前建卡时代
@@ -480,7 +481,7 @@ onMounted(async () => {
             <input
               v-model="searchQueries[requirement.id]"
               type="search"
-              placeholder="搜索中文名、英文名或别名"
+              placeholder="搜索技能名称或别名"
             />
           </label>
 
@@ -507,7 +508,7 @@ onMounted(async () => {
             没有符合当前搜索的技能。
           </p>
           <p v-else-if="customOptionsFor(requirement.id).length > 0" class="muted">
-            此需求没有预定义候选，可以创建下方的自定义专业化。
+            此需求没有预设选项，可以创建下方的自定义技能专攻。
           </p>
           <p v-else class="warning-message">当前时代没有可用的目录技能。</p>
 
@@ -515,12 +516,12 @@ onMounted(async () => {
             v-if="openCustomOptionsFor(requirement.id).length > 0"
             class="custom-specialization form-stack compact-stack"
           >
-            <strong>创建自定义专业化</strong>
+            <strong>创建自定义技能专攻</strong>
             <label
               v-if="openCustomOptionsFor(requirement.id).length > 1"
               class="field"
             >
-              <span>专业化父技能</span>
+              <span>专攻所属技能</span>
               <select
                 :value="selectedCustomParent(requirement)"
                 @change="setSelectedCustomParent(requirement.id, $event)"
@@ -573,10 +574,10 @@ onMounted(async () => {
         </template>
 
         <p v-if="requirement.guidance" class="requirement-guidance">
-          <strong>选择说明：</strong>{{ requirement.guidance.zh }}
+          <strong>选择说明：</strong>{{ formatPlayerFacingOccupationText(requirement.guidance.zh) }}
         </p>
         <p v-if="requirement.keeperReview" class="warning-message">
-          此需求需要 KP 确认。
+          此需求需要守秘人确认。
         </p>
         <p v-if="requirementStatus(requirement) === 'invalid'" class="warning-message" role="status">
           当前组合不符合职业要求；草稿已保留，你可以继续调整。
@@ -585,8 +586,8 @@ onMounted(async () => {
 
       <footer class="panel requirement-actions">
         <div>
-          <strong>职业技能需求选择进度：{{ completedRequirementCount }} / {{ occupation.skillRequirements.length }}</strong>
-          <p class="muted">完成当前职业技能需求后，可在下方分配职业点与兴趣点。</p>
+          <strong>本职技能需求选择进度：{{ completedRequirementCount }} / {{ occupation.skillRequirements.length }}</strong>
+          <p class="muted">完成当前本职技能需求后，可在下方分配本职技能点与兴趣技能点。</p>
         </div>
         <button class="button" type="button" @click="creationStore.setCurrentStep('occupation')">返回职业</button>
       </footer>
@@ -596,7 +597,7 @@ onMounted(async () => {
         <SkillFinalizationPanel :character="character" />
       </template>
       <section v-else class="panel empty-state">
-        请先完成上方职业技能需求选择。
+        请先完成上方本职技能需求选择。
       </section>
     </template>
   </section>

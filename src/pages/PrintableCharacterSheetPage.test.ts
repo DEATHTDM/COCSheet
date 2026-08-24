@@ -131,13 +131,13 @@ describe("PrintableCharacterSheetPage rendered integrations", () => {
 
     expect(wrapper.text()).toContain("私人侦探快照");
     expect(wrapper.text()).toContain("古典（1920年代）");
-    expect(wrapper.text()).toContain("Current HP");
-    expect(wrapper.text()).toContain("Maximum 12");
-    expect(wrapper.text()).toContain("Initial 15");
+    expect(wrapper.text()).toContain("当前生命值（HP）");
+    expect(wrapper.text()).toContain("上限 12");
+    expect(wrapper.text()).toContain("起始 15");
     expect(wrapper.findAll(".print-characteristic-card")).toHaveLength(8);
     expect(wrapper.get('[data-skill-key="skill:library-use"]').text()).toContain("✓ 成长");
-    expect(wrapper.get('[data-skill-key="skill:retired-skill"]').text()).toContain("Orphan");
-    expect(wrapper.text()).toContain("★ 关键联结");
+    expect(wrapper.get('[data-skill-key="skill:retired-skill"]').text()).toContain("技能规则资料缺失");
+    expect(wrapper.text()).toContain("★ 关键连接");
     expect(wrapper.text()).toContain("$123.45");
     expect(wrapper.findAll(".print-possession-list li")).toHaveLength(2);
     expect(wrapper.findAll('[data-weapon-instance-id]')).toHaveLength(3);
@@ -210,8 +210,8 @@ describe("PrintableCharacterSheetPage rendered integrations", () => {
     await vi.waitFor(() => expect(wrapper.get("h1").text()).toBe(second.name));
 
     expect(wrapper.get("#print-resources-heading").element.nextElementSibling?.textContent)
-      .toContain("Current HP3");
-    expect(wrapper.text()).toContain("Current Luck7");
+      .toContain("当前生命值（HP）3");
+    expect(wrapper.text()).toContain("当前幸运7");
     expect(document.title).toBe("Route B Printable - 人物卡");
     wrapper.unmount();
     expect(document.title).toBe("COCSheet Test");
@@ -231,7 +231,7 @@ describe("PrintableCharacterSheetPage rendered integrations", () => {
 
     expect(wrapper.text()).toContain("最终属性未记录");
     expect(wrapper.text()).toContain("财富未记录");
-    expect(wrapper.text()).toContain("Maximum 99");
+    expect(wrapper.text()).toContain("上限 99");
     expect(update).not.toHaveBeenCalled();
     expect((await characterRepository.getById(legacy.id))?.data).toEqual(legacy);
   });
@@ -259,9 +259,9 @@ describe("PrintableCharacterSheetPage rendered integrations", () => {
     await vi.waitFor(() => expect(wrapper.get("h1").text()).toBe(gaslight.name));
 
     expect(wrapper.text()).toContain("Cthulhu by Gaslight");
-    expect(wrapper.text()).toContain("当前 Setting 暂无可可靠派生数据");
+    expect(wrapper.text()).toContain("当前规则环境暂无可可靠计算的派生数据");
     expect(wrapper.find('[data-skill-key="skill:library-use"]').text()).toContain("未知技能");
-    expect(wrapper.text()).toContain("123 raw minor units");
+    expect(wrapper.text()).toContain("原始金额 123（当前规则环境暂不支持格式化）");
     expect(wrapper.text()).toContain("未知武器（bow）");
     expect(wrapper.findAll(".print-skill-row")).toHaveLength(1);
   });
@@ -293,8 +293,8 @@ describe("PrintableCharacterSheetPage rendered integrations", () => {
     await vi.waitFor(() => expect(wrapper.find(".printable-sheet").exists()).toBe(true));
 
     const resources = wrapper.get("#print-resources-heading").element.nextElementSibling?.textContent;
-    expect(resources).toContain("Current HP9");
-    expect(resources).not.toContain("Current HP4");
+    expect(resources).toContain("当前生命值（HP）9");
+    expect(resources).not.toContain("当前生命值（HP）4");
     expect((await characterRepository.getById(character.id))?.data.resources?.hp.current).toBe(9);
   });
 });

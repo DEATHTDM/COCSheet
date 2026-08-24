@@ -146,7 +146,7 @@ describe("HomePage full library backup integration", () => {
 
     const input = await selectLibraryFile(wrapper, file);
 
-    await vi.waitFor(() => expect(wrapper.text()).toContain("已导入 1 名调查员、1 个建卡会话和 1 个 KP 预设"));
+    await vi.waitFor(() => expect(wrapper.text()).toContain("已导入 1 名调查员、1 份建卡进度和 1 个 KP 建卡预设"));
     expect(wrapper.text()).toContain("Restored");
     expect(await db.kpPresets.get(preset.id)).toBeDefined();
     expect(input.value).toBe("");

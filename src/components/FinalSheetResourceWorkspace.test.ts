@@ -85,7 +85,7 @@ describe("Final Sheet resource workspace rendered interactions", () => {
         mp: { current: 25 },
       });
     });
-    expect(editor(wrapper, "sheet-current-mp").text()).toContain("Initial 13");
+    expect(editor(wrapper, "sheet-current-mp").text()).toContain("起始 13");
 
     await saveValue(wrapper, "sheet-current-hp", "14");
     expect(wrapper.get('[role="alert"]').text()).toContain("当前 HP 必须为 0～13");
@@ -172,7 +172,7 @@ describe("Final Sheet resource workspace rendered interactions", () => {
     const wrapper = await mountCharacter(character);
     const updateSpy = vi.spyOn(characterRepository, "update");
 
-    expect(wrapper.text()).toContain("尚未记录 Current Luck");
+    expect(wrapper.text()).toContain("尚未记录当前幸运");
     expect(wrapper.get<HTMLInputElement>("#sheet-current-luck").element.value).toBe("");
     expect(updateSpy).not.toHaveBeenCalled();
 
@@ -193,7 +193,7 @@ describe("Final Sheet resource workspace rendered interactions", () => {
 
     for (const invalid of ["-1", "100", "1.5"]) {
       await saveValue(wrapper, "sheet-current-luck", invalid);
-      expect(wrapper.get('[role="alert"]').text()).toContain("Current Luck 必须为 0～99 的整数");
+      expect(wrapper.get('[role="alert"]').text()).toContain("当前幸运必须为 0～99 的整数");
     }
     expect(updateSpy).not.toHaveBeenCalled();
 

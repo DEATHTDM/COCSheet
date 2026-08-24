@@ -62,13 +62,13 @@ function parseDraft(action: ResourceAction): number | undefined {
   const draft = String(drafts[action]).trim();
   if (!/^\d+$/.test(draft)) {
     actionError.value = action === "luck"
-      ? "Current Luck 必须为 0～99 的整数。"
+      ? "当前幸运必须为 0～99 的整数。"
       : "资源值必须是非负整数。";
     return undefined;
   }
   const value = Number(draft);
   if (action === "luck" && value > 99) {
-    actionError.value = "Current Luck 必须为 0～99 的整数。";
+    actionError.value = "当前幸运必须为 0～99 的整数。";
     return undefined;
   }
   return value;
@@ -88,7 +88,7 @@ async function saveCurrent(action: ResourceAction): Promise<void> {
     if (action === "san") await characterStore.setCurrentSan(props.character.id, value);
     if (action === "luck") await characterStore.setCurrentLuck(props.character.id, value);
     synchronizeDrafts();
-    actionStatus.value = `${action === "luck" ? "Current Luck" : action.toUpperCase()} 已保存。`;
+    actionStatus.value = `${action === "luck" ? "当前幸运" : action.toUpperCase()}已保存。`;
   } catch (error: unknown) {
     actionError.value = error instanceof Error ? error.message : "保存当前状态失败。";
     synchronizeDrafts();
@@ -105,7 +105,7 @@ async function reconcileSanity(): Promise<void> {
   try {
     await characterStore.reconcileSanityToMaximum(props.character.id);
     synchronizeDrafts();
-    actionStatus.value = "SAN 已同步至当前 Maximum SAN。";
+    actionStatus.value = "SAN 已同步至当前理智上限。";
   } catch (error: unknown) {
     actionError.value = error instanceof Error ? error.message : "同步 SAN 上限失败。";
     synchronizeDrafts();
@@ -119,7 +119,7 @@ async function reconcileSanity(): Promise<void> {
   <section class="panel resource-panel final-resource-workspace">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Game-time Resources</p>
+        <p class="eyebrow">游戏中资源</p>
         <h2>当前资源</h2>
         <p class="muted">直接维护人物当前长期状态。</p>
       </div>
@@ -127,11 +127,11 @@ async function reconcileSanity(): Promise<void> {
 
     <div class="resource-grid">
       <div v-if="character.resources" class="resource-editor">
-        <label for="sheet-current-hp">Current HP <small>/ {{ derived?.maxHp ?? '—' }}</small></label>
+        <label for="sheet-current-hp">当前生命值（HP） <small>/ {{ derived?.maxHp ?? '—' }}</small></label>
         <input
           id="sheet-current-hp"
           v-model="drafts.hp"
-          aria-label="Current HP"
+          aria-label="当前生命值 HP"
           type="number"
           min="0"
           step="1"
@@ -145,11 +145,11 @@ async function reconcileSanity(): Promise<void> {
       </div>
 
       <div v-if="character.resources" class="resource-editor">
-        <label for="sheet-current-mp">Current MP <small>Initial {{ derived?.initialMp ?? '—' }}</small></label>
+        <label for="sheet-current-mp">当前魔法值（MP） <small>起始 {{ derived?.initialMp ?? '—' }}</small></label>
         <input
           id="sheet-current-mp"
           v-model="drafts.mp"
-          aria-label="Current MP"
+          aria-label="当前魔法值 MP"
           type="number"
           min="0"
           step="1"
@@ -162,11 +162,11 @@ async function reconcileSanity(): Promise<void> {
       </div>
 
       <div v-if="character.resources" class="resource-editor">
-        <label for="sheet-current-san">Current SAN <small>/ {{ maximumSanity }}</small></label>
+        <label for="sheet-current-san">当前理智（SAN） <small>/ {{ maximumSanity }}</small></label>
         <input
           id="sheet-current-san"
           v-model="drafts.san"
-          aria-label="Current SAN"
+          aria-label="当前理智 SAN"
           type="number"
           min="0"
           step="1"
@@ -180,11 +180,11 @@ async function reconcileSanity(): Promise<void> {
       </div>
 
       <div class="resource-editor luck-editor">
-        <label for="sheet-current-luck">Current Luck <small>0～99</small></label>
+        <label for="sheet-current-luck">当前幸运 <small>0～99</small></label>
         <input
           id="sheet-current-luck"
           v-model="drafts.luck"
-          aria-label="Current Luck"
+          aria-label="当前幸运"
           type="number"
           min="0"
           max="99"
@@ -196,11 +196,11 @@ async function reconcileSanity(): Promise<void> {
         <button class="button" type="button" :disabled="busyAction !== undefined" @click="saveCurrent('luck')">
           {{ busyAction === 'luck' ? '保存中…' : '保存' }}
         </button>
-        <small v-if="character.luck === undefined" class="resource-missing-note">尚未记录 Current Luck</small>
+        <small v-if="character.luck === undefined" class="resource-missing-note">尚未记录当前幸运</small>
       </div>
     </div>
 
-    <p class="muted current-luck-guidance">Current Luck 是当前长期数值；可按桌上实际变化手动维护。</p>
+    <p class="muted current-luck-guidance">幸运会随游戏过程变化，可在这里手动维护。</p>
     <p v-if="!character.resources" class="empty-state">尚未初始化 HP、MP 与 SAN；打开人物卡不会自动补写。</p>
     <p v-if="actionError" class="error-message final-resource-message" role="alert">{{ actionError }}</p>
     <p v-if="actionStatus" class="success-message final-resource-message" role="status">{{ actionStatus }}</p>

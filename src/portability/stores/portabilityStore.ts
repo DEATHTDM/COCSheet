@@ -73,8 +73,8 @@ export const usePortabilityStore = defineStore("portability", () => {
       };
       importStatus.value = "success";
       importMessage.value = imported.creationSession
-        ? `已导入调查员“${result.characterName}”及建卡会话。`
-        : `已导入调查员“${result.characterName}”（无建卡会话）。`;
+        ? `已导入调查员“${result.characterName}”并恢复建卡进度。`
+        : `已导入人物卡“${result.characterName}”；该文件不含建卡进度。`;
       return result;
     } catch (error: unknown) {
       importStatus.value = "error";

@@ -116,7 +116,7 @@ async function clearKeyConnection(): Promise<void> {
   <section class="panel final-backstory-workspace">
     <div class="section-heading final-narrative-heading">
       <div>
-        <p class="eyebrow">Backstory</p>
+        <p class="eyebrow">人物卡长期资料</p>
         <h2>背景故事</h2>
       </div>
       <span class="status-badge">{{ character.backstory?.entries.length ?? 0 }} 条长期记录</span>
@@ -124,7 +124,7 @@ async function clearKeyConnection(): Promise<void> {
 
     <aside class="final-key-connection" :class="{ empty: !keyConnection }">
       <div>
-        <strong>Key Connection</strong>
+        <strong>关键连接</strong>
         <p v-if="keyConnection">
           {{ backstoryCategoryLabels[keyConnection.category] }} · {{ keyConnection.text }}
         </p>

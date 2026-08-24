@@ -121,7 +121,7 @@ describe("custom occupation builder store integration", () => {
     await useCharacterStore().setEra(characterId, "classic-1920s");
 
     await expect(store.selectCustomOccupation(customOccupation()))
-      .rejects.toThrow("当前 KP 预设禁止自定义职业");
+      .rejects.toThrow("当前守秘人建卡预设禁止自定义职业");
 
     const session = store.current?.data;
     if (!session) throw new Error("会话不存在");

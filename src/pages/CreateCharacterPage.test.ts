@@ -97,7 +97,7 @@ describe("CreateCharacterPage creation experience preference", () => {
     window.localStorage.setItem(CREATION_EXPERIENCE_MODE_STORAGE_KEY, "quick");
     const { wrapper, start } = await mountPage();
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
-      .find((button) => button.text().includes("Standard CoC 7E"));
+      .find((button) => button.text().includes("开始创建调查员"));
 
     expect(standardButton).toBeDefined();
     expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
@@ -171,7 +171,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     expect(wrapper.text()).toContain("Cthulhu by Gaslight");
     expect(wrapper.text()).toContain("手动输入、购点");
     expect(wrapper.text()).toContain("不会自动保存到你的 KP 预设库");
-    expect(wrapper.text()).toContain("当前版本不支持，不能用于新建调查员");
+    expect(wrapper.text()).toContain("暂不支持新建调查员");
     expect(wrapper.find(".shared-preset-preview .button.primary").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
     expect(start).not.toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe("CreateCharacterPage shared KP Preset", () => {
     expect(wrapper.get('[role="alert"]').text()).toContain("无法读取共享 KP 预设：压缩内容已损坏。");
     expect(wrapper.text()).not.toContain("保存到我的 KP 预设");
     const standardButton = wrapper.findAll(".setting-grid .setting-card")
-      .find((button) => button.text().includes("Standard CoC 7E"));
+      .find((button) => button.text().includes("开始创建调查员"));
     expect(wrapper.findAll(".setting-grid .setting-card")).toHaveLength(1);
     await standardButton?.trigger("click");
     expect(start).toHaveBeenCalledWith("standard", undefined);

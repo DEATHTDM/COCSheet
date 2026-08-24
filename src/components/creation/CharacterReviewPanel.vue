@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { characteristicIds } from "../../coc7/types/attribute";
+import { characteristicIds, type CharacteristicId } from "../../coc7/types/attribute";
 import { backstoryCategoryIds, type Character } from "../../coc7/types/character";
 import { getSkillRefKey } from "../../coc7/rules/skills";
 import { getHistoricalSettingLabel } from "../../content/settingCompatibility";
@@ -33,6 +33,16 @@ import {
 const props = defineProps<{ readonly character: Character }>();
 const creationStore = useCreationStore();
 const actionError = ref("");
+const characteristicLabels: Readonly<Record<CharacteristicId, string>> = {
+  STR: "力量（STR）",
+  CON: "体质（CON）",
+  SIZ: "体型（SIZ）",
+  DEX: "敏捷（DEX）",
+  APP: "外貌（APP）",
+  INT: "智力（INT）",
+  POW: "意志（POW）",
+  EDU: "教育（EDU）",
+};
 const settingName = computed(() => getHistoricalSettingLabel(props.character.settingId));
 const skillRegistry = computed(() => getSkillRegistry(props.character.settingId));
 const weaponRegistry = computed(() => getWeaponRegistry(props.character.settingId));
@@ -102,12 +112,12 @@ async function returnToPossessions(): Promise<void> {
   <section class="page-stack review-panel">
     <header class="panel section-heading">
       <div>
-        <p class="eyebrow">Review</p>
+        <p class="eyebrow">建卡检查</p>
         <h2>建卡检查</h2>
         <p class="success-message">建卡数据已保存到本地。</p>
       </div>
       <div class="actions">
-        <RouterLink class="button primary" :to="`/characters/${character.id}/sheet`">打开最终人物卡</RouterLink>
+        <RouterLink class="button primary" :to="`/characters/${character.id}/sheet`">打开人物卡</RouterLink>
         <button class="button" type="button" @click="returnToSkills">返回技能调整</button>
         <button class="button" type="button" @click="returnToBackground">返回修改背景</button>
         <button class="button" type="button" @click="returnToPossessions">返回修改财富与物品</button>
@@ -120,25 +130,25 @@ async function returnToPossessions(): Promise<void> {
       <h3>调查员摘要</h3>
       <dl class="review-summary-grid">
         <div><dt>姓名</dt><dd>{{ character.name || '未命名调查员' }}</dd></div>
-        <div><dt>Setting</dt><dd>{{ settingName }}</dd></div>
-        <div><dt>Era</dt><dd>{{ character.eraId ? formatOccupationEraId(character.eraId) : '未指定' }}</dd></div>
+        <div><dt>建卡环境</dt><dd>{{ settingName }}</dd></div>
+        <div><dt>时代</dt><dd>{{ character.eraId ? formatOccupationEraId(character.eraId) : '未指定' }}</dd></div>
         <div><dt>年龄</dt><dd>{{ character.age ?? '—' }}</dd></div>
         <div><dt>性别</dt><dd>{{ character.sex ?? '—' }}</dd></div>
         <div><dt>住所</dt><dd>{{ character.residence ?? '—' }}</dd></div>
         <div><dt>出身地</dt><dd>{{ character.birthplace ?? '—' }}</dd></div>
         <div><dt>最终职业</dt><dd>{{ character.occupation?.displayNameSnapshot.zh ?? '—' }}</dd></div>
-        <div><dt>Luck</dt><dd>{{ character.luck ?? '—' }}</dd></div>
+        <div><dt>幸运</dt><dd>{{ character.luck ?? '—' }}</dd></div>
       </dl>
     </section>
 
     <section class="panel form-stack">
       <h3>财富与资产</h3>
       <dl class="review-summary-grid">
-        <div><dt>Credit Rating</dt><dd>{{ creditRating ?? '—' }}</dd></div>
-        <div><dt>Lifestyle</dt><dd>{{ wealthRule ? standardLifestyleLabels[wealthRule.lifestyle] : '—' }}</dd></div>
-        <div><dt>Current Cash</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.cashMinorUnits) : '—' }}</dd></div>
-        <div><dt>Current Assets</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.assetsMinorUnits) : '—' }}</dd></div>
-        <div><dt>Spending Level</dt><dd>{{ wealthRule ? formatStandardMoney(wealthRule.spendingLevelMinorUnits) : '—' }}</dd></div>
+        <div><dt>信用评级</dt><dd>{{ creditRating ?? '—' }}</dd></div>
+        <div><dt>生活水平</dt><dd>{{ wealthRule ? standardLifestyleLabels[wealthRule.lifestyle] : '—' }}</dd></div>
+        <div><dt>现金</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.cashMinorUnits) : '—' }}</dd></div>
+        <div><dt>资产</dt><dd>{{ character.wealth ? formatStandardMoney(character.wealth.assetsMinorUnits) : '—' }}</dd></div>
+        <div><dt>消费水平</dt><dd>{{ wealthRule ? formatStandardMoney(wealthRule.spendingLevelMinorUnits) : '—' }}</dd></div>
         <div v-if="wealthRule?.assets.type === 'minimum'">
           <dt>官方初始资产</dt><dd>{{ formatStandardInitialAssets(wealthRule.assets) }}</dd>
         </div>
@@ -206,7 +216,7 @@ async function returnToPossessions(): Promise<void> {
             </div>
           </header>
           <p v-if="item.orphaned" class="warning-message">
-            当前 Setting 的武器目录中找不到 definition：{{ item.instance.definitionId }}。
+            这件武器的规则资料已不在当前目录中。
           </p>
           <dl v-else-if="item.definition" class="weapon-mechanics-grid">
             <div><dt>技能</dt><dd>{{ item.skillLabel }}</dd></div>
@@ -230,7 +240,7 @@ async function returnToPossessions(): Promise<void> {
       <h3>最终属性</h3>
       <div v-if="character.characteristics" class="attribute-grid">
         <div v-for="id in characteristicIds" :key="id" class="attribute-card">
-          <span>{{ id }}</span><strong>{{ character.characteristics[id] }}</strong>
+          <span>{{ characteristicLabels[id] }}</span><strong>{{ character.characteristics[id] }}</strong>
         </div>
       </div>
       <p v-else class="empty-state">尚无最终属性。</p>

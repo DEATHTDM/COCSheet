@@ -28,9 +28,9 @@ export type LibraryCollisionKind = "character" | "orphan-session" | "kp-preset";
 export class LibraryCollisionError extends Error {
   constructor(readonly kind: LibraryCollisionKind, readonly entityId: string) {
     const messages: Record<LibraryCollisionKind, string> = {
-      character: `本地已经存在相同 ID 的调查员：${entityId}。整份完整备份未导入。`,
-      "orphan-session": `本地存在占用调查员 ID 的建卡会话：${entityId}。整份完整备份未导入。`,
-      "kp-preset": `本地已经存在相同 ID 的 KP 预设：${entityId}。整份完整备份未导入。`,
+      character: "本地已经有备份中的一张调查员人物卡。为保护现有资料，整份完整备份未导入。",
+      "orphan-session": "本地已有一份无法对应到人物卡的建卡进度。为保护现有资料，整份完整备份未导入。",
+      "kp-preset": "本地已经有备份中的一个 KP 建卡预设。为保护现有资料，整份完整备份未导入。",
     };
     super(messages[kind]);
     this.name = "LibraryCollisionError";
@@ -39,7 +39,7 @@ export class LibraryCollisionError extends Error {
 
 export class LibraryExportIntegrityError extends Error {
   constructor(readonly characterId: string) {
-    super(`本地存在没有对应调查员的建卡会话（${characterId}），无法生成完整备份。`);
+    super("本地存在没有对应人物卡的建卡进度，无法生成完整备份。请先恢复对应人物卡，再重试。");
     this.name = "LibraryExportIntegrityError";
   }
 }
@@ -48,7 +48,7 @@ export class LibraryRecordValidationError extends Error {
   constructor(readonly recordKind: "character" | "creation-session" | "kp-preset") {
     const labels = {
       character: "调查员",
-      "creation-session": "建卡会话",
+      "creation-session": "建卡进度",
       "kp-preset": "KP 预设",
     } as const;
     super(`本地存在无法验证的${labels[recordKind]}记录，无法生成完整备份。`);

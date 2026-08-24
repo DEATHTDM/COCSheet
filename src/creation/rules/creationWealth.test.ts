@@ -45,7 +45,7 @@ describe("creation wealth provenance", () => {
     });
     expect(stale.errors).toContainEqual({
       code: "stale-wealth-initialization",
-      message: "当前财富基于旧的时代或 Credit Rating，请重新初始化财富。",
+      message: "当前财富基于旧的时代或信用评级，请重新建立财富记录。",
     });
   });
 

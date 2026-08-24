@@ -155,7 +155,7 @@ function slotToRequirement(
       };
     case "predefined": {
       if (skill.specialization.type !== "required") {
-        return { errors: [`技能栏位【${skill.name.zh}】不是专业化技能。`] };
+        return { errors: [`技能栏位【${skill.name.zh}】不是技能专攻。`] };
       }
       const specialization = skill.predefinedSpecializations.find(
         ({ id }) => id === slot.specializationId,
@@ -250,7 +250,7 @@ export function buildCustomOccupationDefinition(
   const requirementIds = new Set<string>();
 
   for (const [index, slot] of draft.skillSlots.entries()) {
-    const label = `第 ${index + 1} 个职业技能栏位`;
+    const label = `第 ${index + 1} 个本职技能栏位`;
     if (requirementIds.has(slot.id)) errors.push(`${label}与其他栏位使用了重复的稳定 ID。`);
     requirementIds.add(slot.id);
     const skill = skills.get(slot.definitionId);
@@ -259,7 +259,7 @@ export function buildCustomOccupationDefinition(
       continue;
     }
     if (skill.id === "credit-rating") {
-      errors.push("信用评级由职业信用范围独立处理，不能加入职业技能栏位。");
+    errors.push("信用评级由职业信用范围独立处理，不能加入本职技能栏位。");
       continue;
     }
     if (eraId && !isSkillAvailableInEra(skill, eraId)) {
@@ -268,14 +268,14 @@ export function buildCustomOccupationDefinition(
     if (skill.specialization.type === "required" && !skill.specialization.allowMultiple) {
       const count = (singleParentCounts.get(skill.id) ?? 0) + 1;
       singleParentCounts.set(skill.id, count);
-      if (count > 1) errors.push(`技能【${skill.name.zh}】只允许占用一个职业技能栏位。`);
+      if (count > 1) errors.push(`技能【${skill.name.zh}】只允许占用一个本职技能栏位。`);
     }
     const result = slotToRequirement(slot, skill);
     errors.push(...result.errors);
     if (!result.requirement) continue;
     const exactKey = exactSelectorKey(result.requirement);
     if (exactKey && exactKeys.has(exactKey)) {
-      errors.push(`职业技能栏位不能重复选择【${skill.name.zh}】的同一技能实例。`);
+      errors.push(`本职技能栏位不能重复选择【${skill.name.zh}】的同一技能实例。`);
     }
     if (exactKey) exactKeys.add(exactKey);
     requirements.push(result.requirement);
@@ -371,10 +371,10 @@ export function createCustomOccupationDraftFromDefinition(
   }
   if (definition.era.type !== "all") errors.push("Builder 只支持全时代自定义职业。");
   const formula = formulaToDraft(definition.pointFormula);
-  if (!formula) errors.push("当前职业点公式不属于 Builder 支持的单属性、两项相加或多属性取高形式。");
+  if (!formula) errors.push("当前本职技能点公式不属于编辑器支持的单属性、两项相加或多属性取高形式。");
   const slots = definition.skillRequirements.map(requirementToSlot);
   if (slots.some((slot) => slot === undefined)) {
-    errors.push("当前职业包含 Builder 无法转换的职业技能栏位。");
+    errors.push("当前职业包含编辑器无法转换的本职技能栏位。");
   }
   if (!formula || slots.some((slot) => slot === undefined) || errors.length > 0) return { errors };
   return {

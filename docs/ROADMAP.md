@@ -465,6 +465,26 @@ Status: Completed
 - route-race-safe saved/error transient UI and unsupported historical/invalid share guards
 - unchanged share v1, library v1, domain/Record schemas, Dexie tables/indexes/version and Zero Server architecture
 
+## Phase 17 — Public Release Hardening
+
+Status: In Progress
+
+### Phase 17A — Player-facing UX & Terminology Audit
+
+Status: Completed
+
+- Chinese-first player-facing UI with durable CoC terminology and developer-vocabulary boundaries
+- desktop/mobile production-preview operation audit across current player workflows
+- semantic terminology regressions plus reusable browser QA checklist
+- unchanged persistence schemas, Dexie version, portability/share formats, rules mechanics and dependencies
+
+### Phase 17B — Open-source Release Documentation & Community Files
+
+Status: Planned
+
+- public release documentation, contribution guidance and community issue templates
+- no Phase 17B implementation is included in Phase 17A
+
 ## Later
 
 - field-level coachmarks, automatic focus guidance, and richer visual onboarding
@@ -472,4 +492,4 @@ Status: Completed
 - shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. No Phase 17 name, order, or scope is frozen.
+Later-item ordering is not frozen. Phase 17 remains in progress; only Phase 17A is complete.

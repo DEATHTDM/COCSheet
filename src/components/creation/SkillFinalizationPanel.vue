@@ -5,6 +5,10 @@ import { useCharacterStore } from "../../app/stores/characterStore";
 import type { ApprovalRequirement } from "../../coc7/rules/occupationSkills";
 import type { Character } from "../../coc7/types/character";
 import { useCreationStore } from "../../creation/stores/creationStore";
+import {
+  formatPlayerFacingSkillApproval,
+  formatPlayerFacingSkillIssue,
+} from "../../creation/presentation/creationGuideReadiness";
 import type { ApprovalReasonId, KeeperApprovalGrant } from "../../creation/types/skillCreation";
 
 const props = defineProps<{ readonly character: Character }>();
@@ -16,14 +20,14 @@ const busyAction = ref("");
 const actionError = ref("");
 
 const reasonLabels: Readonly<Record<ApprovalReasonId, string>> = {
-  "occupation-definition": "职业定义批准",
-  "preset-occupation-policy": "预设职业政策批准",
-  "custom-occupation": "自定义职业批准",
+  "occupation-definition": "职业确认",
+  "preset-occupation-policy": "建卡预设职业确认",
+  "custom-occupation": "自定义职业确认",
   "credit-rating-override": "信用评级范围例外",
-  "cthulhu-mythos-allocation": "克苏鲁神话创建点批准",
-  "skill-creation-point-policy": "技能创建点政策批准",
-  "fuzzy-requirement": "模糊职业需求确认",
-  "occupation-skill-replacement": "职业技能替换批准",
+  "cthulhu-mythos-allocation": "克苏鲁神话创建期点数确认",
+  "skill-creation-point-policy": "技能创建期点数确认",
+  "fuzzy-requirement": "开放式本职技能确认",
+  "occupation-skill-replacement": "本职技能替换确认",
 };
 
 const session = computed(() => creationStore.current?.data);
@@ -75,7 +79,7 @@ async function approve(approval: ApprovalRequirement): Promise<void> {
     }
     delete approvalNotes.value[key];
   } catch (error: unknown) {
-    actionError.value = error instanceof Error ? error.message : "保存 KP 批准失败。";
+    actionError.value = error instanceof Error ? error.message : "保存守秘人确认失败。";
   } finally {
     busyAction.value = "";
   }
@@ -88,7 +92,7 @@ async function revoke(grant: KeeperApprovalGrant): Promise<void> {
   try {
     await creationStore.revokeKeeperApproval(grant.reason, grant.subjectId);
   } catch (error: unknown) {
-    actionError.value = error instanceof Error ? error.message : "撤销 KP 批准失败。";
+    actionError.value = error instanceof Error ? error.message : "撤销守秘人确认失败。";
   } finally {
     busyAction.value = "";
   }
@@ -124,23 +128,23 @@ async function complete(): Promise<void> {
 <template>
   <section class="panel form-stack skill-finalization-panel">
     <div>
-      <p class="eyebrow">Keeper approvals & finalization</p>
-      <h2>批准与技能完成</h2>
-      <p>所有阻断、警告与待批准项目都来自当前技能结算计划。</p>
+      <p class="eyebrow">守秘人确认</p>
+      <h2>检查并完成技能</h2>
+      <p>这里会列出尚需完成、提醒与需要守秘人确认的项目。</p>
     </div>
 
     <section v-if="plan.errors.length > 0" class="finalization-block errors" role="alert">
-      <h3>阻断错误</h3>
+      <h3>尚需完成</h3>
       <ul class="allocation-issue-list">
         <li v-for="(issue, index) in plan.errors" :key="`${issue.code}:${index}`">
-          {{ issue.message }}
+          {{ formatPlayerFacingSkillIssue(issue) }}
         </li>
       </ul>
       <p><strong>请先修正以上问题，才能完成技能建卡。</strong></p>
     </section>
 
     <section v-if="plan.approvals.length > 0" class="finalization-block approvals">
-      <h3>待 KP 批准</h3>
+      <h3>待守秘人确认</h3>
       <div class="approval-card-list">
         <article
           v-for="approval in plan.approvals"
@@ -149,11 +153,10 @@ async function complete(): Promise<void> {
         >
           <div>
             <strong>{{ approvalLabel(approval.reason) }}</strong>
-            <p>{{ approval.message }}</p>
-            <small v-if="approval.subjectId" class="muted">Subject：{{ approval.subjectId }}</small>
+            <p>{{ formatPlayerFacingSkillApproval(approval) }}</p>
           </div>
           <label class="field compact-field">
-            <span>{{ approval.reason === 'credit-rating-override' ? '批准理由（可选）' : '批准备注（可选）' }}</span>
+            <span>{{ approval.reason === 'credit-rating-override' ? '确认理由（可选）' : '确认备注（可选）' }}</span>
             <input
               v-model="approvalNotes[approvalKey(approval)]"
               type="text"
@@ -165,13 +168,13 @@ async function complete(): Promise<void> {
             type="button"
             :disabled="busyAction !== ''"
             @click="approve(approval)"
-          >KP 批准</button>
+          >守秘人确认</button>
         </article>
       </div>
     </section>
 
     <section v-if="state?.keeperApprovals.length" class="finalization-block">
-      <h3>已保存的 KP 批准记录</h3>
+      <h3>已保存的守秘人确认</h3>
       <div class="saved-approval-list">
         <article
           v-for="grant in state.keeperApprovals"
@@ -181,7 +184,6 @@ async function complete(): Promise<void> {
           <div>
             <strong>{{ approvalLabel(grant.reason) }}</strong>
             <small v-if="grant.note">备注：{{ grant.note }}</small>
-            <small v-if="grant.subjectId" class="muted">Subject：{{ grant.subjectId }}</small>
           </div>
           <button
             class="button compact-button danger"
@@ -196,7 +198,7 @@ async function complete(): Promise<void> {
     <section v-if="currentCreditRatingOverride" class="finalization-block">
       <h3>当前职业的信用评级例外</h3>
       <p>
-        KP 已批准当前职业超出信用评级范围。
+        守秘人已确认当前职业超出信用评级范围。
         <span v-if="currentCreditRatingOverride.reason">理由：{{ currentCreditRatingOverride.reason }}</span>
       </p>
       <button
@@ -211,7 +213,7 @@ async function complete(): Promise<void> {
       <h3>完成前确认</h3>
       <ul class="allocation-warning-list">
         <li v-for="(warning, index) in plan.warnings" :key="`${warning.code}:${index}`">
-          {{ warning.message }}
+          {{ formatPlayerFacingSkillIssue(warning) }}
         </li>
       </ul>
       <label class="warning-acknowledgement">

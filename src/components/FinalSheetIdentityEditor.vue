@@ -60,7 +60,7 @@ async function saveIdentity(): Promise<void> {
   <section class="panel final-identity-panel">
     <div class="section-heading final-narrative-heading">
       <div>
-        <p class="eyebrow">Investigator</p>
+        <p class="eyebrow">人物卡长期资料</p>
         <h2>身份</h2>
       </div>
       <button v-if="!editing" class="button" type="button" @click="beginEditing">编辑身份</button>
@@ -93,11 +93,11 @@ async function saveIdentity(): Promise<void> {
       <div><dt>姓名</dt><dd>{{ character.name || '未命名调查员' }}</dd></div>
       <div><dt>年龄</dt><dd>{{ character.age ?? '—' }}</dd></div>
       <div><dt>性别</dt><dd>{{ character.sex ?? '—' }}</dd></div>
-      <div><dt>Era</dt><dd>{{ character.eraId ? formatOccupationEraId(character.eraId) : '—' }}</dd></div>
+      <div><dt>时代</dt><dd>{{ character.eraId ? formatOccupationEraId(character.eraId) : '—' }}</dd></div>
       <div><dt>住所</dt><dd>{{ character.residence ?? '—' }}</dd></div>
       <div><dt>出身地</dt><dd>{{ character.birthplace ?? '—' }}</dd></div>
       <div><dt>职业</dt><dd>{{ character.occupation?.displayNameSnapshot.zh ?? '—' }}</dd></div>
-      <div><dt>Setting</dt><dd>{{ getHistoricalSettingLabel(character.settingId) }}</dd></div>
+      <div><dt>规则环境</dt><dd>{{ getHistoricalSettingLabel(character.settingId) }}</dd></div>
     </dl>
 
     <p v-if="actionError" class="error-message final-narrative-message" role="alert">{{ actionError }}</p>

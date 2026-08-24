@@ -35,14 +35,12 @@ async function confirmStructuredRebuild(): Promise<void> {
 
 async function resetOccupationDraft(): Promise<void> {
   const confirmed = window.confirm([
-    "将重置职业相关草稿：",
-    "- 清空职业 requirement selections",
-    "- 清空职业点",
-    "- 清除 replacement",
-    "- 清除 Credit Rating override",
-    "- 清除 occupation-scoped approvals",
+    "将重置与当前职业有关的技能草稿：",
+    "- 清空本职技能选择和本职技能点",
+    "- 清除本职技能替换与信用评级例外",
+    "- 清除只适用于当前职业的守秘人确认",
     "",
-    "兴趣技能及兴趣点会保留；仍适用于技能本身的 creation-policy approvals 也会保留。",
+    "兴趣技能、兴趣技能点及仍适用于技能本身的守秘人确认会保留。",
   ].join("\n"));
   if (!confirmed) return;
 
@@ -68,10 +66,8 @@ async function resetOccupationDraft(): Promise<void> {
     <section v-if="hasManualConflict" class="skill-draft-conflict-card">
       <h3>此调查员已经存在手动技能数据。</h3>
       <p>当前已有技能数量：<strong>{{ manualSkillCount }}</strong></p>
-      <p>继续结构化技能建卡后，只有在最终完成技能时才会用结构化结果重建 Character.skills。</p>
-      <p>
-        若要保留现有手动技能，请不要确认重建；现有 Character.skills 不会被修改。
-      </p>
+      <p>继续后，只有在最终完成技能时才会用本页结果替换已有技能。</p>
+      <p>若要保留现有手动技能，请返回人物卡；在你确认完成前，已有技能不会改变。</p>
       <button
         class="button"
         type="button"
@@ -81,14 +77,14 @@ async function resetOccupationDraft(): Promise<void> {
     </section>
 
     <section v-if="staleDraftErrors.length > 0" class="skill-draft-conflict-card">
-      <h3>检测到上一个职业或旧选择留下的职业技能草稿。</h3>
+      <h3>检测到上一个职业或旧选择留下的本职技能草稿。</h3>
       <ul class="allocation-issue-list">
         <li v-for="(issue, index) in staleDraftErrors" :key="`${issue.code}:${index}`">
           {{ issue.message }}
         </li>
       </ul>
       <p>
-        重置会清空职业选择、职业点、replacement、信用评级例外与职业范围批准；兴趣技能及兴趣点会保留。
+        重置会清空本职技能选择、点数、替换、信用评级例外与职业相关确认；兴趣技能及兴趣技能点会保留。
       </p>
       <button
         class="button danger"

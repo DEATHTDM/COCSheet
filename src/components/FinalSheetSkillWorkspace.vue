@@ -95,7 +95,7 @@ async function setImprovement(row: FinalSheetSkillPresentation, event: Event): P
 async function createCustom(): Promise<void> {
   const definition = selectedCustomDefinition.value;
   if (!definition) {
-    errorMessage.value = "请选择专业化类别。";
+    errorMessage.value = "请选择技能专攻类别。";
     return;
   }
   await run(async () => {
@@ -124,7 +124,7 @@ async function renameCustom(row: FinalSheetSkillPresentation, event: Event): Pro
 async function removeCustom(row: FinalSheetSkillPresentation): Promise<void> {
   if (row.ref.type !== "custom") return;
   const specializationId = row.ref.specializationId;
-  if (!window.confirm(`删除自定义专业化“${row.ref.displayName}”？此操作会删除其当前值与成长标记。`)) {
+  if (!window.confirm(`删除自定义技能专攻“${row.ref.displayName}”？此操作会删除其当前值与成长标记。`)) {
     return;
   }
   await run(() => characterStore.removeCustomSpecialization(
@@ -134,7 +134,7 @@ async function removeCustom(row: FinalSheetSkillPresentation): Promise<void> {
 }
 
 function customDefinitionLabel(definition: SkillDefinition): string {
-  return `${definition.name.zh} / ${definition.name.en}`;
+  return definition.name.zh;
 }
 </script>
 
@@ -142,7 +142,7 @@ function customDefinitionLabel(definition: SkillDefinition): string {
   <section class="panel final-skill-workspace">
     <div class="section-heading final-skill-heading">
       <div>
-        <p class="eyebrow">Skills</p>
+        <p class="eyebrow">调查员技能</p>
         <h2>技能</h2>
         <p class="muted">目录基础值只读解析；修改数值或成长标记时才写入人物。</p>
       </div>
@@ -152,7 +152,7 @@ function customDefinitionLabel(definition: SkillDefinition): string {
     <div class="final-skill-toolbar">
       <label class="field final-skill-search">
         <span>搜索技能</span>
-        <input v-model="search" type="search" placeholder="中文、英文、别名或自定义名称" />
+        <input v-model="search" type="search" placeholder="技能名称或别名" />
       </label>
       <div class="final-skill-toggles">
         <label class="final-skill-toggle">
@@ -161,7 +161,7 @@ function customDefinitionLabel(definition: SkillDefinition): string {
         </label>
         <label class="final-skill-toggle">
           <input v-model="showPredefinedSpecializations" type="checkbox" />
-          <span>显示专业化技能</span>
+          <span>显示技能专攻</span>
         </label>
       </div>
     </div>
@@ -181,22 +181,21 @@ function customDefinitionLabel(definition: SkillDefinition): string {
       >
         <div class="sheet-skill-identity">
           <strong>{{ skill.nameZh }}</strong>
-          <small>{{ skill.nameEn }}</small>
           <div class="sheet-skill-badges">
             <span v-if="skill.availability?.sheet === 'uncommon'" class="skill-badge warning">非常规</span>
             <span v-if="skill.availability?.era === 'modern-only'" class="skill-badge">现代限定</span>
             <span v-if="skill.eraStatus === 'incompatible'" class="skill-badge danger">当前时代不兼容</span>
             <span v-else-if="skill.availability?.era === 'modern-only' && skill.eraStatus === 'unknown'" class="skill-badge warning">时代未指定</span>
             <span v-if="!skill.persisted" class="skill-badge subtle">目录基础值</span>
-            <span v-if="skill.orphaned" class="skill-badge warning">Orphan · 只读</span>
+            <span v-if="skill.orphaned" class="skill-badge warning">规则资料缺失 · 只读</span>
           </div>
-          <small v-if="skill.orphaned">当前人物 Setting 的 SkillRegistry 无法解析 {{ skill.key }}</small>
+          <small v-if="skill.orphaned">当前规则环境找不到这项技能的规则资料，已保存数值仍会显示。</small>
 
           <label v-if="skill.ref.type === 'custom' && !skill.orphaned" class="custom-skill-name">
-            <span>专业化名称</span>
+            <span>技能专攻名称</span>
             <input
               type="text"
-              :aria-label="`${skill.nameZh} 专业化名称`"
+              :aria-label="`${skill.nameZh} 技能专攻名称`"
               :value="skill.ref.displayName"
               :disabled="mutationPending"
               @blur="renameCustom(skill, $event)"
@@ -208,12 +207,12 @@ function customDefinitionLabel(definition: SkillDefinition): string {
             type="button"
             :disabled="mutationPending"
             @click="removeCustom(skill)"
-          >删除专业化</button>
+          >删除技能专攻</button>
         </div>
 
         <div class="sheet-skill-values">
           <label class="sheet-current-skill-value">
-            <span>Current</span>
+            <span>当前值</span>
             <input
               v-if="!skill.orphaned"
               type="number"
@@ -228,8 +227,8 @@ function customDefinitionLabel(definition: SkillDefinition): string {
             <strong v-else>{{ skill.currentValue }}</strong>
           </label>
           <dl>
-            <div><dt>Half</dt><dd>{{ skill.halfValue }}</dd></div>
-            <div><dt>Fifth</dt><dd>{{ skill.fifthValue }}</dd></div>
+            <div><dt>困难</dt><dd>{{ skill.halfValue }}</dd></div>
+            <div><dt>极难</dt><dd>{{ skill.fifthValue }}</dd></div>
           </dl>
           <label class="sheet-improvement-toggle" :title="skill.improvementPolicy === 'not-eligible' ? '此技能不允许成长标记' : '成长标记'">
             <input
@@ -247,7 +246,7 @@ function customDefinitionLabel(definition: SkillDefinition): string {
     <p v-else class="empty-state">没有符合当前筛选条件的技能。</p>
 
     <details v-if="customDefinitions.length" class="final-custom-skill-manager">
-      <summary>新增自定义专业化</summary>
+      <summary>新增自定义技能专攻</summary>
       <form class="final-custom-skill-form" @submit.prevent="createCustom">
         <label class="field">
           <span>技能类别</span>
@@ -259,12 +258,12 @@ function customDefinitionLabel(definition: SkillDefinition): string {
           </select>
         </label>
         <label class="field">
-          <span>专业化名称</span>
+          <span>技能专攻名称</span>
           <input v-model="customName" type="text" required placeholder="例如：陶艺" :disabled="mutationPending || !character.characteristics" />
         </label>
         <button class="button" type="submit" :disabled="mutationPending || !character.characteristics">创建</button>
       </form>
-      <p v-if="!character.characteristics" class="muted">完成属性后才能按基础值创建自定义专业化。</p>
+      <p v-if="!character.characteristics" class="muted">完成属性后才能按基础值创建自定义技能专攻。</p>
     </details>
   </section>
 </template>

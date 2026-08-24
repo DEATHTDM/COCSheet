@@ -279,7 +279,7 @@ describe("skill allocation store APIs", () => {
 
     await store.createCustomInterestAllocation("language-own", "中文", 1);
     await expect(store.createCustomInterestAllocation("language-own", "英语", 1))
-      .rejects.toThrow("只允许一个专业化实例");
+      .rejects.toThrow("只允许一个技能专攻实例");
 
     const firstOther = await store.createCustomInterestAllocation("language-other", "西班牙语", 1);
     const secondOther = await store.createCustomInterestAllocation("language-other", "拉丁语", 1);
@@ -300,7 +300,7 @@ describe("skill allocation store APIs", () => {
     await expect(store.createCustomInterestAllocation("art-craft", "陶艺", 0))
       .rejects.toThrow("必须是正整数");
     await expect(store.createCustomInterestAllocation("fighting", "拳法", 1))
-      .rejects.toThrow("不允许创建自定义专业化");
+      .rejects.toThrow("不允许创建自定义技能专攻");
   });
 
   it("Accountant 切换 Author 后显式 reset 清除 stale 职业草稿并恢复固定需求", async () => {

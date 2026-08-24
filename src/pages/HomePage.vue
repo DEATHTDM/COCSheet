@@ -89,7 +89,7 @@ async function handleLibraryImportFile(event: Event): Promise<void> {
   }
   try {
     const confirmed = window.confirm(
-      "将把完整备份中的数据追加到当前浏览器。\n已有相同 ID 的数据不会被覆盖；发现任一冲突时整份导入取消。\n继续？",
+      "将把完整备份中的数据追加到当前浏览器。\n已有的同一份资料不会被覆盖；发现任一冲突时整份导入取消。\n继续？",
     );
     if (!confirmed) return;
     await libraryPortabilityStore.importLibraryText(await file.text());
@@ -116,7 +116,7 @@ async function exportLibrary(): Promise<void> {
 <template>
   <section class="page-stack">
     <div class="hero">
-      <p class="eyebrow">中文 Call of Cthulhu 7th Edition 建卡工具</p>
+      <p class="eyebrow">中文 CoC 7版调查员建卡工具</p>
       <h1>COCSheet</h1>
       <p>纯前端、本地优先，不需要账号或服务器。</p>
       <RouterLink class="button primary" to="/create">创建调查员</RouterLink>
@@ -170,7 +170,7 @@ async function exportLibrary(): Promise<void> {
                 ? '建卡已完成'
                 : getCharacterCreationStatus(creationStore.sessionSteps[record.id]) === 'incomplete'
                   ? '建卡尚未完成'
-                  : '无建卡会话' }}
+                  : '仅有人物卡资料' }}
             </span>
             <small>最后修改：{{ dateFormatter.format(record.updatedAt) }}</small>
           </div>

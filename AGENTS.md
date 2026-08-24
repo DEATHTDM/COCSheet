@@ -41,6 +41,13 @@ COCSheet 是中文 Call of Cthulhu 7th Edition 人物卡与建卡工具。
 - 持久化 Schema 变化必须考虑已有 IndexedDB 数据。
 - 不为“以后可能用到”提前实现业务，不顺手实现当前任务范围外的 Roadmap 功能。
 
+## Player-facing UI
+
+- 玩家可见界面默认使用中文，不直接暴露开发者内部英文标识。
+- 玩家可见 CoC 术语必须遵守 `docs/UI_TERMINOLOGY.md`。
+- occupation skill 必须写作“本职技能”，不得写作“专业化技能”；本职技能与技能专攻不得混淆。
+- 修改玩家可见页面后，除自动测试外必须进行实际浏览器验收：至少覆盖一个桌面 viewport、一个约 390px 手机 viewport、touched workflow 的真实点击路径、console errors 与页面级横向 overflow。
+
 ## Validation
 
 修改代码后至少运行：

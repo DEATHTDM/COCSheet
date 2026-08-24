@@ -46,7 +46,7 @@ describe("KPPresetEditorPage Standard-only scope", () => {
     const record = await usePresetStore().createDefault();
     const wrapper = await mountEditor(record.id);
 
-    expect(wrapper.text()).toContain("Standard CoC 7E");
+    expect(wrapper.text()).toContain("CoC 7版标准规则");
     expect(wrapper.find("select").exists()).toBe(false);
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true);
   });
@@ -64,7 +64,7 @@ describe("KPPresetEditorPage Standard-only scope", () => {
     const wrapper = await mountEditor(historical.id);
 
     expect(wrapper.text()).toContain("Regency Cthulhu");
-    expect(wrapper.text()).toContain("预设将保持原样");
+    expect(wrapper.text()).toContain("预设会保持原样");
     expect(wrapper.find("form").exists()).toBe(false);
     expect(wrapper.find('button[type="submit"]').exists()).toBe(false);
     expect(wrapper.find("button.danger").text()).toBe("删除");

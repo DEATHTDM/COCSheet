@@ -11,6 +11,10 @@ import type { Character } from "../../coc7/types/character";
 import type { SkillDefinition, SkillRef } from "../../coc7/types/skill";
 import { getSkillRegistry } from "../../content/skillRegistry";
 import { formatSkillRefForOccupation } from "../../creation/presentation/occupationPresentation";
+import {
+  formatPlayerFacingSkillApproval,
+  formatPlayerFacingSkillIssue,
+} from "../../creation/presentation/creationGuideReadiness";
 import { listConcreteSkillRefs } from "../../creation/rules/requirementSelection";
 import { listOccupationAllocationRefs } from "../../creation/rules/skillAllocationPresentation";
 import { useCreationStore } from "../../creation/stores/creationStore";
@@ -148,7 +152,7 @@ function creationPolicyMessage(ref: SkillRef): string | undefined {
     return "不允许使用创建期技能点";
   }
   if (definition.creationPointPolicy === "keeper-approval") {
-    return "需要 KP 批准";
+    return "需要守秘人确认";
   }
   return undefined;
 }
@@ -222,7 +226,7 @@ function setInterestDraftPoints(ref: SkillRef, event: Event): void {
 async function addInterestSkill(ref: SkillRef): Promise<void> {
   const points = interestPointsFor(ref);
   if (!Number.isInteger(points) || points <= 0) {
-    errorMessage.value = "添加兴趣技能时，兴趣点必须是正整数。";
+    errorMessage.value = "添加兴趣技能时，兴趣技能点必须是正整数。";
     return;
   }
   try {
@@ -270,7 +274,7 @@ async function createCustomInterest(): Promise<void> {
     customInterestPoints.value = 1;
     errorMessage.value = "";
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : "创建兴趣专业化失败。";
+    errorMessage.value = error instanceof Error ? error.message : "创建兴趣技能专攻失败。";
   }
 }
 </script>
@@ -279,12 +283,12 @@ async function createCustomInterest(): Promise<void> {
   <section class="skill-allocation-workspace page-stack">
     <header class="panel form-stack compact-stack">
       <div>
-        <p class="eyebrow">Phase 5C-3A</p>
+        <p class="eyebrow">技能分配</p>
         <h2>技能点分配</h2>
       </div>
       <div v-if="plan" class="budget-grid">
         <div class="budget-card" :class="{ exceeded: plan.remainingOccupationPoints < 0 }">
-          <span>职业技能点</span>
+          <span>本职技能点</span>
           <strong>已用 {{ occupationSpent }} / 总计 {{ plan.occupationBudget }} / 剩余 {{ plan.remainingOccupationPoints }}</strong>
         </div>
         <div class="budget-card" :class="{ exceeded: plan.remainingInterestPoints < 0 }">
@@ -295,19 +299,19 @@ async function createCustomInterest(): Promise<void> {
       <p v-if="previewError" class="error-message" role="alert">{{ previewError }}</p>
       <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
       <ul v-if="budgetIssues.length" class="validation-list allocation-issue-list">
-        <li v-for="issue in budgetIssues" :key="issue.code">{{ issue.message }}</li>
+        <li v-for="issue in budgetIssues" :key="issue.code">{{ formatPlayerFacingSkillIssue(issue) }}</li>
       </ul>
       <ul v-if="generalIssues.length" class="validation-list allocation-issue-list">
         <li v-for="(issue, index) in generalIssues" :key="`${issue.code}:${index}`">
-          {{ issue.message }}
+          {{ formatPlayerFacingSkillIssue(issue) }}
         </li>
       </ul>
       <ul v-if="plan?.warnings.length" class="allocation-warning-list">
-        <li v-for="warning in plan.warnings" :key="warning.code">{{ warning.message }}</li>
+        <li v-for="warning in plan.warnings" :key="warning.code">{{ formatPlayerFacingSkillIssue(warning) }}</li>
       </ul>
       <ul v-if="nonRowApprovals.length" class="allocation-approval-list">
         <li v-for="(approval, index) in nonRowApprovals" :key="`${approval.reason}:${index}`">
-          {{ approval.message }}（将在后续批准步骤处理）
+          {{ formatPlayerFacingSkillApproval(approval) }}（将在后续确认步骤处理）
         </li>
       </ul>
     </header>
@@ -323,8 +327,8 @@ async function createCustomInterest(): Promise<void> {
             <tr>
               <th>技能</th>
               <th>基础值</th>
-              <th>职业点</th>
-              <th>兴趣点</th>
+              <th>本职技能点</th>
+              <th>兴趣技能点</th>
               <th>最终值</th>
               <th>状态</th>
             </tr>
@@ -333,7 +337,7 @@ async function createCustomInterest(): Promise<void> {
             <tr v-for="row in rows" :key="getSkillRefKey(row.ref)">
               <th>
                 {{ formatRef(row.ref) }}
-                <small>{{ row.occupation ? "职业技能" : "仅兴趣技能" }}</small>
+                <small>{{ row.occupation ? "本职技能" : "兴趣技能" }}</small>
                 <small v-if="row.ref.definitionId === 'credit-rating' && occupation">
                   职业要求范围：{{ occupation.creditRating.min }} ～ {{ occupation.creditRating.max }}
                 </small>
@@ -346,7 +350,7 @@ async function createCustomInterest(): Promise<void> {
                   step="1"
                   :value="allocationFor(row.ref).occupationPoints"
                   :disabled="!row.occupation"
-                  :aria-label="`${formatRef(row.ref)}职业点`"
+                  :aria-label="`${formatRef(row.ref)}本职技能点`"
                   @input="updateAllocation(row.ref, 'occupationPoints', $event)"
                 />
               </td>
@@ -356,7 +360,7 @@ async function createCustomInterest(): Promise<void> {
                   min="0"
                   step="1"
                   :value="allocationFor(row.ref).interestPoints"
-                  :aria-label="`${formatRef(row.ref)}兴趣点`"
+                  :aria-label="`${formatRef(row.ref)}兴趣技能点`"
                   @input="updateAllocation(row.ref, 'interestPoints', $event)"
                 />
               </td>
@@ -372,16 +376,16 @@ async function createCustomInterest(): Promise<void> {
                   v-if="definitionFor(row.ref)?.creationPointPolicy === 'keeper-approval' &&
                     allocationFor(row.ref).occupationPoints + allocationFor(row.ref).interestPoints > 0"
                   class="approval-message"
-                >该技能的创建期点数需要 KP 批准。</small>
+                >该技能的创建期点数需要守秘人确认。</small>
                 <small
                   v-if="row.ref.definitionId === 'credit-rating' && hasApproval(row.ref, 'credit-rating-override')"
                   class="approval-message"
-                >当前信用评级超出职业范围，需要 KP 批准。</small>
+                >当前信用评级超出职业范围，需要守秘人确认。</small>
                 <small
                   v-for="(issue, index) in rowIssues(row.ref)"
                   :key="`${issue.code}:${index}`"
                   class="error-message"
-                >{{ issue.message }}</small>
+                >{{ formatPlayerFacingSkillIssue(issue) }}</small>
               </td>
             </tr>
           </tbody>
@@ -391,12 +395,12 @@ async function createCustomInterest(): Promise<void> {
 
     <section class="panel form-stack">
       <div>
-        <p class="eyebrow">Interest only</p>
+        <p class="eyebrow">兴趣技能</p>
         <h3>添加兴趣技能</h3>
       </div>
       <label class="field">
         <span>搜索目录技能</span>
-        <input v-model="interestSearch" type="search" placeholder="中文名、英文名、别名或专业化名称" />
+        <input v-model="interestSearch" type="search" placeholder="技能名称或别名" />
       </label>
       <div class="interest-candidate-list">
         <article
@@ -410,7 +414,7 @@ async function createCustomInterest(): Promise<void> {
             <small v-if="creationPolicyMessage(ref)">{{ creationPolicyMessage(ref) }}</small>
           </div>
           <label>
-            <span>兴趣点</span>
+            <span>兴趣技能点</span>
             <input
               type="number"
               min="1"
@@ -435,15 +439,15 @@ async function createCustomInterest(): Promise<void> {
 
     <section class="panel form-stack">
       <div>
-        <p class="eyebrow">Custom specialization</p>
-        <h3>创建兴趣专业化</h3>
+        <p class="eyebrow">自定义技能专攻</p>
+        <h3>创建兴趣技能专攻</h3>
       </div>
       <div class="custom-interest-grid">
         <label class="field">
-          <span>专业化父技能</span>
+          <span>专攻所属技能</span>
           <select v-model="customParentId">
             <option v-for="definition in customParents" :key="definition.id" :value="definition.id">
-              {{ definition.name.zh }} / {{ definition.name.en }}
+              {{ definition.name.zh }}
             </option>
           </select>
         </label>
@@ -452,15 +456,15 @@ async function createCustomInterest(): Promise<void> {
           <input v-model="customDisplayName" type="text" placeholder="例如：陶艺、西班牙语、沙漠" />
         </label>
         <label class="field">
-          <span>兴趣点</span>
+          <span>兴趣技能点</span>
           <input v-model.number="customInterestPoints" type="number" min="1" step="1" />
         </label>
       </div>
       <p v-if="selectedCustomParent?.creationPointPolicy === 'keeper-approval'" class="approval-message">
-        该技能的创建期点数需要 KP 批准。
+        该技能的创建期点数需要守秘人确认。
       </p>
       <p v-if="customSingleInstanceConflict(selectedCustomParent)" class="warning-message">
-        {{ selectedCustomParent?.name.zh }}只允许一个专业化实例。
+        {{ selectedCustomParent?.name.zh }}只允许一个技能专攻实例。
       </p>
       <button
         class="button"

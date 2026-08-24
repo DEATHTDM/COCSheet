@@ -189,7 +189,7 @@ export const useCreationStore = defineStore("creation", () => {
   const config = computed(() => resolveAttributeGenerationConfig(current.value?.data.presetSnapshot));
 
   function requireSession(): CreationSession {
-    if (!current.value) throw new Error("尚未载入建卡会话");
+    if (!current.value) throw new Error("尚未载入建卡进度");
     return current.value.data;
   }
 
@@ -287,7 +287,7 @@ export const useCreationStore = defineStore("creation", () => {
     await flushSkillAllocationWrites();
     const session = requireSession();
     if (session.presetSnapshot?.allowCustomOccupation === false) {
-      throw new Error("当前 KP 预设禁止自定义职业");
+      throw new Error("当前守秘人建卡预设禁止自定义职业");
     }
     const parsed = occupationDefinitionSchema.parse(definition);
     const errors = validateCustomOccupationDefinition(parsed);
@@ -423,7 +423,7 @@ export const useCreationStore = defineStore("creation", () => {
       throw new Error("职业或技能创建状态尚未初始化");
     }
     const trimmedName = displayName.trim();
-    if (!trimmedName) throw new Error("自定义专业化名称不能为空");
+    if (!trimmedName) throw new Error("自定义技能专攻名称不能为空");
     if (!Number.isInteger(interestPoints) || interestPoints <= 0) {
       throw new Error("兴趣技能点必须是正整数");
     }
@@ -432,7 +432,7 @@ export const useCreationStore = defineStore("creation", () => {
     const definition = skillRegistry.get(definitionId);
     if (!definition) throw new Error(`找不到技能定义：${definitionId}`);
     if (definition.specialization.type !== "required" || !definition.specialization.allowCustom) {
-      throw new Error("该技能不允许创建自定义专业化");
+      throw new Error("该技能不允许创建自定义技能专攻");
     }
 
     const character = await characterRepository.getById(session.characterId);
@@ -451,7 +451,7 @@ export const useCreationStore = defineStore("creation", () => {
       );
       const alreadyExists = [...occupationRefs, ...session.skills.allocations.map(({ ref }) => ref)]
         .some((ref) => ref.definitionId === definition.id);
-      if (alreadyExists) throw new Error(`${definition.name.zh}只允许一个专业化实例`);
+      if (alreadyExists) throw new Error(`${definition.name.zh}只允许一个技能专攻实例`);
     }
 
     const ref = skillRefSchema.parse({
@@ -508,7 +508,7 @@ export const useCreationStore = defineStore("creation", () => {
       session.occupation.definitionSnapshot,
       session.skills,
     )?.targetRequirementId === requirementId) {
-      throw new Error("已被替换的职业技能需求不能保存普通 selection");
+      throw new Error("已被替换的本职技能需求不能保存普通选择");
     }
 
     const parsedRefs = skillRefSchema.array().parse(refs);
@@ -563,13 +563,13 @@ export const useCreationStore = defineStore("creation", () => {
     const definition = skillRegistry.get(definitionId);
     if (!definition) throw new Error(`找不到技能定义：${definitionId}`);
     if (definition.specialization.type !== "required") {
-      throw new Error("该技能不使用专业化实例");
+      throw new Error("该技能不使用技能专攻实例");
     }
     if (!definition.specialization.allowCustom) {
-      throw new Error("该技能不允许自定义专业化");
+      throw new Error("该技能不允许自定义技能专攻");
     }
     const trimmedName = displayName.trim();
-    if (!trimmedName) throw new Error("自定义专业化名称不能为空");
+    if (!trimmedName) throw new Error("自定义技能专攻名称不能为空");
 
     const character = await characterRepository.getById(session.characterId);
     if (!character) throw new Error("找不到当前调查员");
@@ -598,7 +598,7 @@ export const useCreationStore = defineStore("creation", () => {
         );
       });
       if (alreadySelected) {
-        throw new Error(`${definition.name.zh}只允许一个专业化实例`);
+        throw new Error(`${definition.name.zh}只允许一个技能专攻实例`);
       }
     }
 
@@ -621,14 +621,14 @@ export const useCreationStore = defineStore("creation", () => {
         displayName: trimmedName,
       });
     if (!matchesSkillSelector(ref, requirement.selector)) {
-      throw new Error("该自定义专业化不符合当前职业技能需求");
+      throw new Error("该自定义技能专攻不符合当前本职技能需求");
     }
 
     const currentRefs = session.skills.requirementSelections
       .find((selection) => selection.requirementId === requirementId)?.refs ?? [];
     const maximum = requirement.cardinality.max;
     if (maximum !== undefined && maximum !== 1 && currentRefs.length >= maximum) {
-      throw new Error("该职业技能需求已达到选择上限");
+      throw new Error("该本职技能需求已达到选择上限");
     }
     await setRequirementSelection(
       requirementId,
@@ -717,7 +717,7 @@ export const useCreationStore = defineStore("creation", () => {
       throw new Error("职业或技能创建状态尚未初始化");
     }
     if (!character.skills || character.skills.length === 0) {
-      throw new Error("当前调查员没有需要确认重建的 Character.skills");
+      throw new Error("当前调查员没有需要确认重建的人物技能草稿");
     }
     if (session.skills.existingSkillResolution?.action === "rebuild-structured") return;
     await persist({
@@ -757,9 +757,9 @@ export const useCreationStore = defineStore("creation", () => {
     const pending = getSkillFinalizePlan(character).approvals.find((candidate) =>
       candidate.reason === approval.reason && candidate.subjectId === approval.subjectId,
     );
-    if (!pending) throw new Error("该 Keeper approval 已失效或并非当前待批准项目");
+    if (!pending) throw new Error("该守秘人确认已失效或并非当前待确认项目");
     if (pending.reason === "credit-rating-override") {
-      throw new Error("Credit Rating override 必须使用独立批准操作");
+      throw new Error("信用评级调整必须使用独立确认操作");
     }
     if (session.skills.keeperApprovals.some((grant) =>
       grant.reason === pending.reason && grant.subjectId === pending.subjectId,
@@ -810,7 +810,7 @@ export const useCreationStore = defineStore("creation", () => {
     if (!getSkillFinalizePlan(character).approvals.some(
       (approval) => approval.reason === "credit-rating-override",
     )) {
-      throw new Error("当前没有待批准的 Credit Rating override");
+      throw new Error("当前没有待确认的信用评级调整");
     }
     const trimmedReason = reason?.trim();
     await persist({
@@ -934,7 +934,7 @@ export const useCreationStore = defineStore("creation", () => {
     }
     const creditRating = getFinalCreditRating(character);
     if (creditRating === undefined) {
-      throw new Error("必须先完成技能并生成最终 Credit Rating");
+      throw new Error("必须先完成技能并生成最终信用评级");
     }
     const initial = deriveStandardInitialWealth(character.eraId, creditRating);
     const completedSession: CreationSession = {
@@ -1146,14 +1146,14 @@ export const useCreationStore = defineStore("creation", () => {
 
   function getCompletionErrors(): readonly string[] {
     const session = current.value?.data;
-    if (!session) return ["尚未载入建卡会话"];
+    if (!session) return ["尚未载入建卡进度"];
     const attributes = session.attributes;
     if (!attributes) return ["尚未选择属性生成方式"];
     const base = baseFromGeneration(attributes.generation);
     if (!base) return ["基础属性尚未完成或不符合预设限制"];
     if (session.draftAge === undefined || !attributes.ageAdjustment) return ["尚未输入年龄"];
     const rule = getAgeAdjustmentRule(session.draftAge);
-    if (rule.requiresKeeperRuling) return ["该年龄需要 KP 裁定，标准年龄调整无法自动完成"];
+    if (rule.requiresKeeperRuling) return ["该年龄需要守秘人裁定，标准年龄调整无法自动完成"];
     const errors: string[] = [];
     const ageLimit = session.presetSnapshot?.age;
     if (ageLimit?.min !== undefined && session.draftAge < ageLimit.min) errors.push(`年龄不得低于预设下限 ${ageLimit.min}`);

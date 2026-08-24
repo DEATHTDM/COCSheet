@@ -190,7 +190,7 @@ function submit(): void {
 </script>
 
 <template>
-  <section class="panel custom-occupation-builder form-stack" aria-label="自定义职业 Builder">
+  <section class="panel custom-occupation-builder form-stack" aria-label="自定义职业编辑器">
     <header class="section-heading">
       <div>
         <p class="eyebrow">当前调查员</p>
@@ -264,7 +264,7 @@ function submit(): void {
     </fieldset>
 
     <fieldset class="builder-fieldset" :disabled="conversionErrors.length > 0">
-      <legend>职业技能点公式</legend>
+      <legend>本职技能点公式</legend>
       <label class="field">
         <span>公式类型</span>
         <select :value="draft.pointFormula.type" @change="setFormulaType">
@@ -361,7 +361,7 @@ function submit(): void {
     </fieldset>
 
     <fieldset class="builder-fieldset" :disabled="conversionErrors.length > 0">
-      <legend>职业技能 category</legend>
+      <legend>本职技能栏位</legend>
       <div class="section-heading">
         <p>最多添加 8 个；信用评级由上方范围独立处理。</p>
         <button
@@ -371,7 +371,7 @@ function submit(): void {
           :disabled="draft.skillSlots.length >= 8"
           @click="addSkillSlot"
         >
-          添加职业技能
+          添加本职技能
         </button>
       </div>
 
@@ -400,17 +400,17 @@ function submit(): void {
               <span>专业形式</span>
               <select
                 :value="slot.mode"
-                :aria-label="`栏位 ${index + 1} 专业形式`"
+                :aria-label="`栏位 ${index + 1} 技能专攻形式`"
                 @change="setSlotMode(slot, textValue($event) as CustomOccupationSkillSlotMode)"
               >
                 <option v-if="getSkill(slot)?.predefinedSpecializations.length" value="predefined">
-                  已有预定义专业化
+                  已有预设技能专攻
                 </option>
                 <option
                   v-if="slotAllowsCustom(slot)"
                   value="named-custom"
                 >
-                  固定自定义专业化
+                  固定自定义技能专攻
                 </option>
                 <option value="specialization-of">建卡技能步骤再决定具体专业</option>
               </select>
@@ -420,7 +420,7 @@ function submit(): void {
               <span>预定义专业</span>
               <select
                 :value="slot.specializationId"
-                :aria-label="`栏位 ${index + 1} 预定义专业`"
+                :aria-label="`栏位 ${index + 1} 预定义技能专攻`"
                 @change="updateSlot(slot.id, { specializationId: textValue($event) })"
               >
                 <option
@@ -438,7 +438,7 @@ function submit(): void {
               <input
                 type="text"
                 :value="slot.customName"
-                :aria-label="`栏位 ${index + 1} 自定义专业名称`"
+                :aria-label="`栏位 ${index + 1} 自定义技能专攻名称`"
                 @input="updateSlot(slot.id, { customName: textValue($event) })"
               />
             </label>
@@ -452,9 +452,9 @@ function submit(): void {
           </template>
         </li>
       </ol>
-      <p v-else class="empty-state">尚未添加职业技能栏位；可以少于 8 个。</p>
+      <p v-else class="empty-state">尚未添加本职技能栏位；可以少于 8 个。</p>
       <p class="builder-capacity" aria-live="polite">
-        当前职业技能容量：{{ buildResult.maximumSkills ?? "—" }} / 8
+        当前本职技能容量：{{ buildResult.maximumSkills ?? "—" }} / 8
       </p>
     </fieldset>
 

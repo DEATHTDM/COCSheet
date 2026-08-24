@@ -168,7 +168,7 @@ describe("Final Sheet weapon workspace rendered interactions", () => {
     expect(persisted?.data.weapons?.[1]?.definitionId).toBe("fn-fal");
 
     let orphan = wrapper.get(`[data-weapon-instance-id="${orphanId}"]`);
-    expect(orphan.text()).toContain("不会自动修复");
+    expect(orphan.text()).toContain("规则资料已不在当前目录中");
     await clickButton(orphan, "编辑备注");
     await orphan.get("textarea").setValue("待 Keeper 核对");
     await clickButton(orphan, "保存备注");
@@ -194,7 +194,7 @@ describe("Final Sheet weapon workspace rendered interactions", () => {
       settingId: "gaslight",
     });
     expect(wrapper.get(".final-weapon-catalog summary").text()).toContain("（0）");
-    expect(wrapper.text()).toContain("不会回退显示 Standard 武器");
+    expect(wrapper.text()).toContain("当前规则环境没有可用的武器目录");
     expect(wrapper.findAll("[data-weapon-definition-id]")).toHaveLength(0);
     expect(wrapper.text()).not.toContain("FN FAL");
   });

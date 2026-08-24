@@ -168,7 +168,7 @@ describe("custom occupation builder", () => {
         slot("slot-own-two", "language-own", { mode: "specialization-of" }),
       ],
     }), skills);
-    expect(repeatedParent.errors.join("；")).toContain("只允许占用一个职业技能栏位");
+    expect(repeatedParent.errors.join("；")).toContain("只允许占用一个本职技能栏位");
 
     const emptyName = buildCustomOccupationDefinition(draft({
       skillSlots: [slot("slot-science-custom", "science", {

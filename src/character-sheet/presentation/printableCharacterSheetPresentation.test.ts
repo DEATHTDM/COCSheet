@@ -123,7 +123,7 @@ describe("printable character sheet presentation", () => {
     expect(result.identity).toEqual({
       name: "林默",
       occupation: "私人侦探（历史快照）",
-      setting: "Standard CoC 7E",
+      setting: "CoC 7版标准规则",
       era: "古典（1920年代）",
       age: "31",
       sex: "女性",
@@ -212,7 +212,7 @@ describe("printable character sheet presentation", () => {
     expect(result.weapons).toEqual([]);
   });
 
-  it("non-Standard 只使用人物自身空 Registry，保留 persisted orphan 与 raw wealth", () => {
+  it("non-Standard 只使用人物自身空 Registry，保留 persisted orphan 与原始 wealth", () => {
     const gaslight: Character = {
       ...fullCharacter,
       id: "12000000-0000-4000-8000-000000000024",
@@ -239,8 +239,8 @@ describe("printable character sheet presentation", () => {
     expect(result.skills).toHaveLength(1);
     expect(result.skills[0]).toMatchObject({ key: "skill:library-use", orphaned: true });
     expect(result.wealth).toMatchObject({
-      cashLabel: "123 raw minor units",
-      assetsLabel: "456 raw minor units",
+      cashLabel: "原始金额 123（当前规则环境暂不支持格式化）",
+      assetsLabel: "原始金额 456（当前规则环境暂不支持格式化）",
       standard: false,
     });
     expect(result.weapons[0]).toMatchObject({ name: "未知武器（bow）", orphaned: true });

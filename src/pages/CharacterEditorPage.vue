@@ -61,6 +61,16 @@ const methodLabels: Readonly<Record<AttributeGenerationMethod, string>> = {
   "point-buy": "购点",
   manual: "手动输入",
 };
+const characteristicLabels: Readonly<Record<CharacteristicId, string>> = {
+  STR: "力量（STR）",
+  CON: "体质（CON）",
+  SIZ: "体型（SIZ）",
+  DEX: "敏捷（DEX）",
+  APP: "外貌（APP）",
+  INT: "智力（INT）",
+  POW: "意志（POW）",
+  EDU: "教育（EDU）",
+};
 
 const characterId = computed(() => String(route.params.id));
 const session = computed(() => creationStore.current?.data);
@@ -216,7 +226,7 @@ onMounted(async () => {
       creationStore.loadByCharacterId(characterId.value),
     ]);
     if (!loadedRecord || !sessionRecord) {
-      errorMessage.value = "找不到该调查员或建卡会话。";
+      errorMessage.value = "找不到该调查员或对应的建卡进度。";
       return;
     }
     const record = await characterStore.ensureResourcesInitialized(characterId.value);
@@ -372,7 +382,7 @@ async function rollEduWithConfirmation(): Promise<void> {
 }
 
 async function rollLuckWithConfirmation(): Promise<void> {
-  if (attributes.value?.luck && !window.confirm("重新掷 Luck 将覆盖当前 Luck 结果，是否继续？")) return;
+  if (attributes.value?.luck && !window.confirm("重新掷幸运将覆盖当前幸运结果，是否继续？")) return;
   await creationStore.rollCurrentLuck();
 }
 
@@ -402,16 +412,16 @@ async function reconcileSanity(): Promise<void> {
     <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
     <template v-if="characterStore.current && session">
       <div>
-        <p class="eyebrow">调查员 ID：{{ characterStore.current.id }}</p>
+        <p class="eyebrow">调查员建卡</p>
         <h1>{{ name || "未命名调查员" }}</h1>
-        <p>当前设定：{{ settingName }}</p>
+        <p>建卡环境：{{ settingName }}</p>
       </div>
 
       <aside v-if="!supportedSetting" class="panel legacy-warning" role="alert">
-        <strong>当前不支持继续该建卡环境</strong>
+        <strong>这张人物卡暂时无法继续建卡</strong>
         <p>
-          这份历史 Character 与 CreationSession 会保持原样；页面不会转换为 Standard，
-          也不会用 Standard 的属性、职业、技能、财富或武器规则继续建卡。
+          这张人物卡使用的规则环境目前暂不支持继续建卡。原有数据会保持不变；
+          你仍然可以查看人物卡、导出或删除它。
         </p>
         <div class="actions">
           <RouterLink class="button primary" :to="`/characters/${characterStore.current.id}/sheet`">
@@ -503,7 +513,7 @@ async function reconcileSanity(): Promise<void> {
             <div><p class="eyebrow">年龄 {{ session.draftAge }} 岁</p><h2>属性生成</h2></div>
             <button class="button" type="button" @click="creationStore.setCurrentStep('basic-info')">返回基本信息</button>
           </div>
-          <p v-if="session.settingId !== 'standard'" class="warning-message">当前建卡环境的属性规则尚未实现；本阶段不会自动套用 Standard COC7 规则。</p>
+          <p v-if="session.settingId !== 'standard'" class="warning-message">当前建卡环境的属性规则尚未实现；本阶段不会自动套用 CoC 7版标准规则。</p>
           <div v-else class="method-grid">
             <button
               v-for="method in creationStore.config.allowedMethods"
@@ -526,7 +536,7 @@ async function reconcileSanity(): Promise<void> {
           <template v-if="generation.method === 'standard-roll' && generation.result">
             <div class="attribute-grid">
               <div v-for="roll in generation.result.rolls" :key="roll.characteristic" class="attribute-card">
-                <strong>{{ roll.characteristic }} {{ roll.value }}</strong><small>{{ roll.dice.join('+') }}{{ roll.modifier ? `+${roll.modifier}` : '' }} = {{ roll.raw }}</small>
+                <strong>{{ characteristicLabels[roll.characteristic] }} {{ roll.value }}</strong><small>{{ roll.dice.join('+') }}{{ roll.modifier ? `+${roll.modifier}` : '' }} = {{ roll.raw }}</small>
               </div>
             </div>
           </template>
@@ -536,7 +546,7 @@ async function reconcileSanity(): Promise<void> {
             <p v-else class="success-message">不足三项原始结果低于 10，本次不触发补强。</p>
             <div class="attribute-grid">
               <label v-for="roll in generation.result.rolls" :key="roll.characteristic" class="attribute-card field">
-                <span>{{ roll.characteristic }}：原始 {{ roll.raw }}</span>
+                <span>{{ characteristicLabels[roll.characteristic] }}：原始 {{ roll.raw }}</span>
                 <input
                   v-if="roll.raw < 10 && generation.bonusRoll"
                   type="number" min="0" :max="generation.bonusRoll"
@@ -552,7 +562,7 @@ async function reconcileSanity(): Promise<void> {
             <p>五个 3D6 与三个 2D6+6 结果均可自由分配；每个结果只能使用一次。</p>
             <div class="attribute-grid">
               <label v-for="id in characteristicIds" :key="id" class="field attribute-card">
-                <span>{{ id }}</span>
+                <span>{{ characteristicLabels[id] }}</span>
                 <select :value="generation.assignments?.[id] ?? ''" @change="setAssignment(id, $event)">
                   <option value="" disabled>选择骰值</option>
                   <option v-for="roll in generation.rolls" :key="roll.id" :value="roll.id">{{ roll.value }}（{{ roll.formula }}：{{ roll.dice.join('+') }}{{ roll.modifier ? `+${roll.modifier}` : '' }}）</option>
@@ -565,19 +575,19 @@ async function reconcileSanity(): Promise<void> {
             <label v-for="(candidate, index) in generation.candidates" :key="index" class="candidate-card">
               <input type="radio" name="candidate" :checked="generation.selectedIndex === index" @change="creationStore.selectCandidate(index)" />
               <strong>第 {{ index + 1 }} 组</strong>
-              <span>{{ characteristicIds.map(id => `${id} ${candidate.values[id]}`).join(' · ') }}</span>
+              <span>{{ characteristicIds.map(id => `${characteristicLabels[id]} ${candidate.values[id]}`).join(' · ') }}</span>
             </label>
           </template>
 
           <template v-if="generation.method === 'point-buy' || generation.method === 'manual'">
-            <p v-if="generation.method === 'point-buy'">总和 {{ creationStore.config.pointBuy?.total ?? 460 }}；范围 {{ creationStore.config.pointBuy?.min ?? 15 }}～{{ creationStore.config.pointBuy?.max ?? 90 }}；INT/SIZ 下限 {{ creationStore.config.pointBuy?.intMin ?? 40 }}/{{ creationStore.config.pointBuy?.sizMin ?? 40 }}。</p>
+            <p v-if="generation.method === 'point-buy'">总和 {{ creationStore.config.pointBuy?.total ?? 460 }}；范围 {{ creationStore.config.pointBuy?.min ?? 15 }}～{{ creationStore.config.pointBuy?.max ?? 90 }}；智力／体型下限 {{ creationStore.config.pointBuy?.intMin ?? 40 }}/{{ creationStore.config.pointBuy?.sizMin ?? 40 }}。</p>
             <p v-else>输入年龄调整前的八项基础属性。已填写 {{ manualEnteredCount }}/8。</p>
             <div v-if="generation.method === 'point-buy' && pointBuySummary" class="allocation-summary">
               <strong>总点数：{{ pointBuySummary.total }}</strong><span>已分配：{{ pointBuySummary.allocated }}</span><span>剩余：{{ pointBuySummary.remaining }}</span>
             </div>
             <div class="attribute-grid">
               <label v-for="id in characteristicIds" :key="id" class="field attribute-card">
-                <span>{{ id }}</span>
+                <span>{{ characteristicLabels[id] }}</span>
                 <input
                   type="number"
                   :min="generation.method === 'point-buy' ? creationStore.config.pointBuy?.min ?? 15 : 0"
@@ -593,50 +603,50 @@ async function reconcileSanity(): Promise<void> {
 
         <section v-if="baseValues" class="panel form-stack">
           <h2>年龄调整：{{ ageRule.ageRange }}</h2>
-          <p v-if="ageRule.requiresKeeperRuling" class="warning-message">该年龄不在标准自动调整范围内，需要 KP 裁定。</p>
+          <p v-if="ageRule.requiresKeeperRuling" class="warning-message">该年龄不在标准自动调整范围内，需要守秘人裁定。</p>
           <template v-else>
-            <p>EDU 成长判定 ×{{ ageRule.eduImprovementCount }}；<span v-if="ageRule.fixed.APP">APP {{ ageRule.fixed.APP }}</span><span v-if="ageRule.fixed.EDU">EDU {{ ageRule.fixed.EDU }}</span></p>
+            <p>教育成长判定 ×{{ ageRule.eduImprovementCount }}；<span v-if="ageRule.fixed.APP">外貌 {{ ageRule.fixed.APP }}</span><span v-if="ageRule.fixed.EDU">教育 {{ ageRule.fixed.EDU }}</span></p>
             <div v-if="ageRule.reduction.total > 0" class="allocation-summary">
               <strong>需要减少：{{ ageRule.reduction.total }}</strong><span>已分配：{{ reductionAllocated }}</span><span>剩余：{{ reductionRemaining }}</span>
             </div>
             <div v-if="ageRule.reduction.total > 0" class="attribute-grid">
               <label v-for="id in ageRule.reduction.characteristics" :key="id" class="field attribute-card">
-                <span>{{ id }}（基础 {{ baseValues[id] }}）</span>
+                <span>{{ characteristicLabels[id] }}（基础 {{ baseValues[id] }}）</span>
                 <input type="number" min="0" :max="baseValues[id]" :value="ageAdjustment?.reductionAllocation[id] ?? 0" @input="setReduction(id, $event)" />
               </label>
             </div>
             <div class="form-stack compact-stack">
-              <button v-if="ageRule.eduImprovementCount > 0" class="button" type="button" @click="rollEduWithConfirmation">进行 EDU 成长判定 ×{{ ageRule.eduImprovementCount }}</button>
-              <p v-else>本年龄段没有 EDU 成长判定。</p>
+              <button v-if="ageRule.eduImprovementCount > 0" class="button" type="button" @click="rollEduWithConfirmation">进行教育成长判定 ×{{ ageRule.eduImprovementCount }}</button>
+              <p v-else>本年龄段没有教育成长判定。</p>
               <ol v-if="ageAdjustment?.eduImprovements.length" class="result-list">
-                <li v-for="(result, index) in ageAdjustment.eduImprovements" :key="index">第 {{ index + 1 }} 次：D100={{ result.checkRoll }}，EDU {{ result.eduBefore }} → {{ result.eduAfter }}（{{ result.success ? `成功${result.improvementRoll ? `，+${result.improvementRoll}` : ''}` : '失败' }}）</li>
+                <li v-for="(result, index) in ageAdjustment.eduImprovements" :key="index">第 {{ index + 1 }} 次：D100={{ result.checkRoll }}，教育 {{ result.eduBefore }} → {{ result.eduAfter }}（{{ result.success ? `成功${result.improvementRoll ? `，+${result.improvementRoll}` : ''}` : '失败' }}）</li>
               </ol>
             </div>
             <div class="luck-controls">
-              <button class="button" type="button" @click="rollLuckWithConfirmation">掷 Luck（{{ ageRule.luckRollCount }} 次取高）</button>
+              <button class="button" type="button" @click="rollLuckWithConfirmation">掷幸运（{{ ageRule.luckRollCount }} 次取高）</button>
               <span>或手动输入</span>
               <input type="number" min="0" max="99" :value="attributes?.luck?.source === 'manual' ? attributes.luck.value : ''" @change="creationStore.setManualLuck(numberFromEvent($event))" />
             </div>
-            <p v-if="attributes?.luck"><strong>Luck：{{ attributes.luck.value }}</strong><span v-if="attributes.luck.source === 'rolled'">（骰值：{{ attributes.luck.rolls.map(roll => roll.total).join('、') }}）</span><span v-else>（手动）</span></p>
+            <p v-if="attributes?.luck"><strong>幸运：{{ attributes.luck.value }}</strong><span v-if="attributes.luck.source === 'rolled'">（骰值：{{ attributes.luck.rolls.map(roll => roll.total).join('、') }}）</span><span v-else>（手动）</span></p>
           </template>
         </section>
 
         <section v-if="baseValues" class="panel form-stack">
           <h2>属性预览</h2>
           <div class="attribute-table-wrap">
-            <table class="attribute-table"><thead><tr><th>属性</th><th>基础</th><th>最终</th><th>Half</th><th>Fifth</th></tr></thead><tbody>
-              <tr v-for="id in characteristicIds" :key="id"><th>{{ id }}</th><td>{{ baseValues[id] }}</td><td>{{ finalPreview?.[id] ?? '—' }}</td><td>{{ finalPreview ? getHalfValue(finalPreview[id]) : '—' }}</td><td>{{ finalPreview ? getFifthValue(finalPreview[id]) : '—' }}</td></tr>
+            <table class="attribute-table"><thead><tr><th>属性</th><th>基础</th><th>最终</th><th>困难</th><th>极难</th></tr></thead><tbody>
+              <tr v-for="id in characteristicIds" :key="id"><th>{{ characteristicLabels[id] }}</th><td>{{ baseValues[id] }}</td><td>{{ finalPreview?.[id] ?? '—' }}</td><td>{{ finalPreview ? getHalfValue(finalPreview[id]) : '—' }}</td><td>{{ finalPreview ? getFifthValue(finalPreview[id]) : '—' }}</td></tr>
             </tbody></table>
           </div>
           <template v-if="derivedPreview">
             <h2>派生属性预览</h2>
             <div class="attribute-grid">
-              <div class="attribute-card"><span>最大 HP</span><strong>{{ derivedPreview.maxHp }}</strong></div>
-              <div class="attribute-card"><span>起始 MP</span><strong>{{ derivedPreview.initialMp }}</strong></div>
-              <div class="attribute-card"><span>起始 SAN</span><strong>{{ derivedPreview.initialSan }}</strong></div>
-              <div class="attribute-card"><span>MOV</span><strong>{{ derivedPreview.movement.status === 'value' ? derivedPreview.movement.value : '需 KP 裁定' }}</strong></div>
-              <div class="attribute-card"><span>Damage Bonus</span><strong>{{ formatDamageBonus(derivedPreview.damageBonus) }}</strong></div>
-              <div class="attribute-card"><span>Build</span><strong>{{ derivedPreview.build }}</strong></div>
+              <div class="attribute-card"><span>生命值上限（HP）</span><strong>{{ derivedPreview.maxHp }}</strong></div>
+              <div class="attribute-card"><span>起始魔法值（MP）</span><strong>{{ derivedPreview.initialMp }}</strong></div>
+              <div class="attribute-card"><span>起始理智（SAN）</span><strong>{{ derivedPreview.initialSan }}</strong></div>
+              <div class="attribute-card"><span>移动力</span><strong>{{ derivedPreview.movement.status === 'value' ? derivedPreview.movement.value : '需守秘人裁定' }}</strong></div>
+              <div class="attribute-card"><span>伤害加值</span><strong>{{ formatDamageBonus(derivedPreview.damageBonus) }}</strong></div>
+              <div class="attribute-card"><span>体格</span><strong>{{ derivedPreview.build }}</strong></div>
             </div>
           </template>
           <ul v-if="completionErrors.length" class="validation-list"><li v-for="message in completionErrors" :key="message">{{ message }}</li></ul>

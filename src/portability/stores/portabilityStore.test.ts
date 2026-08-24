@@ -102,7 +102,7 @@ describe("Portability Store", () => {
       hasCreationSession: false,
     });
     expect(store.importStatus).toBe("success");
-    expect(store.importMessage).toContain("无建卡会话");
+    expect(store.importMessage).toContain("该文件不含建卡进度");
     expect((await characterRepository.getById(character.id))?.data).toEqual(character);
     expect(await creationSessionRepository.getByCharacterId(character.id)).toBeUndefined();
   });
@@ -150,8 +150,8 @@ describe("Portability Store", () => {
     );
     const store = usePortabilityStore();
     await store.importCharacterText(text);
-    await expect(store.importCharacterText(text)).rejects.toThrow("不会自动覆盖或合并");
-    expect(store.importMessage).toContain("相同 ID");
+    await expect(store.importCharacterText(text)).rejects.toThrow("为保护现有资料，本次没有导入");
+    expect(store.importMessage).toContain("本地已经有这张调查员人物卡");
 
     await characterRepository.remove(character.id);
     vi.spyOn(characterPortabilityRepository, "importCharacterPackage")

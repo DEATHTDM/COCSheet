@@ -95,7 +95,7 @@ async function removePreset(): Promise<void> {
       <p><strong>{{ name }}</strong></p>
       <p>建卡环境：{{ getHistoricalSettingLabel(presetStore.current.data.settingId) }}</p>
       <p class="warning-message" role="alert">
-        该建卡环境当前不再支持新建。预设将保持原样，不会转换为 Standard，也不能保存修改。
+        该建卡环境暂不支持新建。预设会保持原样，你仍然可以删除它。
       </p>
       <div class="actions">
         <button class="button danger" type="button" @click="removePreset">删除</button>
@@ -103,7 +103,7 @@ async function removePreset(): Promise<void> {
     </section>
     <form v-else-if="presetStore.current" class="form-stack" @submit.prevent="save">
       <label class="field"><span>名称</span><input v-model="name" type="text" required /></label>
-      <div class="field"><span>建卡环境</span><strong>Standard CoC 7E</strong></div>
+      <div class="field"><span>建卡环境</span><strong>CoC 7版标准规则</strong></div>
 
       <fieldset class="panel form-stack"><legend>允许的属性生成方式</legend>
         <label v-for="method in methods" :key="method" class="checkbox-field"><input v-model="allowedMethods" type="checkbox" :value="method" />{{ methodLabels[method] }}</label>
@@ -111,13 +111,13 @@ async function removePreset(): Promise<void> {
 
       <fieldset class="panel config-grid"><legend>属性方式配置</legend>
         <label class="field"><span>多组数量（2～10）</span><input v-model.number="multiCount" type="number" min="2" max="10" /></label>
-        <label class="field"><span>Assign INT 下限</span><input v-model.number="assignIntMin" type="number" min="0" max="90" /></label>
-        <label class="field"><span>Assign SIZ 下限</span><input v-model.number="assignSizMin" type="number" min="0" max="90" /></label>
-        <label class="field"><span>Point Buy 总点数</span><input v-model.number="pointTotal" type="number" min="1" /></label>
-        <label class="field"><span>Point Buy 最小值</span><input v-model.number="pointMin" type="number" min="0" max="99" /></label>
-        <label class="field"><span>Point Buy 最大值</span><input v-model.number="pointMax" type="number" min="0" max="99" /></label>
-        <label class="field"><span>Point Buy INT 下限</span><input v-model.number="pointIntMin" type="number" min="0" max="99" /></label>
-        <label class="field"><span>Point Buy SIZ 下限</span><input v-model.number="pointSizMin" type="number" min="0" max="99" /></label>
+        <label class="field"><span>自由分配：智力下限</span><input v-model.number="assignIntMin" type="number" min="0" max="90" /></label>
+        <label class="field"><span>自由分配：体型下限</span><input v-model.number="assignSizMin" type="number" min="0" max="90" /></label>
+        <label class="field"><span>购点：总点数</span><input v-model.number="pointTotal" type="number" min="1" /></label>
+        <label class="field"><span>购点：最小值</span><input v-model.number="pointMin" type="number" min="0" max="99" /></label>
+        <label class="field"><span>购点：最大值</span><input v-model.number="pointMax" type="number" min="0" max="99" /></label>
+        <label class="field"><span>购点：智力下限</span><input v-model.number="pointIntMin" type="number" min="0" max="99" /></label>
+        <label class="field"><span>购点：体型下限</span><input v-model.number="pointSizMin" type="number" min="0" max="99" /></label>
       </fieldset>
 
       <p v-if="message" class="success-message" aria-live="polite">{{ message }}</p>

@@ -43,13 +43,13 @@ function validateEntryIntegrity(character: Character, creationSession?: Creation
   if (creationSession.characterId !== character.id) {
     throw new PortableLibraryPackageError(
       "character-session-id-mismatch",
-      "完整备份中的调查员与建卡会话 ID 不一致。",
+      "完整备份中的人物卡与建卡进度不属于同一名调查员。",
     );
   }
   if (creationSession.settingId !== character.settingId) {
     throw new PortableLibraryPackageError(
       "character-session-setting-mismatch",
-      "完整备份中的调查员与建卡会话 Setting 不一致。",
+      "完整备份中的人物卡与建卡进度使用了不同的建卡环境。",
     );
   }
 }
@@ -63,7 +63,7 @@ function validateUniqueIds(
     if (characterIds.has(entry.character.id)) {
       throw new PortableLibraryPackageError(
         "duplicate-character-id",
-        `完整备份中存在重复的调查员 ID：${entry.character.id}`,
+        "完整备份中重复包含了同一张调查员人物卡。",
       );
     }
     characterIds.add(entry.character.id);
@@ -74,7 +74,7 @@ function validateUniqueIds(
     if (presetIds.has(preset.id)) {
       throw new PortableLibraryPackageError(
         "duplicate-kp-preset-id",
-        `完整备份中存在重复的 KP 预设 ID：${preset.id}`,
+        "完整备份中重复包含了同一个 KP 建卡预设。",
       );
     }
     presetIds.add(preset.id);
@@ -108,7 +108,7 @@ export function createPortableLibraryPackage(
     if (creationSession && !creationSession.success) {
       throw new PortableLibraryPackageError(
         "invalid-creation-session",
-        "完整备份中的建卡会话数据无效。",
+        "完整备份中的建卡进度数据无效。",
       );
     }
     validateEntryIntegrity(character.data, creationSession?.data);
@@ -168,7 +168,7 @@ export function parsePortableLibraryPackageText(text: string): PortableLibraryPa
   if (raw.formatVersion !== 1) {
     throw new PortableLibraryPackageError(
       "unsupported-version",
-      "当前版本 COCSheet 无法导入该完整备份文件版本。",
+      "这个完整备份使用了尚不支持的文件格式版本。",
     );
   }
   if (!Array.isArray(raw.characterEntries) || !Array.isArray(raw.kpPresets)) {
@@ -190,7 +190,7 @@ export function parsePortableLibraryPackageText(text: string): PortableLibraryPa
     if (creationSession && !creationSession.success) {
       throw new PortableLibraryPackageError(
         "invalid-creation-session",
-        "完整备份中的建卡会话数据无效。",
+        "完整备份中的建卡进度数据无效。",
       );
     }
     validateEntryIntegrity(character.data, creationSession?.data);

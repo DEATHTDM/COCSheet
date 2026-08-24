@@ -15,6 +15,7 @@ import {
   formatOccupationEra,
   formatOccupationEraId,
   formatOccupationPointFormula,
+  formatPlayerFacingOccupationText,
   formatOccupationRequirement,
   formatSkillSelectorForOccupation,
   getAvailableOccupationCategories,
@@ -225,11 +226,11 @@ async function goToSkills(): Promise<void> {
               <dd>{{ currentSelection.definitionSnapshot.creditRating.min }}～{{ currentSelection.definitionSnapshot.creditRating.max }}</dd>
             </div>
             <div>
-              <dt>职业技能点</dt>
+              <dt>本职技能点</dt>
               <dd>{{ formatOccupationPointFormula(currentSelection.definitionSnapshot.pointFormula) }}</dd>
             </div>
             <div>
-              <dt>职业技能 category</dt>
+              <dt>本职技能栏位</dt>
               <dd>{{ currentSelection.definitionSnapshot.skillRequirements.length }} 个栏位</dd>
             </div>
           </dl>
@@ -265,13 +266,13 @@ async function goToSkills(): Promise<void> {
           当前职业不适用于{{ formatOccupationEraId(props.eraId) }}
         </p>
         <p v-if="selectedCustomIsBanned" class="warning-message" role="alert">
-          当前 KP 预设禁止自定义职业。
+          当前守秘人建卡预设禁止自定义职业。
         </p>
         <p
           v-else-if="currentSelection.kind === 'custom' && customOccupationPolicy === 'keeper-approval'"
           class="warning-message"
         >
-          此自定义职业最终需要 KP 批准。
+          此自定义职业最终需要守秘人确认。
         </p>
       </div>
     </aside>
@@ -281,12 +282,12 @@ async function goToSkills(): Promise<void> {
         <p class="eyebrow">当前调查员专用</p>
         <h3>{{ selectedCustomOccupation ? "编辑自定义职业" : "创建自定义职业" }}</h3>
         <p v-if="customOccupationPolicy === false" class="warning-message" role="alert">
-          当前 KP 预设禁止自定义职业。
+          当前守秘人建卡预设禁止自定义职业。
         </p>
         <p v-else-if="customOccupationPolicy === 'keeper-approval'" class="warning-message">
-          此自定义职业最终需要 KP 批准。
+          此自定义职业最终需要守秘人确认。
         </p>
-        <p v-else class="muted">自定义职业只保存在当前建卡会话的职业快照中。</p>
+        <p v-else class="muted">自定义职业只属于当前调查员，不会加入公共职业目录。</p>
       </div>
       <button
         class="button primary"
@@ -358,13 +359,13 @@ async function goToSkills(): Promise<void> {
               @click="preview(occupation.id)"
             >
               <span class="occupation-card-heading">
-                <span><strong>{{ occupation.name.zh }}</strong><small>{{ occupation.name.en }}</small></span>
+                <span><strong>{{ occupation.name.zh }}</strong></span>
                 <span class="occupation-badges">
                   <span v-if="selectedCatalogId === occupation.id" class="occupation-badge selected">已选择</span>
                   <span v-if="occupation.variantOf" class="occupation-badge">职业变体</span>
-                  <span v-if="policyStatus(occupation) === 'banned'" class="occupation-badge banned">当前 KP 预设禁用</span>
-                  <span v-else-if="policyStatus(occupation) === 'keeper-approval-required'" class="occupation-badge approval">需要 KP 批准</span>
-                  <span v-if="occupation.approval" class="occupation-badge approval">职业需 KP 批准</span>
+                  <span v-if="policyStatus(occupation) === 'banned'" class="occupation-badge banned">当前建卡预设禁用</span>
+                  <span v-else-if="policyStatus(occupation) === 'keeper-approval-required'" class="occupation-badge approval">需要守秘人确认</span>
+                  <span v-if="occupation.approval" class="occupation-badge approval">职业需守秘人确认</span>
                   <span v-if="props.eraId && !eraCompatible(occupation)" class="occupation-badge banned">
                     不适用于当前建卡时代
                   </span>
@@ -387,14 +388,13 @@ async function goToSkills(): Promise<void> {
           <div>
             <p class="eyebrow">职业详情</p>
             <h2>{{ previewOccupation.name.zh }}</h2>
-            <p class="muted">{{ previewOccupation.name.en }}</p>
           </div>
           <div class="occupation-badges">
             <span v-if="selectedCatalogId === previewOccupation.id" class="occupation-badge selected">当前职业</span>
             <span v-if="previewOccupation.variantOf" class="occupation-badge">职业变体</span>
-            <span v-if="policyStatus(previewOccupation) === 'banned'" class="occupation-badge banned">当前 KP 预设禁用</span>
-            <span v-else-if="policyStatus(previewOccupation) === 'keeper-approval-required'" class="occupation-badge approval">需要 KP 批准</span>
-            <span v-if="previewOccupation.approval" class="occupation-badge approval">该职业需要 KP 批准</span>
+            <span v-if="policyStatus(previewOccupation) === 'banned'" class="occupation-badge banned">当前建卡预设禁用</span>
+            <span v-else-if="policyStatus(previewOccupation) === 'keeper-approval-required'" class="occupation-badge approval">需要守秘人确认</span>
+            <span v-if="previewOccupation.approval" class="occupation-badge approval">该职业需要守秘人确认</span>
             <span v-if="props.eraId && !eraCompatible(previewOccupation)" class="occupation-badge banned">
               不适用于当前建卡时代
             </span>
@@ -406,7 +406,7 @@ async function goToSkills(): Promise<void> {
           <div><dt>分类</dt><dd>{{ formatOccupationCategory(previewOccupation.category) }}</dd></div>
           <div><dt>适用时代</dt><dd>{{ formatOccupationEra(previewOccupation.era) }}</dd></div>
           <div><dt>信用评级</dt><dd>{{ previewOccupation.creditRating.min }}～{{ previewOccupation.creditRating.max }}</dd></div>
-          <div><dt>职业技能点</dt><dd>{{ formatOccupationPointFormula(previewOccupation.pointFormula) }}</dd></div>
+          <div><dt>本职技能点</dt><dd>{{ formatOccupationPointFormula(previewOccupation.pointFormula) }}</dd></div>
         </dl>
 
         <section v-if="previewOccupation.tags?.length">
@@ -419,7 +419,7 @@ async function goToSkills(): Promise<void> {
         </section>
 
         <section>
-          <h3>职业技能需求</h3>
+          <h3>本职技能需求</h3>
           <ol class="occupation-requirements">
             <li v-for="requirement in previewOccupation.skillRequirements" :key="requirement.id">
               {{ formatOccupationRequirement(requirement, skills) }}
@@ -430,7 +430,7 @@ async function goToSkills(): Promise<void> {
         <aside v-if="previewOccupation.skillReplacement" class="occupation-special-rule">
           <strong>特殊职业规则</strong>
           <p>
-            经 KP 批准，可用【{{ formatSkillSelectorForOccupation(previewOccupation.skillReplacement.replacement, skills) }}】替换其中一项指定职业技能。
+            经守秘人确认，可用【{{ formatSkillSelectorForOccupation(previewOccupation.skillReplacement.replacement, skills) }}】替换其中一项指定本职技能。
           </p>
         </aside>
 
@@ -450,10 +450,10 @@ async function goToSkills(): Promise<void> {
         </section>
 
         <p v-if="previewOccupation.approval?.guidance" class="warning-message">
-          {{ previewOccupation.approval.guidance.zh }}
+          {{ formatPlayerFacingOccupationText(previewOccupation.approval.guidance.zh) }}
         </p>
         <p v-if="policyStatus(previewOccupation) === 'banned'" class="warning-message">
-          此职业仍可查看，但当前 KP 预设不允许选择。
+          此职业仍可查看，但当前建卡预设不允许选择。
         </p>
         <p v-if="props.eraId && !eraCompatible(previewOccupation)" class="warning-message">
           此职业仍可查看，但不适用于当前建卡时代。
@@ -474,7 +474,7 @@ async function goToSkills(): Promise<void> {
       <div>
         <strong>{{ selectedOccupationName ? `当前职业：${selectedOccupationName}` : "尚未选择职业" }}</strong>
         <p v-if="continueReason" class="warning-message">{{ continueReason }}</p>
-        <p v-else class="muted">下一步选择职业技能需求；点数分配将在后续阶段接入。</p>
+        <p v-else class="muted">下一步选择本职技能并分配技能点。</p>
       </div>
       <button class="button primary" type="button" :disabled="!canContinue" @click="goToSkills">
         继续：技能

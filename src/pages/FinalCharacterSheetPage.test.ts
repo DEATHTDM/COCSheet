@@ -66,7 +66,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     const wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
     await vi.waitFor(() => expect(wrapper.text()).toContain("建立当前财富记录"));
     expect(wrapper.find(".final-resource-workspace").exists()).toBe(true);
-    expect(wrapper.text()).toContain("尚未记录 Current Luck");
+    expect(wrapper.text()).toContain("尚未记录当前幸运");
     expect(wrapper.text()).toContain("尚未初始化 HP、MP 与 SAN");
     expect(wrapper.find(".final-skill-workspace").exists()).toBe(true);
     expect(wrapper.find(".sheet-backstory-workspace").exists()).toBe(true);
@@ -241,7 +241,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     await router.push(`/characters/${legacy.id}/sheet`);
     await router.isReady();
     let wrapper = mount(FinalCharacterSheetPage, { global: { plugins: [pinia, router] } });
-    await vi.waitFor(() => expect(wrapper.text()).toContain("此人物没有建卡会话"));
+    await vi.waitFor(() => expect(wrapper.text()).toContain("没有可继续的建卡进度"));
 
     const editIdentity = wrapper.findAll("button").find((button) => button.text() === "编辑身份");
     if (!editIdentity) throw new Error("找不到编辑身份按钮");
@@ -284,7 +284,7 @@ describe("FinalCharacterSheetPage rendered integrations", () => {
     });
     await vi.waitFor(() => expect(wrapper.get("h1").text()).toBe("长期叙事调查员"));
     expect(wrapper.text()).toContain("左眉留下了一道旧疤");
-    expect(wrapper.text()).toContain("此人物没有建卡会话");
+    expect(wrapper.text()).toContain("没有可继续的建卡进度");
   });
 
   it("route A → B 复用页面时重新载入人物并同步 HP/MP/SAN/Luck drafts", async () => {

@@ -177,9 +177,9 @@ async function removeCustom(row: SkillRow): Promise<void> {
   <section class="skill-editor form-stack">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Phase 4B</p>
+        <p class="eyebrow">人物卡技能</p>
         <h2>技能基础编辑</h2>
-        <p class="muted">显示完整 Standard 核心技能目录；职业点与兴趣点将在后续阶段实现。</p>
+        <p class="muted">显示 CoC 7版标准规则的核心技能目录；本职技能点与兴趣技能点将在后续阶段实现。</p>
       </div>
       <label class="field skill-search">
         <span>搜索技能</span>
@@ -193,7 +193,7 @@ async function removeCustom(row: SkillRow): Promise<void> {
     <div v-else class="skill-table-wrap">
       <table class="skill-table">
         <thead>
-          <tr><th>技能</th><th>基础</th><th>当前</th><th>Half</th><th>Fifth</th><th>成长</th><th>自定义</th></tr>
+          <tr><th>技能</th><th>基础</th><th>当前</th><th>困难</th><th>极难</th><th>成长</th><th>自定义</th></tr>
         </thead>
         <tbody>
           <tr v-for="row in filteredRows" :key="row.key">
@@ -253,11 +253,11 @@ async function removeCustom(row: SkillRow): Promise<void> {
         @submit.prevent="createCustom(definition)"
       >
         <div>
-          <strong>新增{{ definition.name.zh }}专业化</strong>
+          <strong>新增{{ definition.name.zh }}技能专攻</strong>
           <span v-if="definition.availability.sheet === 'uncommon'" class="skill-badge warning">非常规</span>
           <span v-if="definition.availability.era === 'modern-only'" class="skill-badge">现代限定</span>
         </div>
-        <input v-model="customNames[definition.id]" type="text" required placeholder="专业化名称" />
+        <input v-model="customNames[definition.id]" type="text" required placeholder="技能专攻名称" />
         <button class="button" type="submit">创建</button>
       </form>
     </div>

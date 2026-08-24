@@ -58,12 +58,12 @@ export function validateCreationWealth(
     errors.push({ code: "missing-era", message: "Standard 调查员必须先选择建卡时代。" });
   }
   if (creditRating === undefined) {
-    errors.push({ code: "missing-credit-rating", message: "必须先完成技能并生成最终 Credit Rating。" });
+    errors.push({ code: "missing-credit-rating", message: "必须先完成技能并生成最终信用评级。" });
   } else if (!Number.isInteger(creditRating) || creditRating < 0 || creditRating > 99) {
-    errors.push({ code: "invalid-credit-rating", message: "Credit Rating 必须为 0～99 的整数。" });
+    errors.push({ code: "invalid-credit-rating", message: "信用评级必须为 0～99 的整数。" });
   }
   if (!character.wealth) {
-    errors.push({ code: "wealth-not-initialized", message: "请先按当前 Credit Rating 初始化财富。" });
+    errors.push({ code: "wealth-not-initialized", message: "请先按当前信用评级建立财富记录。" });
   } else if (!isCreationWealthInitializationCurrent(
     character.eraId,
     creditRating,
@@ -71,7 +71,7 @@ export function validateCreationWealth(
   )) {
     errors.push({
       code: "stale-wealth-initialization",
-      message: "当前财富基于旧的时代或 Credit Rating，请重新初始化财富。",
+      message: "当前财富基于旧的时代或信用评级，请重新建立财富记录。",
     });
   }
   if (character.wealth && character.wealth.assetsMinorUnits > 0 &&

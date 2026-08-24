@@ -68,7 +68,7 @@ async function addWeapon(definition: WeaponDefinition): Promise<void> {
   await run(`add:${definition.id}`, () => characterStore.addWeapon(
     props.character.id,
     definition.id,
-  ), `${definition.name.zh}已添加；availability 与参考价格只作展示，Cash 未改变。`);
+  ), `${definition.name.zh}已添加；时代标记与参考价格只作查阅，现金未改变。`);
 }
 
 function beginEditing(instance: CharacterWeaponInstance): void {
@@ -88,15 +88,15 @@ async function saveNotes(instanceId: string): Promise<void> {
     await characterStore.updateWeaponNotes(props.character.id, instanceId, editingNotes.value);
     editingId.value = undefined;
     editingNotes.value = "";
-  }, "武器备注已保存；武器实例与 definition 引用未改变。");
+  }, "武器备注已保存；武器规则资料未改变。");
 }
 
 async function removeWeapon(instance: CharacterWeaponInstance, name: string): Promise<void> {
-  if (!window.confirm(`删除武器“${name}”？Cash 不会改变。`)) return;
+  if (!window.confirm(`删除武器“${name}”？现金不会改变。`)) return;
   await run(`remove:${instance.id}`, async () => {
     await characterStore.removeWeapon(props.character.id, instance.id);
     if (editingId.value === instance.id) cancelEditing();
-  }, "武器已删除；Cash 未改变。");
+  }, "武器已删除；现金未改变。");
 }
 </script>
 
@@ -104,9 +104,9 @@ async function removeWeapon(instance: CharacterWeaponInstance, name: string): Pr
   <section class="panel final-inventory-workspace final-weapon-workspace sheet-weapons-section">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Weapons</p>
+        <p class="eyebrow">人物卡长期资料</p>
         <h2>武器</h2>
-        <p class="muted">持有实例优先展示；目录只来自人物自身 Setting，不处理购买、弹药或战斗。</p>
+        <p class="muted">已持有武器优先展示；目录来自人物卡所属的规则环境，不处理购买、弹药或战斗。</p>
       </div>
       <span class="status-badge">{{ ownedWeapons.length }} 件</span>
     </div>
@@ -124,7 +124,7 @@ async function removeWeapon(instance: CharacterWeaponInstance, name: string): Pr
         <header class="section-heading">
           <div>
             <h3>{{ item.name }}</h3>
-            <p v-if="item.orphaned" class="warning-message">当前 Setting 找不到 definition：{{ item.instance.definitionId }}。实例仍可编辑备注或删除，不会自动修复。</p>
+            <p v-if="item.orphaned" class="warning-message">这件武器的规则资料已不在当前目录中；你仍可修改备注或删除它。</p>
             <div v-else-if="item.definition" class="weapon-badges">
               <span class="occupation-badge">{{ weaponCategoryLabels[item.definition.category] }}</span>
               <span v-if="item.eraAvailability" class="occupation-badge" :class="{ approval: item.eraAvailability === 'rare', banned: item.eraAvailability === 'unavailable' }">{{ weaponAvailabilityLabels[item.eraAvailability] }}</span>
@@ -161,14 +161,14 @@ async function removeWeapon(instance: CharacterWeaponInstance, name: string): Pr
     <p v-else class="empty-state">尚未持有武器；缺失字段不会在打开页面时自动生成。</p>
 
     <details class="final-weapon-catalog">
-      <summary>浏览当前 Setting 武器目录（{{ weaponRegistry.definitions.length }}）</summary>
+      <summary>浏览当前规则环境的武器目录（{{ weaponRegistry.definitions.length }}）</summary>
       <div class="final-weapon-catalog-body">
-        <p v-if="!weaponRegistry.definitions.length" class="empty-state">当前 Setting 尚未提供武器目录，不会回退显示 Standard 武器。</p>
+        <p v-if="!weaponRegistry.definitions.length" class="empty-state">当前规则环境没有可用的武器目录。</p>
         <template v-else>
           <div class="weapon-filter-bar">
-            <label class="field"><span>搜索</span><input v-model="search" type="search" placeholder="中文、英文、技能或 stable ID" /></label>
+            <label class="field"><span>搜索</span><input v-model="search" type="search" placeholder="武器名称或关联技能" /></label>
             <label class="field">
-              <span>Category</span>
+              <span>类别</span>
               <select v-model="category">
                 <option value="">全部类别</option>
                 <option v-for="categoryId in weaponCategoryIds" :key="categoryId" :value="categoryId">{{ weaponCategoryLabels[categoryId] }}</option>
@@ -179,7 +179,7 @@ async function removeWeapon(instance: CharacterWeaponInstance, name: string): Pr
           <div v-if="filteredDefinitions.length" class="weapon-catalog-grid">
             <article v-for="definition in filteredDefinitions" :key="definition.id" class="weapon-card catalog" :class="{ unavailable: availability(definition) === 'unavailable' }" :data-weapon-definition-id="definition.id">
               <header class="section-heading">
-                <div><h3>{{ definition.name.zh }}</h3><p v-if="definition.name.en" class="muted">{{ definition.name.en }}</p></div>
+                <div><h3>{{ definition.name.zh }}</h3></div>
                 <button class="button" type="button" :disabled="busyAction !== undefined" @click="addWeapon(definition)">添加</button>
               </header>
               <div class="weapon-badges">
@@ -197,7 +197,7 @@ async function removeWeapon(instance: CharacterWeaponInstance, name: string): Pr
                 <div><dt>贯穿</dt><dd>{{ definition.impales ? '是' : '否' }}</dd></div>
                 <div><dt>参考价格</dt><dd>{{ formatWeaponReferencePrice(definition, character.eraId) }}</dd></div>
               </dl>
-              <p v-if="availability(definition) === 'unavailable'" class="warning-message">当前时代标记为不可用；该 metadata 不阻止添加。</p>
+              <p v-if="availability(definition) === 'unavailable'" class="warning-message">这件武器不适用于当前时代，但仍可添加。</p>
             </article>
           </div>
           <p v-else class="empty-state">没有符合当前搜索与类别筛选的武器。</p>
