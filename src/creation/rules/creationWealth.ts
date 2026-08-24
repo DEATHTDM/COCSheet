@@ -52,10 +52,10 @@ export function validateCreationWealth(
   const creditRating = getFinalCreditRating(character);
 
   if (character.settingId !== "standard") {
-    errors.push({ code: "standard-required", message: "当前仅实现 Standard COC7 财富规则。" });
+    errors.push({ code: "standard-required", message: "当前建卡环境暂不支持创建期财富规则。" });
   }
   if (!isStandardWealthEraId(character.eraId)) {
-    errors.push({ code: "missing-era", message: "Standard 调查员必须先选择建卡时代。" });
+    errors.push({ code: "missing-era", message: "请先选择建卡时代。" });
   }
   if (creditRating === undefined) {
     errors.push({ code: "missing-credit-rating", message: "必须先完成技能并生成最终信用评级。" });
