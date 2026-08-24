@@ -28,6 +28,8 @@ Guided 模式实时展示当前步骤的权威 readiness 与七步流程位置�
 
 玩家可见界面默认使用自然中文和已确认的 CoC 中文术语。涉及玩家页面的改动除自动测试外，还必须在桌面与手机尺寸的真实浏览器中完成主要操作、错误状态、控制台和页面级横向溢出检查。
 
+公开版本还必须长期清楚说明浏览器本地数据的保存与丢失风险，且只有用户显式操作才请求浏览器持久存储保护；该保护不得被宣传为备份。未处理运行异常和启动失败必须提供不依赖远端服务的恢复入口。版本诊断只在本地生成，移除 query、分享 token 与动态人物／预设 identity，不读取任何 domain data。发布验证包含 production build + Vite preview 的 Playwright Chromium desktop/mobile smoke。
+
 ## Product constraints
 
 COCSheet 必须保持：

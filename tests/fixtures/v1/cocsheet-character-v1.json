@@ -1,0 +1,14 @@
+{
+  "format": "cocsheet-character",
+  "formatVersion": 1,
+  "exportedAt": 1700000000000,
+  "character": {
+    "version": 1,
+    "id": "d1000000-0000-4000-8000-000000000001",
+    "name": "兼容性测试调查员",
+    "settingId": "standard",
+    "eraId": "classic-1920s",
+    "sex": "测试资料",
+    "residence": "阿卡姆测试街"
+  }
+}

@@ -44,6 +44,38 @@ Pull Request、main push 与手动运行都执行 validation；Pull Request 永�
 
 Hash Router 与 Vite relative `base: "./"` 继续保证同一份 `dist/` 可运行在 GitHub Pages project path 或其他普通子目录 static host，不依赖 origin、固定仓库路径或服务器 rewrite。GitHub Pages production delivery 已启用；通过 validation 的 `main` push 会自动部署，已验证的 production endpoint 是 <https://deathtdm.github.io/COCSheet/>。
 
+## Public release safety and diagnostics
+
+浏览器持久存储保护位于独立的 `src/app/storage/browserStoragePersistence.ts` adapter，只调用 `navigator.storage.persisted()` 与用户点击后触发的 `navigator.storage.persist()`。它不访问 Dexie、Character、CreationSession、CreationPreset、localStorage 或任何 portability data；unsupported、denied 与 API rejection 都是 Home 的 nonfatal presentation state。Persistent Storage 只影响浏览器自动 storage eviction 倾向，不是备份，也不能抵抗主动清理、浏览器 profile 删除、设备损坏或换设备。
+
+运行异常边界是：
+
+```text
+Vue errorHandler / window error / unhandledrejection
+        ↓ console.error + local runtime summary
+App recovery presentation
+        ↓
+reload / Home / local diagnostics / GitHub Issues
+```
+
+runtime summary 不保留或展示 exception object、stack 或 domain payload；没有 telemetry、remote logging 或 crash upload。Vue mount 前／过程中失败则由 `main.ts` catch 调用静态 DOM fallback，该 fallback 不依赖 Vue Router、Pinia 或 Dexie，也不把 raw error 插入页面。
+
+构建 metadata 的唯一链路是 `package.json version + build-time exact SHA → shared metadata helper → footer / diagnostics`。本地没有合法注入值时使用 `dev`；Pull Request Validate 注入 exact PR head SHA，main Pages build 注入 `github.sha`，并在 build artifact 中断言该 SHA 存在，不运行 GitHub API 获取版本。
+
+公开浏览器 smoke 使用 `@playwright/test` 的 Chromium：
+
+```text
+Vite production build
+        ↓
+vite preview
+        ↓
+Playwright desktop 1280×900 + small mobile 390×844 suite
+        ↓
+console.error / pageerror / document horizontal overflow assertions
+```
+
+E2E 只通过真实页面操作，不向 `window` 暴露 Store，也不增加 production-only test hook。固定的 v1 character/library/share fixtures 存放在 repository 中，证明旧 wire data 能由当前 parser 与 Repository boundary 读取，而不只验证 current serializer round-trip。
+
 ## Domain separation
 
 当前已落地的主要目录是：

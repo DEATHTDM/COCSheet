@@ -79,7 +79,7 @@ async function selectFile(
   await input.trigger("change");
   await flushPromises();
   await vi.waitFor(() => {
-    expect(wrapper.find('[role="status"], [role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('.success-message[role="status"], .error-message[role="alert"]').exists()).toBe(true);
   });
   return input.element as HTMLInputElement;
 }
@@ -227,5 +227,31 @@ describe("HomePage portable Character integration", () => {
     expect(wrapper.get('[role="alert"]').text()).toContain("为保护现有资料，本次没有导入");
     expect(await db.characters.count()).toBe(1);
     expect((await characterRepository.getById(character.id))?.data).toEqual(character);
+  });
+
+  it("长期显示备份语义，并只在明确点击后请求持久存储保护", async () => {
+    const originalStorageDescriptor = Object.getOwnPropertyDescriptor(navigator, "storage");
+    const persisted = vi.fn().mockResolvedValue(false);
+    const persist = vi.fn().mockResolvedValue(true);
+    Object.defineProperty(navigator, "storage", {
+      configurable: true,
+      value: { persisted, persist },
+    });
+    try {
+      const { wrapper } = await mountHome();
+      await vi.waitFor(() => expect(wrapper.text()).toContain("浏览器尚未提供持久存储保护"));
+      expect(wrapper.text()).toContain("人物资料、建卡进度和建卡预设不会自动上传或跨设备同步");
+      expect(wrapper.text()).toContain("持久存储保护不等于完整备份");
+      expect(persist).not.toHaveBeenCalled();
+      await wrapper.get(".storage-persistence-status button").trigger("click");
+      await vi.waitFor(() => expect(wrapper.text()).toContain("浏览器已启用持久存储保护"));
+      expect(persist).toHaveBeenCalledOnce();
+    } finally {
+      if (originalStorageDescriptor) {
+        Object.defineProperty(navigator, "storage", originalStorageDescriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "storage");
+      }
+    }
   });
 });

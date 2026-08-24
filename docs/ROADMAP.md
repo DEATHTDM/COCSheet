@@ -467,7 +467,7 @@ Status: Completed
 
 ## Phase 17 — Public Release Hardening
 
-Status: In Progress
+Status: Completed
 
 ### Phase 17A — Player-facing UX & Terminology Audit
 
@@ -478,12 +478,16 @@ Status: Completed
 - semantic terminology regressions plus reusable browser QA checklist
 - unchanged persistence schemas, Dexie version, portability/share formats, rules mechanics and dependencies
 
-### Phase 17B — Open-source Release Documentation & Community Files
+### Phase 17B — Public Release Safety & Supportability
 
-Status: Planned
+Status: Completed
 
-- public release documentation, contribution guidance and community issue templates
-- no Phase 17B implementation is included in Phase 17A
+- explicit local-only data safety and full-backup guidance plus user-controlled browser persistence requests that are never presented as backup
+- Vue/window runtime recovery, mount/bootstrap fallback, privacy-safe local diagnostics, package version + exact build SHA and formal Not Found routing
+- fixed historical character/library/share v1 fixtures through current parser/Repository boundaries
+- Chromium production-build/Vite-preview desktop/mobile smoke in Validate CI with console, pageerror and horizontal-overflow assertions
+- public README, contribution guidance, privacy-aware Issue Forms and reusable release checklist
+- unchanged domain/Record/Dexie versions, tables/indexes, v1 portability/share formats, CoC rules mechanics and Zero Server architecture
 
 ## Later
 
@@ -492,4 +496,4 @@ Status: Planned
 - shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. Phase 17 remains in progress; only Phase 17A is complete.
+Later-item ordering is not frozen. Phase 17 is complete; no Phase 18 name, order or scope is frozen.

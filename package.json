@@ -9,7 +9,8 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "pnpm build && playwright test"
   },
   "dependencies": {
     "dexie": "^4.4.4",
@@ -19,6 +20,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "^2.4.11",
     "fake-indexeddb": "^6.2.5",

@@ -26,6 +26,24 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 Printable presentation 只做纸面分组与格式化，并复用现有 Final Sheet derived / Maximum SAN / sparse skill resolver、same-Setting SkillRegistry、same-Setting WeaponRegistry 与 orphan-safe presentation。任何 non-Standard Setting 都不回退 Standard 规则或目录。当前“打印 / 保存 PDF”以 `window.print()` 进入浏览器自己的打印／Save as PDF 对话框，不引入第二套 PDF binary renderer、Repository、Store、schema、缓存或导出 metadata；未来若需要直接 PDF renderer，应另行设计而不破坏这条长期数据边界。
 
+## Public release safety
+
+### R001 — Local browser storage must be explicit
+
+公开产品必须长期、自然地说明 Character、CreationSession 与 CreationPreset 默认只存在于当前浏览器和设备，不自动上传或同步，并清楚列出清理站点数据、无痕浏览、浏览器/profile 删除、设备损坏与换设备风险。完整资料库导出是长期保存和迁移的重要手段；不使用首次 modal、强制确认或重复恐吓式警告代替稳定说明。
+
+### R002 — Persistent Storage API is not backup
+
+`navigator.storage.persist()` 只能由用户显式点击触发。支持并获批时，它只表示浏览器更倾向于不因自动 storage eviction 清理站点数据，不代表永久保存、云端保护、已经备份或不会丢失。Adapter 只接触 Storage API，不访问 domain data、Dexie 或 schema；unsupported、denied 和 exception 都不得阻断普通功能。
+
+### R003 — Diagnostics are local and privacy-safe
+
+诊断报告只在本地按用户操作生成和复制，可以包含 package version、exact build SHA、时间、user agent、language 与已脱敏 route。所有 query string 都移除，Character／Preset 动态路由归一化，因此不包含 share token 或 UUID。诊断不得读取 Character、CreationSession、Preset、IndexedDB、localStorage、备份文件或剪贴板，也不得自动上传；产品不加入 analytics、telemetry、remote logging 或 crash-reporting SDK。
+
+### R004 — Public release validation includes production-browser smoke
+
+公开发布 validation 必须在 production build + Vite preview 上运行 Playwright Chromium，覆盖精简 desktop/mobile 真实路径，并把 console.error、pageerror 与 document-level horizontal overflow 作为失败条件。Pull Request 使用 exact head SHA，main Pages build 使用 exact `github.sha`，同一个 build metadata source 同时服务普通 UI 与诊断。
+
 ## Guided creation
 
 ### G001 — Creation Guide is presentation-only

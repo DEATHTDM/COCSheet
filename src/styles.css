@@ -77,6 +77,50 @@ main {
   padding: 3rem 0 5rem;
 }
 
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 1rem 0 1.5rem;
+  border-top: 1px solid #cfc6b3;
+  color: #695f52;
+  font-size: 0.875rem;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.data-safety-note {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #dfd7c8;
+}
+
+.storage-persistence-status {
+  padding: 0.875rem 1rem;
+  border-left: 3px solid #6e8b7d;
+  background: #f5f7f3;
+}
+
+.storage-persistence-status > :last-child {
+  margin-bottom: 0;
+}
+
+.runtime-recovery,
+.bootstrap-fallback {
+  width: min(100%, 720px);
+  margin: 2rem auto;
+}
+
+.runtime-recovery textarea {
+  width: 100%;
+  resize: vertical;
+}
+
 h1,
 h2,
 p {
@@ -2768,6 +2812,7 @@ textarea:disabled {
   }
 
   .site-header,
+  .site-footer,
   .print-preview-toolbar,
   .print-preview-message {
     display: none !important;

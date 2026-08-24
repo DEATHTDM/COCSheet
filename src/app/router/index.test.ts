@@ -14,4 +14,11 @@ describe("application router", () => {
     expect(resolved.matched).toHaveLength(1);
     expect(resolved.href).toContain("#/characters/12000000-0000-4000-8000-000000000012/print");
   });
+
+  it("resolves unknown Hash routes to the formal Not Found page", () => {
+    const resolved = router.resolve("/this-route-does-not-exist");
+    expect(resolved.name).toBe("not-found");
+    expect(resolved.matched).toHaveLength(1);
+    expect(resolved.href).toContain("#/this-route-does-not-exist");
+  });
 });

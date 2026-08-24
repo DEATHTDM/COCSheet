@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
+import {
+  checkBrowserStoragePersistence,
+  requestBrowserStoragePersistence,
+  type BrowserStoragePersistenceStatus,
+} from "../app/storage/browserStoragePersistence";
 import { useCharacterStore } from "../app/stores/characterStore";
 import { getCharacterCreationStatus } from "../character-sheet/presentation/finalCharacterSheetPresentation";
 import { isSupportedSetting } from "../coc7/types/setting";
@@ -20,6 +25,8 @@ const exportingCharacterId = ref("");
 const exportingLibrary = ref(false);
 const exportError = ref("");
 const libraryExportError = ref("");
+const storagePersistenceStatus = ref<BrowserStoragePersistenceStatus | "checking" | "requesting">("checking");
+const storagePersistenceRequestAttempted = ref(false);
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -30,7 +37,17 @@ onMounted(() => {
     characterStore.loadList(),
     creationStore.loadSessionSteps(),
   ]);
+  void checkBrowserStoragePersistence().then((status) => {
+    storagePersistenceStatus.value = status;
+  });
 });
+
+async function requestPersistentStorage(): Promise<void> {
+  if (storagePersistenceStatus.value === "requesting") return;
+  storagePersistenceRequestAttempted.value = true;
+  storagePersistenceStatus.value = "requesting";
+  storagePersistenceStatus.value = await requestBrowserStoragePersistence();
+}
 
 async function removeCharacter(id: string, name: string): Promise<void> {
   if (window.confirm(`确定删除调查员“${name}”吗？`)) {
@@ -200,6 +217,37 @@ async function exportLibrary(): Promise<void> {
     </section>
 
     <section class="panel page-stack library-backup-panel">
+      <div class="data-safety-note">
+        <p class="eyebrow">本地数据安全</p>
+        <h2>资料只保存在这个浏览器中</h2>
+        <p>
+          人物资料、建卡进度和建卡预设不会自动上传或跨设备同步。清理网站数据、更换设备、卸载或重置浏览器资料，
+          都可能让本地资料无法继续使用；无痕或隐私浏览不适合长期保存。建议定期导出完整备份。
+        </p>
+        <div class="storage-persistence-status" role="status" aria-live="polite">
+          <p v-if="storagePersistenceStatus === 'checking' || storagePersistenceStatus === 'requesting'">
+            {{ storagePersistenceStatus === 'checking' ? '正在检查浏览器存储保护……' : '正在请求浏览器持久保存……' }}
+          </p>
+          <template v-else-if="storagePersistenceStatus === 'persisted'">
+            <p><strong>浏览器已启用持久存储保护。</strong></p>
+            <p class="muted">这只会降低浏览器自动回收本站数据的可能，持久存储保护不等于完整备份；主动清理网站数据仍会删除资料。</p>
+          </template>
+          <template v-else-if="storagePersistenceStatus === 'not-persisted'">
+            <p>
+              <strong>{{ storagePersistenceRequestAttempted ? '浏览器暂未批准持久存储保护。' : '浏览器尚未提供持久存储保护。' }}</strong>
+            </p>
+            <p class="muted">持久存储保护不等于完整备份，无论是否获批，仍建议定期导出完整备份。</p>
+            <button class="button" type="button" @click="requestPersistentStorage">请求持久保存</button>
+          </template>
+          <p v-else-if="storagePersistenceStatus === 'unsupported'" class="muted">
+            当前浏览器无法检查这项保护，请定期导出完整备份。
+          </p>
+          <p v-else class="muted">
+            暂时无法检查浏览器存储保护，其他功能仍可继续使用；请定期导出完整备份。
+          </p>
+        </div>
+      </div>
+
       <div class="section-heading">
         <div>
           <p class="eyebrow">完整资料库文件</p>

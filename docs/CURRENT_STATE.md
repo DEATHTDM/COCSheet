@@ -4,15 +4,32 @@ Last updated: 2026-08-24
 
 ## Current phase
 
-Phase 17A — Player-facing UX & Terminology Audit (Completed)
+Phase 17B — Public Release Safety & Supportability (Completed)
 
-玩家可见界面现在以自然中文和统一 CoC 术语呈现，并通过桌面／手机 production-preview 实操覆盖现有建卡、人物卡、打印与 KP 建卡预设工作流；domain、rules、schema 与 portability/share 格式保持不变。
+Phase 17 — Public Release Hardening 已整体完成：公开用户现在能看到稳定的本地数据风险和备份说明，运行异常与启动失败具备本地恢复入口，版本／构建诊断经过隐私脱敏，固定 v1 fixtures 与 Chromium production-preview E2E 保护长期兼容和发布路径，公开 README／贡献说明／Issue Forms 已建立。Zero Server、domain、rules、schema 与 portability/share 格式保持不变。
 
 ## Git baseline
 
-Phase 17A was created from exact `main@25edc5b00a3bc31371bced407ac8b9c0ec4d84fd`, the merged Phase 16 closure baseline.
+Phase 17B was created from exact `main@4e5fbdad4793f49a318df3495a35d3521b9ac5ae`, the merged Phase 17A closure baseline.
 
 ## Implemented
+
+- compact, permanently visible Home “本地数据安全” guidance covering local-only storage, no automatic upload/sync, site-data clearing, private browsing, browser/profile/device loss and regular full-backup practice without a blocking modal
+- isolated browser Storage Persistence adapter that checks `persisted()` on Home, calls `persist()` only after the explicit “请求持久保存” action, and keeps persisted/not-persisted/unsupported/rejected states nonfatal without Dexie or domain access
+- accurate UI contract that persistent storage only reduces automatic eviction risk and never means backup, permanent safety, cloud protection or resistance to explicit clearing/device loss
+- local runtime error state fed by Vue `app.config.errorHandler`, `window error` and `unhandledrejection`, with continued `console.error` plus a Chinese App recovery panel for reload, Home, privacy-safe diagnostics and GitHub feedback
+- mount/bootstrap `try/catch` static DOM fallback independent from Vue Router, Pinia and Dexie, using only safe text nodes and no raw error message/stack presentation
+- single build metadata source combining `package.json` version 0.1.0 with build-time SHA; local fallback is `dev`, ordinary footer uses a 12-character SHA, and diagnostics retain the full injected SHA
+- CI exact metadata injection: Validate builds PR exact head SHA or dispatched/push `github.sha`; Pages builds exact main `github.sha`; static artifact checks assert the expected full SHA is embedded
+- local privacy-safe diagnostics containing version, build SHA, timestamp, userAgent, language, sanitized route and optional runtime error count, with every query removed and Character/Preset dynamic paths normalized so share tokens and UUIDs are absent
+- Clipboard failure-safe readonly manual diagnostics plus no Character, CreationSession, Preset, IndexedDB, localStorage, backup or clipboard reads and no analytics, telemetry, remote logging or crash upload
+- formal catch-all Hash Router Not Found page with Home/Create recovery, and App navigation terminology corrected from “KP 建卡预设” to “建卡预设”
+- committed fictitious historical fixtures for `cocsheet-character v1`, `cocsheet-library v1` including non-Standard identities, and one already-encoded `cocsheet-kp-preset-share v1` token, all verified through current parser/Repository boundaries
+- `@playwright/test` as the only new dev dependency, with production build + Vite preview Chromium projects split into desktop 1280×900 core smoke and mobile 390×844 small smoke
+- real-page E2E for Home safety/version/backup, deterministic manual Basic Info → Attributes completion, incomplete Character Home/Final Sheet/print, Standard Preset edit/persistence/share URL, full-backup download/JSON protocol, fixed library fixture import, Not Found recovery and mobile Home/Create/Editor/Final Sheet
+- shared E2E assertions for unfiltered `console.error`, `pageerror` and document-level horizontal overflow; Validate installs Chromium and runs E2E, while PR Pages build/deploy remain skipped and main Pages still waits for Validate
+- public release README, practical `CONTRIBUTING.md`, privacy-warning Bug/Feature Issue Forms and reusable `docs/RELEASE_CHECKLIST.md`
+- unchanged Character, CreationSession, CreationPreset and Record version 1; unchanged Dexie version/tables/indexes and all three v1 portability/share formats; no CoC rules mechanics change
 
 - durable player-facing terminology contract in `docs/UI_TERMINOLOGY.md`, including the strict separation of 本职技能 and 技能专攻
 - concise reusable desktop/mobile browser acceptance contract in `docs/UX_QA_CHECKLIST.md` plus matching `AGENTS.md` requirements
@@ -308,7 +325,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 17A is complete. Phase 17 remains in progress; Phase 17B is not authorized by this phase.
+Phase 17 is complete. No Phase 18 name, order, scope or implementation is frozen by this closure; later work still requires an explicit task.
 
 ## Known technical risks
 
@@ -317,4 +334,4 @@ Phase 17A is complete. Phase 17 remains in progress; Phase 17B is not authorized
 - future explicitly authorized Setting extension evolution
 - Deprogrammer's former `keeper-approved-single-occupation-skill-replacement` pressure is resolved by an occupation-level singular exact replacement policy with explicit target and target-scoped Keeper approval; there is no active Engine pressure
 - Keeper Criminal's former `choice-pool-with-repeatable-specialization-branch` pressure is resolved by the top-level-only `choice-pool` selector, which separates selected category count from selected SkillRef count
-- browser storage can be cleared; single-Character and full-library local backups now exist, but there is no automatic/cloud backup or encrypted archive
+- browser storage can still be explicitly cleared or lost with the browser profile/device; persistent storage protection is best-effort and single-Character/full-library files remain the user-controlled backup boundary, with no automatic/cloud backup or encrypted archive
