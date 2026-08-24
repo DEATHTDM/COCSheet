@@ -49,6 +49,24 @@ describe("creation wealth provenance", () => {
     });
   });
 
+  it("玩家可见的环境与时代错误使用自然中文，不泄漏 Standard 实现词", () => {
+    const result = validateCreationWealth(makeCharacter({
+      settingId: "gaslight",
+      eraId: undefined,
+      wealth: undefined,
+    }), undefined);
+
+    expect(result.errors).toContainEqual({
+      code: "standard-required",
+      message: "当前建卡环境暂不支持创建期财富规则。",
+    });
+    expect(result.errors).toContainEqual({
+      code: "missing-era",
+      message: "请先选择建卡时代。",
+    });
+    expect(result.errors.map(({ message }) => message).join(" ")).not.toContain("Standard");
+  });
+
   it("有资产时要求说明，无资产时不要求", () => {
     const snapshot = { eraId: "classic-1920s" as const, creditRating: 20 };
     expect(validateCreationWealth(makeCharacter(), snapshot).errors.map(({ code }) => code))
