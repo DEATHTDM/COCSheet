@@ -5,9 +5,12 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { createMemoryHistory, createRouter, type Router } from "vue-router";
 
+import { useCharacterStore } from "../app/stores/characterStore";
 import type { Character } from "../coc7/types/character";
+import { useCreationStore } from "../creation/stores/creationStore";
 import type { CreationSession } from "../creation/types/creationSession";
 import { db } from "../db/database";
 import { characterRepository } from "../db/repositories/characterRepository";
@@ -282,6 +285,24 @@ describe("HomePage investigator library browsing", () => {
     expect((wrapper.findAll("select")[1]?.element as HTMLSelectElement).value).toBe("updated-desc");
     expect(wrapper.findAll(".record-card strong").map((name) => name.text())).toEqual(["较晚", "较早"]);
     expect(wrapper.text()).toContain("共 2 名调查员");
+  });
+
+  it("hides stale cards and library controls while Character or Session data is reloading", async () => {
+    const complete = makeCharacter(firstId, "旧人物");
+    await creationWorkflowRepository.createCharacterWithSession(complete, makeSession(complete, "review"));
+    const { wrapper } = await mountHome();
+    expect(wrapper.get(".record-card").text()).toContain("建卡已完成");
+
+    const characterStore = useCharacterStore();
+    const creationStore = useCreationStore();
+    characterStore.loading = true;
+    creationStore.sessionStepsLoaded = false;
+    await nextTick();
+
+    expect(wrapper.text()).toContain("正在读取本地数据……");
+    expect(wrapper.find(".character-library-controls").exists()).toBe(false);
+    expect(wrapper.find(".record-card").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("仅有人物卡资料");
   });
 
   it("searches the approved fields and changes the rendered cards immediately", async () => {
