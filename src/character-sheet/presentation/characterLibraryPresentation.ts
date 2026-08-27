@@ -40,7 +40,7 @@ function compareStableIdentity(left: CharacterLibraryItem, right: CharacterLibra
 }
 
 function normalizeSearchText(value: string): string {
-  return value.toLocaleLowerCase();
+  return value.toLowerCase();
 }
 
 function getSearchableText(record: CharacterRecord): string {
