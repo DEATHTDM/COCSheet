@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import {
   checkBrowserStoragePersistence,
@@ -7,7 +7,11 @@ import {
   type BrowserStoragePersistenceStatus,
 } from "../app/storage/browserStoragePersistence";
 import { useCharacterStore } from "../app/stores/characterStore";
-import { getCharacterCreationStatus } from "../character-sheet/presentation/finalCharacterSheetPresentation";
+import {
+  presentCharacterLibrary,
+  type CharacterLibrarySortMode,
+  type CharacterLibraryStatusFilter,
+} from "../character-sheet/presentation/characterLibraryPresentation";
 import { isSupportedSetting } from "../coc7/types/setting";
 import { getHistoricalSettingLabel } from "../content/settingCompatibility";
 import { useCreationStore } from "../creation/stores/creationStore";
@@ -25,12 +29,24 @@ const exportingCharacterId = ref("");
 const exportingLibrary = ref(false);
 const exportError = ref("");
 const libraryExportError = ref("");
+const characterQuery = ref("");
+const characterStatusFilter = ref<CharacterLibraryStatusFilter>("all");
+const characterSortMode = ref<CharacterLibrarySortMode>("updated-desc");
 const storagePersistenceStatus = ref<BrowserStoragePersistenceStatus | "checking" | "requesting">("checking");
 const storagePersistenceRequestAttempted = ref(false);
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   dateStyle: "medium",
   timeStyle: "short",
 });
+const characterLibrary = computed(() => presentCharacterLibrary(
+  characterStore.records,
+  creationStore.sessionSteps,
+  {
+    query: characterQuery.value,
+    statusFilter: characterStatusFilter.value,
+    sortMode: characterSortMode.value,
+  },
+));
 
 onMounted(() => {
   void Promise.all([
@@ -53,6 +69,11 @@ async function removeCharacter(id: string, name: string): Promise<void> {
   if (window.confirm(`确定删除调查员“${name}”吗？`)) {
     await characterStore.remove(id);
   }
+}
+
+function clearCharacterFilters(): void {
+  characterQuery.value = "";
+  characterStatusFilter.value = "all";
 }
 
 function selectImportFile(): void {
@@ -171,49 +192,97 @@ async function exportLibrary(): Promise<void> {
       <p v-if="exportError" class="error-message" role="alert">{{ exportError }}</p>
       <p v-if="characterStore.loading || !creationStore.sessionStepsLoaded">正在读取本地数据……</p>
       <p v-else-if="characterStore.records.length === 0" class="empty-state">暂无调查员</p>
-      <ul v-else class="record-list">
-        <li v-for="record in characterStore.records" :key="record.id" class="record-card">
-          <div>
-            <strong>{{ record.name }}</strong>
-            <p>{{ getHistoricalSettingLabel(record.settingId) }}</p>
-            <span v-if="!isSupportedSetting(record.settingId)" class="status-badge">
-              历史建卡环境（当前不支持继续建卡）
-            </span>
-            <span
-              class="status-badge"
-              :class="getCharacterCreationStatus(creationStore.sessionSteps[record.id])"
+      <template v-else>
+        <div class="character-library-controls">
+          <label class="field character-library-search-field">
+            <span>搜索调查员</span>
+            <input
+              v-model="characterQuery"
+              type="search"
+              placeholder="搜索姓名、职业、住所或出身地"
             >
-              {{ getCharacterCreationStatus(creationStore.sessionSteps[record.id]) === 'complete'
-                ? '建卡已完成'
-                : getCharacterCreationStatus(creationStore.sessionSteps[record.id]) === 'incomplete'
-                  ? '建卡尚未完成'
-                  : '仅有人物卡资料' }}
-            </span>
-            <small>最后修改：{{ dateFormatter.format(record.updatedAt) }}</small>
-          </div>
-          <div class="actions">
-            <RouterLink class="button primary" :to="`/characters/${record.id}/sheet`">打开人物卡</RouterLink>
-            <RouterLink
-              v-if="isSupportedSetting(record.settingId) && getCharacterCreationStatus(creationStore.sessionSteps[record.id]) !== 'missing-session'"
-              class="button"
-              :to="`/characters/${record.id}`"
-            >
-              {{ getCharacterCreationStatus(creationStore.sessionSteps[record.id]) === 'complete'
-                ? '修改建卡'
-                : '继续建卡' }}
-            </RouterLink>
-            <button
-              class="button"
-              type="button"
-              :disabled="exportingCharacterId === record.id"
-              @click="exportCharacter(record.id)"
-            >{{ exportingCharacterId === record.id ? '正在导出……' : '导出' }}</button>
-            <button class="button danger" type="button" @click="removeCharacter(record.id, record.name)">
-              删除
-            </button>
-          </div>
-        </li>
-      </ul>
+          </label>
+          <label class="field">
+            <span>建卡状态</span>
+            <select v-model="characterStatusFilter">
+              <option value="all">全部</option>
+              <option value="complete">建卡已完成</option>
+              <option value="incomplete">建卡尚未完成</option>
+              <option value="missing-session">仅有人物卡资料</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>排序</span>
+            <select v-model="characterSortMode">
+              <option value="updated-desc">最近修改</option>
+              <option value="updated-asc">最早修改</option>
+              <option value="name">按姓名</option>
+            </select>
+          </label>
+        </div>
+        <div class="character-library-summary">
+          <p class="character-library-count">
+            {{ characterLibrary.hasActiveFilters
+              ? `显示 ${characterLibrary.visibleCount} / ${characterLibrary.totalCount} 名调查员`
+              : `共 ${characterLibrary.totalCount} 名调查员` }}
+          </p>
+          <button
+            v-if="characterLibrary.hasActiveFilters && characterLibrary.visibleCount > 0"
+            class="button"
+            type="button"
+            @click="clearCharacterFilters"
+          >清除搜索与筛选</button>
+        </div>
+        <div v-if="characterLibrary.visibleCount === 0" class="empty-state filtered-empty-state">
+          <p>没有符合当前条件的调查员。</p>
+          <button class="button" type="button" @click="clearCharacterFilters">
+            清除搜索与筛选
+          </button>
+        </div>
+        <ul v-else class="record-list">
+          <li v-for="item in characterLibrary.items" :key="item.record.id" class="record-card">
+            <div>
+              <strong>{{ item.record.name }}</strong>
+              <p>{{ getHistoricalSettingLabel(item.record.settingId) }}</p>
+              <span v-if="!isSupportedSetting(item.record.settingId)" class="status-badge">
+                历史建卡环境（当前不支持继续建卡）
+              </span>
+              <span
+                class="status-badge"
+                :class="item.creationStatus"
+              >
+                {{ item.creationStatus === 'complete'
+                  ? '建卡已完成'
+                  : item.creationStatus === 'incomplete'
+                    ? '建卡尚未完成'
+                    : '仅有人物卡资料' }}
+              </span>
+              <small>最后修改：{{ dateFormatter.format(item.record.updatedAt) }}</small>
+            </div>
+            <div class="actions">
+              <RouterLink class="button primary" :to="`/characters/${item.record.id}/sheet`">打开人物卡</RouterLink>
+              <RouterLink
+                v-if="isSupportedSetting(item.record.settingId) && item.creationStatus !== 'missing-session'"
+                class="button"
+                :to="`/characters/${item.record.id}`"
+              >
+                {{ item.creationStatus === 'complete'
+                  ? '修改建卡'
+                  : '继续建卡' }}
+              </RouterLink>
+              <button
+                class="button"
+                type="button"
+                :disabled="exportingCharacterId === item.record.id"
+                @click="exportCharacter(item.record.id)"
+              >{{ exportingCharacterId === item.record.id ? '正在导出……' : '导出' }}</button>
+              <button class="button danger" type="button" @click="removeCharacter(item.record.id, item.record.name)">
+                删除
+              </button>
+            </div>
+          </li>
+        </ul>
+      </template>
     </section>
 
     <section class="panel page-stack library-backup-panel">

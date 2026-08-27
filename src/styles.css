@@ -1427,6 +1427,40 @@ textarea:disabled {
   margin-bottom: 1rem;
 }
 
+.character-library-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 2fr) repeat(2, minmax(160px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 0.75rem;
+}
+
+.character-library-controls .field {
+  min-width: 0;
+}
+
+.character-library-controls input,
+.character-library-controls select {
+  box-sizing: border-box;
+}
+
+.character-library-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.character-library-count {
+  margin: 0;
+  color: #695f52;
+}
+
+.filtered-empty-state p {
+  margin-top: 0;
+}
+
 .record-card {
   display: flex;
   align-items: center;
@@ -2585,6 +2619,15 @@ textarea:disabled {
 
   .record-card .actions {
     justify-content: flex-start;
+  }
+
+  .character-library-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-library-summary {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .stepper {

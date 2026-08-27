@@ -16,6 +16,17 @@ test("390×844 Home, Create, Editor, and Final Sheet smoke", async ({ page }) =>
 
   const characterId = await createIncompleteCharacterThroughAttributes(page, "手机端测试调查员");
   await expectNoHorizontalOverflow(page);
+  await page.getByRole("link", { name: "COCSheet" }).click();
+  await expect(page.getByLabel("搜索调查员")).toBeVisible();
+  await page.getByLabel("搜索调查员").fill("这是一段很长的手机端搜索文字，用来检查输入框不会撑破页面宽度");
+  await page.getByLabel("建卡状态").selectOption({ label: "仅有人物卡资料" });
+  await page.getByLabel("排序").selectOption({ label: "最早修改" });
+  await expect(page.getByText("没有符合当前条件的调查员。")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await page.getByRole("button", { name: "清除搜索与筛选" }).click();
+  await expect(page.getByText("手机端测试调查员", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("排序")).toHaveValue("updated-asc");
+  await expectNoHorizontalOverflow(page);
   await page.goto(`/#/characters/${characterId}/sheet`);
   await expect(page.getByRole("heading", { name: "手机端测试调查员" })).toBeVisible();
   await expectNoHorizontalOverflow(page);

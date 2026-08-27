@@ -10,6 +10,10 @@ const libraryFixture = fileURLToPath(new URL(
   "../tests/fixtures/v1/cocsheet-library-v1.json",
   import.meta.url,
 ));
+const characterFixture = fileURLToPath(new URL(
+  "../tests/fixtures/v1/cocsheet-character-v1.json",
+  import.meta.url,
+));
 
 test("Home → deterministic creation → incomplete Final Sheet → print", async ({ page }) => {
   const quality = monitorPageQuality(page);
@@ -72,6 +76,51 @@ test("Preset persistence/share, fixed library import, and complete backup downlo
   };
   expect(backup.format).toBe("cocsheet-library");
   expect(backup.formatVersion).toBe(1);
+  await expectCleanPage(page, quality);
+});
+
+test("Investigator library search, status filter, sort, and clear", async ({ page }) => {
+  const quality = monitorPageQuality(page);
+  await page.goto("/#/");
+  await createIncompleteCharacterThroughAttributes(page, "Playwright 资料库记者");
+  await page.getByRole("link", { name: "COCSheet" }).click();
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator('input[accept^=".cocsheet-backup.json"]').setInputFiles(libraryFixture);
+  await expect(page.getByText("历史兼容测试调查员")).toBeVisible();
+  await page.locator('input[accept^=".cocsheet.json"]').setInputFiles(characterFixture);
+  await expect(page.getByText("兼容性测试调查员", { exact: true })).toBeVisible();
+  await expect(page.getByText("共 3 名调查员")).toBeVisible();
+
+  const search = page.getByLabel("搜索调查员");
+  await search.fill("兼容性测试");
+  await expect(page.locator(".record-card")).toHaveCount(1);
+  await expect(page.getByText("兼容性测试调查员", { exact: true })).toBeVisible();
+  await expect(page.getByText("Playwright 资料库记者", { exact: true })).toBeHidden();
+  await expect(page.getByText("显示 1 / 3 名调查员")).toBeVisible();
+
+  await search.fill("完全不存在的调查员");
+  await expect(page.getByText("没有符合当前条件的调查员。")).toBeVisible();
+  await page.getByRole("button", { name: "清除搜索与筛选" }).click();
+  await expect(page.locator(".record-card")).toHaveCount(3);
+
+  await page.getByLabel("建卡状态").selectOption({ label: "仅有人物卡资料" });
+  await expect(page.locator(".record-card")).toHaveCount(1);
+  await expect(page.getByText("兼容性测试调查员", { exact: true })).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator(".record-card").getByRole("button", { name: "删除" }).click();
+  await expect(page.getByText("没有符合当前条件的调查员。")).toBeVisible();
+  await expect(page.getByLabel("建卡状态")).toHaveValue("missing-session");
+  await page.getByRole("button", { name: "清除搜索与筛选" }).click();
+  await expect(page.locator(".record-card")).toHaveCount(2);
+
+  await page.getByLabel("排序").selectOption({ label: "按姓名" });
+  const sortedNames = await page.locator(".record-card strong").allTextContents();
+  const expectedNames = [...sortedNames].sort(
+    new Intl.Collator("zh-CN", { usage: "sort", sensitivity: "base", numeric: true }).compare,
+  );
+  expect(sortedNames).toEqual(expectedNames);
+  await expectNoHorizontalOverflow(page);
   await expectCleanPage(page, quality);
 });
 
