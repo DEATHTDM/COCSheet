@@ -4,15 +4,27 @@ Last updated: 2026-08-27
 
 ## Current phase
 
-Phase 18 — Investigator Library Search, Filter & Sort (Completed)
+Phase 19A — Fan Material & Licensing Compliance (Completed)
 
-Home“我的调查员”现在提供轻量即时搜索、权威建卡状态筛选、稳定排序、可见数量与独立过滤空状态。全部能力只基于已加载的 Character records 和 Session step map 做内存派生；historical Character、导入、导出、删除和人物卡入口继续保留，Zero Server、domain、rules、schema 与 portability/share 格式保持不变。
+公开 repository 与网站现在明确分开原创软件代码的 GPL-3.0-only 范围，以及 Call of Cthulhu／Chaosium 第三方商标、fan/game content、publication-derived data 与 source references 的独立权利边界。新增静态 `/legal`、官方 required notice、root NOTICE、内容审计与 release guard；网站仍免费、非商业、非官方、Zero Server，版本保持 0.1.0。Phase 19A 不构成法律意见，也不表示 v1.0 已获确认可发布；公开 source distribution 与 bundled structured game data 仍需独立许可复审。
 
 ## Git baseline
 
-Phase 18 was created from exact `main@67bd38ec50cd66dfe1c92b24d2d0d797f5c44888`, the merged Phase 17B closure baseline.
+Phase 19A was created from exact `main@a292647e9df9f776dd54735b3867dcfb306fd4e0`, the merged Phase 18 closure baseline.
 
 ## Implemented
+
+- official Chaosium Fan Material Policy, Fan-Use and Licensing Q&A, Trademarks and Copyrights, and BRP ORC information rechecked on 2026-08-27, using only Chaosium official sources
+- exact current required Fan Material notice kept in one static application source and rendered in plainly legible English on the independent `/legal` route, with no runtime policy fetch, API, analytics or telemetry
+- Legal page and global footer disclosure for an unofficial fan project, free/no-charge/no-paid-feature operation, trademark ownership, original-code GPL scope, excluded third-party/fan content, NOTICE, repository and official-policy links
+- root `NOTICE.md`, README, CONTRIBUTING, AGENTS, Issue Forms, release checklist, product/context/architecture docs and content audit aligned on the separate code-license versus fan-content boundary
+- conservative redistribution guidance: GPL rights in original code do not promise commercial rights in bundled Chaosium material; commercial users must obtain applicable permission or remove/replace the affected bundled material
+- complete tracked-tree audit covering `src/content/standard/**`, `src/coc7/rules/**`, `src/coc7/types/**`, tests, fixtures, audit scripts/data, docs, UI, assets and static build inputs; no long book prose or scenario text found, while structured occupation audit tables remain called out for independent review
+- current tree and full-history filename/blob audit finding no PDF, scan, screenshot, official artwork/logo/sign, map, font, archive or other binary candidate, with no current deletion or history rewrite required
+- release compliance static guard for package version 0.1.0, `private: true`, GPL metadata, required notice clauses and `/legal` route, included in CI validation
+- route/page/footer/NotFound-safe unit coverage plus desktop/mobile production-preview E2E for required notice visibility, safe external links, return Home, console/page errors and document overflow
+- unchanged Character, CreationSession, CreationPreset and Record schemas; unchanged Dexie version/tables/indexes, v1 portability/share formats, dependencies and CoC rules mechanics
+- unresolved release review remains explicit: Fan Policy treatment of downloadable public source plus bundled CoC data, the scope of structured catalogs/audit CSV, and GPL/fan-policy distribution compatibility require independent legal/licensor review before v1.0 is described as publishable
 
 - pure `characterLibraryPresentation` derivation from `CharacterStore.records` plus the existing CreationSession step map, with one creation-status calculation per visible candidate and no Repository/Dexie/N+1 search path
 - trimmed, immediate substring search across Character name, occupation Chinese/English display-name snapshot, residence and birthplace only; English matching is case-insensitive and internal UUIDs, machine IDs, source/provenance and full domain text are excluded
@@ -334,9 +346,13 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 18 is complete. No Phase 19 name, order, scope or implementation is frozen by this closure; later work still requires an explicit task.
+Phase 19A is complete as a documentation/product boundary remediation. Phase 19B remains planned and must not start until the unresolved content-licensing questions receive independent review or explicit release-owner resolution.
 
 ## Known technical risks
+
+- Chaosium Fan Material Policy may change; every release must recheck the official policy and required notice
+- public source distribution plus bundled CoC-specific structured data has not been confirmed by this technical audit as covered by the web-based generator allowance
+- the precise GPL aggregation/distribution treatment of original code beside non-commercial fan material requires independent legal review; NOTICE is disclosure, not a compatibility opinion
 
 - IndexedDB and domain Schema migration
 - future Portable Package and Full Library Backup migrations or advanced conflict-resolution compatibility

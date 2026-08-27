@@ -6,6 +6,7 @@ import FinalCharacterSheetPage from "../../pages/FinalCharacterSheetPage.vue";
 import HomePage from "../../pages/HomePage.vue";
 import KPPresetEditorPage from "../../pages/KPPresetEditorPage.vue";
 import KPPresetsPage from "../../pages/KPPresetsPage.vue";
+import LegalPage from "../../pages/LegalPage.vue";
 import NotFoundPage from "../../pages/NotFoundPage.vue";
 import PrintableCharacterSheetPage from "../../pages/PrintableCharacterSheetPage.vue";
 
@@ -19,6 +20,7 @@ export const router = createRouter({
     { path: "/characters/:id/print", name: "character-print", component: PrintableCharacterSheetPage },
     { path: "/kp/presets", name: "presets", component: KPPresetsPage },
     { path: "/kp/presets/:id", name: "preset", component: KPPresetEditorPage },
+    { path: "/legal", name: "legal", component: LegalPage },
     { path: "/:pathMatch(.*)*", name: "not-found", component: NotFoundPage },
   ],
 });

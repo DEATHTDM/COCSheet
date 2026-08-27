@@ -49,8 +49,9 @@ function returnHome(): void {
     </main>
 
     <footer class="site-footer">
-      <span>COCSheet v{{ buildMetadata.version }} · 构建 {{ buildMetadata.shortBuildSha }}</span>
+      <span>COCSheet v{{ buildMetadata.version }} · 构建 {{ buildMetadata.shortBuildSha }} · 非官方粉丝项目</span>
       <span class="footer-links">
+        <RouterLink to="/legal">法律与许可</RouterLink>
         <a :href="repositoryUrl" target="_blank" rel="noopener noreferrer">源代码</a>
         <a :href="issueChooserUrl" target="_blank" rel="noopener noreferrer">反馈问题</a>
       </span>

@@ -52,6 +52,14 @@ Home 的调查员搜索、建卡状态筛选与排序只基于已经加载到 `C
 
 公开发布 validation 必须在 production build + Vite preview 上运行 Playwright Chromium，覆盖精简 desktop/mobile 真实路径，并把 console.error、pageerror 与 document-level horizontal overflow 作为失败条件。Pull Request 使用 exact head SHA，main Pages build 使用 exact `github.sha`，同一个 build metadata source 同时服务普通 UI 与诊断。
 
+## Licensing
+
+### LC001 — Open-source code does not relicense third-party game content
+
+作者拥有权利的原创软件代码在适用范围内使用 GPL-3.0-only；source code license 不等于 Chaosium／Call of Cthulhu 商标、game content、rule data、publication-derived data 或 source references 的许可。这些第三方／fan material 不因与 GPL code 同仓而被标成 GPL 或 ORC open content，source reference 也不是授权证明。
+
+当前公开网站保持免费、非商业与非官方，不承诺 bundled fan material 可用于商业部署。希望商业使用或重新分发的人必须自行取得适用的 Chaosium 内容许可，或删除、替换没有相应授权的 bundled material。正式 release/tag 前必须重新核对 Chaosium 当前 Fan Material Policy、required notice 与产品实际内容；政策快照和本地 notice 不替代独立法律／权利人复审。
+
 ## Guided creation
 
 ### G001 — Creation Guide is presentation-only

@@ -95,6 +95,39 @@ main {
   gap: 0.75rem;
 }
 
+.legal-page {
+  overflow-wrap: anywhere;
+}
+
+.legal-kicker {
+  margin-bottom: 0.35rem;
+  color: #695f52;
+  font-weight: 800;
+}
+
+.legal-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.legal-section > * {
+  margin: 0;
+}
+
+.fan-material-notice {
+  padding: 1rem;
+  border-left: 4px solid #315649;
+  background: #f2f6f0;
+  line-height: 1.7;
+}
+
+.legal-links {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 .data-safety-note {
   padding-bottom: 1.25rem;
   border-bottom: 1px solid #dfd7c8;

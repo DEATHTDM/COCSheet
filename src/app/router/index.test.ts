@@ -21,4 +21,11 @@ describe("application router", () => {
     expect(resolved.matched).toHaveLength(1);
     expect(resolved.href).toContain("#/this-route-does-not-exist");
   });
+
+  it("resolves the legal route before the Not Found catch-all", () => {
+    const resolved = router.resolve("/legal");
+    expect(resolved.name).toBe("legal");
+    expect(resolved.matched).toHaveLength(1);
+    expect(resolved.href).toContain("#/legal");
+  });
 });

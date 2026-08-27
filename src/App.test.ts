@@ -20,6 +20,7 @@ describe("App shell", () => {
         { path: "/", name: "home", component: { template: "<p>首页内容</p>" } },
         { path: "/create", component: { template: "<p>创建</p>" } },
         { path: "/kp/presets", component: { template: "<p>预设</p>" } },
+        { path: "/legal", component: { template: "<p>法律与许可</p>" } },
       ],
     });
     await router.push("/");
@@ -32,5 +33,7 @@ describe("App shell", () => {
     );
     expect(wrapper.get("footer").text()).toContain("源代码");
     expect(wrapper.get("footer").text()).toContain("反馈问题");
+    expect(wrapper.get("footer").text()).toContain("非官方粉丝项目");
+    expect(wrapper.get('footer a[href="/legal"]').text()).toBe("法律与许可");
   });
 });
