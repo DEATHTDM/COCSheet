@@ -98,6 +98,22 @@ src/pages            当前极简页面
 
 玩家术语属于 presentation concern：玩家可见中文遵守 `docs/UI_TERMINOLOGY.md`，但不得为了显示文案反向重命名 domain／rules identifiers、稳定 ID、schema 字段或持久化 identity。
 
+## Investigator library browsing
+
+Home 的调查员资料库浏览保持纯 presentation boundary：
+
+```text
+CharacterStore.records + CreationStore.sessionSteps
+                    ↓
+pure character-library presentation
+                    ↓
+Home visible items, counts, and empty state
+```
+
+搜索只读取已经加载的 `CharacterRecord.data` 中姓名、职业中英文显示名快照、住所与出身地；状态筛选复用既有 `getCharacterCreationStatus(...)`，排序只操作新建的派生 item 数组并以 Record ID 作稳定 tie-break。query、状态筛选与排序只属于当前 Home 页面实例，不修改 `CharacterStore.records`，不进入 Character、CreationSession、Record、Web Storage、URL 或 portability format。
+
+这条链路没有 Repository search、Dexie query/index 或逐人物 `getById()`，因此不会产生 N+1 read。导入仍由既有 Store refresh boundary 更新已加载 records/session steps，当前浏览条件随后自然重新派生；historical unsupported Character 与 Setting compatibility presentation 保持正交。
+
 ## Character and CreationSession
 
 `Character` 是最终调查员状态的数据源。当前 Schema 包含 `version`、`id`、`name`、`settingId`、可选的权威建卡时代 `eraId`，可选人物信息 `sex`、`residence`、`birthplace`，可选 `backstory`，完成属性阶段后写入的可选 `age`、`characteristics` 与 `luck`，以及整体可选的 `resources`、`wealth`、`possessions`、`weapons`、`skills` 和轻量 `occupation` 身份快照。背景条目使用 UUID 稳定 identity 与闭合类别；Key Connection 引用 entry ID。创建期 3～6 条和 Key Connection 完成条件属于纯 creation validation，不是 Character schema 的长期上限。`wealth` 只保存 integer minor-unit current cash/assets totals 与 UUID-backed 资产构成说明；spending level 不持久化。资产条目可选估值且不要求合计等于 assets total。`possessions` 保存 Store-owned UUID、非空名称与可选备注的普通随身物品自由文本，名称可以重复；它不属于 `wealth` 或 `CreationSession`，不因财富 provenance stale 而失效。`weapons` 保存 Store-owned 单件 UUID、WeaponDefinition stable ID 与可选人物级备注；同 definition 可重复，静态 mechanics 始终从人物自身 Setting 的 WeaponRegistry 解析。orphan definition 不阻断 Character 读取，也不触发补写。`assetEntries`、`possessions` 与 `weapons` 三者不自动同步或去重。最终职业只保存 catalog/custom identity、建卡时显示名与少量来源身份，不复制职业点公式、信用范围或技能需求。`resources` 一旦存在就完整保存 current HP、current MP 与 current SAN；Maximum HP、Initial MP、Initial SAN、Maximum SAN、MOV、Damage Bonus、Build 与 Half / Fifth 均由纯函数实时计算，不进入持久化字段。Maximum SAN 由当前 Cthulhu Mythos 技能值推导；稀疏技能状态中没有该项时按基础值 0 处理。

@@ -1,18 +1,27 @@
 # Current State
 
-Last updated: 2026-08-24
+Last updated: 2026-08-27
 
 ## Current phase
 
-Phase 17B — Public Release Safety & Supportability (Completed)
+Phase 18 — Investigator Library Search, Filter & Sort (Completed)
 
-Phase 17 — Public Release Hardening 已整体完成：公开用户现在能看到稳定的本地数据风险和备份说明，运行异常与启动失败具备本地恢复入口，版本／构建诊断经过隐私脱敏，固定 v1 fixtures 与 Chromium production-preview E2E 保护长期兼容和发布路径，公开 README／贡献说明／Issue Forms 已建立。Zero Server、domain、rules、schema 与 portability/share 格式保持不变。
+Home“我的调查员”现在提供轻量即时搜索、权威建卡状态筛选、稳定排序、可见数量与独立过滤空状态。全部能力只基于已加载的 Character records 和 Session step map 做内存派生；historical Character、导入、导出、删除和人物卡入口继续保留，Zero Server、domain、rules、schema 与 portability/share 格式保持不变。
 
 ## Git baseline
 
-Phase 17B was created from exact `main@4e5fbdad4793f49a318df3495a35d3521b9ac5ae`, the merged Phase 17A closure baseline.
+Phase 18 was created from exact `main@67bd38ec50cd66dfe1c92b24d2d0d797f5c44888`, the merged Phase 17B closure baseline.
 
 ## Implemented
+
+- pure `characterLibraryPresentation` derivation from `CharacterStore.records` plus the existing CreationSession step map, with one creation-status calculation per visible candidate and no Repository/Dexie/N+1 search path
+- trimmed, immediate substring search across Character name, occupation Chinese/English display-name snapshot, residence and birthplace only; English matching is case-insensitive and internal UUIDs, machine IDs, source/provenance and full domain text are excluded
+- orthogonal all/complete/incomplete/missing-session filters reusing `getCharacterCreationStatus(...)`, while historical unsupported Setting compatibility remains independent and all existing safe card actions are preserved
+- default updatedAt descending, explicit ascending and zh-CN name sorting, with deterministic Record-ID tie-breaks and no mutation of `CharacterStore.records`
+- total versus filtered visible counts, true-empty versus filtered-empty states, and a clear action that resets only query/status while preserving sort and every unrelated preference
+- deletion and single/full-library imports recomputing the visible list from existing reactive Store refresh behavior without resetting query, status or sort; no portability architecture change was required
+- responsive desktop/mobile controls with production-preview Chromium coverage for real search, filtering, sorting, clearing, console/page errors and document-level overflow
+- unchanged Character, CreationSession, CreationPreset and Record version 1; unchanged Dexie version/tables/indexes and all three v1 portability/share formats; unchanged dependencies and CoC rules mechanics
 
 - compact, permanently visible Home “本地数据安全” guidance covering local-only storage, no automatic upload/sync, site-data clearing, private browsing, browser/profile/device loss and regular full-backup practice without a blocking modal
 - isolated browser Storage Persistence adapter that checks `persisted()` on Home, calls `persist()` only after the explicit “请求持久保存” action, and keeps persisted/not-persisted/unsupported/rejected states nonfatal without Dexie or domain access
@@ -325,7 +334,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 17 is complete. No Phase 18 name, order, scope or implementation is frozen by this closure; later work still requires an explicit task.
+Phase 18 is complete. No Phase 19 name, order, scope or implementation is frozen by this closure; later work still requires an explicit task.
 
 ## Known technical risks
 

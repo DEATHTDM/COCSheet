@@ -34,8 +34,12 @@ afterEach(async () => {
   await db.delete();
 });
 
-function makeCharacter(id: string, name: string): Character {
-  return { version: 1, id, name, settingId: "standard" };
+function makeCharacter(
+  id: string,
+  name: string,
+  data: Partial<Omit<Character, "version" | "id" | "name" | "settingId">> = {},
+): Character {
+  return { version: 1, id, name, settingId: "standard", ...data };
 }
 
 function makeSession(character: Character, currentStep: CreationSession["currentStep"]): CreationSession {
@@ -253,5 +257,164 @@ describe("HomePage portable Character integration", () => {
         Reflect.deleteProperty(navigator, "storage");
       }
     }
+  });
+});
+
+describe("HomePage investigator library browsing", () => {
+  const firstId = "c1000000-0000-4000-8000-000000000001";
+  const secondId = "c2000000-0000-4000-8000-000000000002";
+  const thirdId = "c3000000-0000-4000-8000-000000000003";
+
+  it("renders search, status, and sort controls with recent modification as the default", async () => {
+    await characterRepository.create(makeCharacter(firstId, "较早"));
+    await characterRepository.create(makeCharacter(secondId, "较晚"));
+    await db.characters.update(firstId, { updatedAt: 1 });
+    await db.characters.update(secondId, { updatedAt: 2 });
+
+    const { wrapper } = await mountHome();
+
+    expect(wrapper.find('input[placeholder="搜索姓名、职业、住所或出身地"]').exists()).toBe(true);
+    expect(wrapper.findAll("label").map((label) => label.text())).toEqual([
+      "搜索调查员",
+      "建卡状态全部建卡已完成建卡尚未完成仅有人物卡资料",
+      "排序最近修改最早修改按姓名",
+    ]);
+    expect((wrapper.findAll("select")[1]?.element as HTMLSelectElement).value).toBe("updated-desc");
+    expect(wrapper.findAll(".record-card strong").map((name) => name.text())).toEqual(["较晚", "较早"]);
+    expect(wrapper.text()).toContain("共 2 名调查员");
+  });
+
+  it("searches the approved fields and changes the rendered cards immediately", async () => {
+    await characterRepository.create(makeCharacter(firstId, "林若雪", {
+      residence: "阿卡姆",
+      occupation: {
+        kind: "catalog",
+        id: "journalist",
+        displayNameSnapshot: { zh: "记者", en: "Journalist" },
+      },
+    }));
+    await characterRepository.create(makeCharacter(secondId, "周明", { birthplace: "波士顿" }));
+    const { wrapper } = await mountHome();
+
+    await wrapper.get('input[type="search"]').setValue("JOURNALIST");
+
+    expect(wrapper.findAll(".record-card strong").map((name) => name.text())).toEqual(["林若雪"]);
+    expect(wrapper.text()).toContain("显示 1 / 2 名调查员");
+  });
+
+  it("filters by authoritative creation status", async () => {
+    const complete = makeCharacter(firstId, "完成调查员");
+    const incomplete = makeCharacter(secondId, "未完成调查员");
+    const missingSession = makeCharacter(thirdId, "仅人物卡");
+    await creationWorkflowRepository.createCharacterWithSession(complete, makeSession(complete, "review"));
+    await creationWorkflowRepository.createCharacterWithSession(
+      incomplete,
+      makeSession(incomplete, "occupation"),
+    );
+    await characterRepository.create(missingSession);
+    const { wrapper } = await mountHome();
+
+    await wrapper.findAll("select")[0]?.setValue("missing-session");
+
+    expect(wrapper.findAll(".record-card strong").map((name) => name.text())).toEqual(["仅人物卡"]);
+    expect(wrapper.get(".record-card").text()).toContain("仅有人物卡资料");
+    expect(wrapper.text()).toContain("显示 1 / 3 名调查员");
+  });
+
+  it("sorts cards by name without clearing other controls", async () => {
+    await characterRepository.create(makeCharacter(firstId, "周明调查员"));
+    await characterRepository.create(makeCharacter(secondId, "林若雪调查员"));
+    await characterRepository.create(makeCharacter(thirdId, "陈安调查员"));
+    const { wrapper } = await mountHome();
+    const search = wrapper.get('input[type="search"]');
+    const status = wrapper.findAll("select")[0];
+    const sort = wrapper.findAll("select")[1];
+    if (!status || !sort) throw new Error("找不到资料库选择控件");
+
+    await search.setValue("调查员");
+    await status.setValue("missing-session");
+    await sort.setValue("name");
+
+    const expected = ["周明调查员", "林若雪调查员", "陈安调查员"]
+      .sort(new Intl.Collator("zh-CN", { usage: "sort", sensitivity: "base", numeric: true }).compare);
+    expect(wrapper.findAll(".record-card strong").map((name) => name.text())).toEqual(expected);
+    expect((search.element as HTMLInputElement).value).toBe("调查员");
+    expect((status.element as HTMLSelectElement).value).toBe("missing-session");
+  });
+
+  it("keeps the true-empty state distinct from filtered-empty state", async () => {
+    const { wrapper } = await mountHome();
+    expect(wrapper.get(".empty-state").text()).toBe("暂无调查员");
+    expect(wrapper.find(".character-library-controls").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("没有符合当前条件的调查员");
+  });
+
+  it("shows filtered-empty state and clears query plus status while preserving sort", async () => {
+    const complete = makeCharacter(firstId, "林若雪");
+    await creationWorkflowRepository.createCharacterWithSession(complete, makeSession(complete, "review"));
+    const { wrapper } = await mountHome();
+    const search = wrapper.get('input[type="search"]');
+    const status = wrapper.findAll("select")[0];
+    const sort = wrapper.findAll("select")[1];
+    if (!status || !sort) throw new Error("找不到资料库选择控件");
+    await search.setValue("不存在");
+    await status.setValue("incomplete");
+    await sort.setValue("name");
+
+    expect(wrapper.text()).toContain("没有符合当前条件的调查员。");
+    expect(wrapper.text()).toContain("显示 0 / 1 名调查员");
+    await wrapper.get(".filtered-empty-state button").trigger("click");
+
+    expect((search.element as HTMLInputElement).value).toBe("");
+    expect((status.element as HTMLSelectElement).value).toBe("all");
+    expect((sort.element as HTMLSelectElement).value).toBe("name");
+    expect(wrapper.get(".record-card strong").text()).toBe("林若雪");
+    expect(wrapper.text()).toContain("共 1 名调查员");
+  });
+
+  it("updates the derived filtered result after deletion without resetting controls", async () => {
+    const complete = makeCharacter(firstId, "待删除");
+    const incomplete = makeCharacter(secondId, "仍被筛掉");
+    await creationWorkflowRepository.createCharacterWithSession(complete, makeSession(complete, "review"));
+    await creationWorkflowRepository.createCharacterWithSession(
+      incomplete,
+      makeSession(incomplete, "skills"),
+    );
+    const { wrapper } = await mountHome();
+    const status = wrapper.findAll("select")[0];
+    if (!status) throw new Error("找不到状态筛选控件");
+    await status.setValue("complete");
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    await wrapper.get(".record-card button.danger").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("没有符合当前条件的调查员。"));
+
+    expect((status.element as HTMLSelectElement).value).toBe("complete");
+    expect(wrapper.text()).toContain("显示 0 / 1 名调查员");
+    expect(await characterRepository.getById(firstId)).toBeUndefined();
+  });
+
+  it("preserves active controls across single-Character import and derives the imported result", async () => {
+    await characterRepository.create(makeCharacter(firstId, "现有人物"));
+    const imported = makeCharacter(secondId, "导入目标");
+    const text = serializePortableCharacterPackage(
+      createPortableCharacterPackage(imported, undefined, 1),
+    );
+    const { wrapper } = await mountHome();
+    const search = wrapper.get('input[type="search"]');
+    const status = wrapper.findAll("select")[0];
+    const sort = wrapper.findAll("select")[1];
+    if (!status || !sort) throw new Error("找不到资料库选择控件");
+    await search.setValue("导入");
+    await status.setValue("missing-session");
+    await sort.setValue("name");
+
+    await selectFile(wrapper, { text: vi.fn().mockResolvedValue(text) });
+
+    await vi.waitFor(() => expect(wrapper.findAll(".record-card strong").map((name) => name.text()))
+      .toEqual(["导入目标"]));
+    expect((search.element as HTMLInputElement).value).toBe("导入");
+    expect((status.element as HTMLSelectElement).value).toBe("missing-session");
+    expect((sort.element as HTMLSelectElement).value).toBe("name");
   });
 });

@@ -26,6 +26,14 @@ COCSheet 是建卡工具与最终电子人物卡，不是只有一次性的 Char
 
 Printable presentation 只做纸面分组与格式化，并复用现有 Final Sheet derived / Maximum SAN / sparse skill resolver、same-Setting SkillRegistry、same-Setting WeaponRegistry 与 orphan-safe presentation。任何 non-Standard Setting 都不回退 Standard 规则或目录。当前“打印 / 保存 PDF”以 `window.print()` 进入浏览器自己的打印／Save as PDF 对话框，不引入第二套 PDF binary renderer、Repository、Store、schema、缓存或导出 metadata；未来若需要直接 PDF renderer，应另行设计而不破坏这条长期数据边界。
 
+## Investigator library
+
+### L001 — Investigator library browsing is presentation-only
+
+Home 的调查员搜索、建卡状态筛选与排序只基于已经加载到 `CharacterStore.records` 的完整 `CharacterRecord.data` 以及既有 CreationSession step map 做内存派生。它们是当前页面实例内的 presentation state，不进入 Character、CreationSession、CreationPreset、Record、Dexie、Web Storage、URL 或任何 portability/share format，也不改变 Store 中的 domain order。
+
+搜索只覆盖姓名、职业中英文显示名快照、住所与出身地；不把 domain object 序列化为全文索引，也不搜索 UUID、machine ID、来源、规则内容或完整人物正文。建卡状态继续只由既有 `getCharacterCreationStatus(...)` 判定；historical unsupported Setting 是独立兼容性维度，不因搜索、筛选或排序被排除、转换或回退 Standard。资料库浏览不建立收藏、标签、文件夹、归档、自定义顺序或其他持久组织系统。
+
 ## Public release safety
 
 ### R001 — Local browser storage must be explicit

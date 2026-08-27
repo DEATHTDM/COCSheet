@@ -195,4 +195,34 @@ describe("HomePage full library backup integration", () => {
     expect(await db.characters.count()).toBe(1);
     expect(await db.kpPresets.count()).toBe(0);
   });
+
+  it("完整资料库导入刷新列表但不重置当前搜索、筛选与排序", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    await characterRepository.create(makeCharacter("Existing"));
+    const imported = makeCharacter("Restored target");
+    const wrapper = await mountHome();
+    const search = wrapper.get('input[type="search"]');
+    const status = wrapper.findAll("select")[0];
+    const sort = wrapper.findAll("select")[1];
+    if (!status || !sort) throw new Error("找不到资料库选择控件");
+    await search.setValue("restored");
+    await status.setValue("complete");
+    await sort.setValue("name");
+
+    await selectLibraryFile(wrapper, {
+      text: vi.fn().mockResolvedValue(serializePortableLibraryPackage(
+        createPortableLibraryPackage(
+          [{ character: imported, creationSession: makeSession(imported) }],
+          [],
+          1,
+        ),
+      )),
+    });
+
+    await vi.waitFor(() => expect(wrapper.findAll(".record-card strong").map((name) => name.text()))
+      .toEqual(["Restored target"]));
+    expect((search.element as HTMLInputElement).value).toBe("restored");
+    expect((status.element as HTMLSelectElement).value).toBe("complete");
+    expect((sort.element as HTMLSelectElement).value).toBe("name");
+  });
 });

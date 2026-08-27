@@ -489,6 +489,17 @@ Status: Completed
 - public README, contribution guidance, privacy-aware Issue Forms and reusable release checklist
 - unchanged domain/Record/Dexie versions, tables/indexes, v1 portability/share formats, CoC rules mechanics and Zero Server architecture
 
+## Phase 18 — Investigator Library Search, Filter & Sort
+
+Status: Completed
+
+- lightweight in-memory search across name, occupation display names, residence and birthplace
+- authoritative creation-status filter plus stable recent/oldest/name sorting
+- total/visible counts, distinct true/filtered empty states and clear action
+- historical Character compatibility plus delete/import reactive updates under active browsing conditions
+- presentation-only state with no Repository/Dexie search, persistence, schema, portability, dependency or rules change
+- production-preview desktop/mobile interaction, console/pageerror and horizontal-overflow coverage
+
 ## Later
 
 - field-level coachmarks, automatic focus guidance, and richer visual onboarding
@@ -496,4 +507,4 @@ Status: Completed
 - shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. Phase 17 is complete; no Phase 18 name, order or scope is frozen.
+Later-item ordering is not frozen. Phase 18 is complete; no Phase 19 name, order or scope is frozen.

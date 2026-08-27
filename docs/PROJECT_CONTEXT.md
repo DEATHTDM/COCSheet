@@ -45,6 +45,7 @@ Zero Server
 - 不需要账号、自建服务器或云数据库，也不依赖用户自己的服务器。
 - 人物默认保存在浏览器 IndexedDB。
 - 人物与资料库支持本地 JSON 导入 / 导出，用于长期保存与迁移。
+- Home 调查员资料库提供基于已加载人物记录的轻量搜索、建卡状态筛选与排序；这些浏览条件不持久化，也不构成人物组织系统。
 - KP Preset 通过压缩 URL 参数分享，不为分享功能引入服务器。
 - 共享 KP Preset 除可直接用于建卡外，也可由接收方显式保存为 fresh-ID 本地副本；两种动作都保持纯前端与本地优先。
 - 当前 production deployment 位于 GitHub Pages；架构继续兼容 Cloudflare Pages 或其他普通静态 Hosting，以保留未来迁移可能。
