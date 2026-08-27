@@ -239,50 +239,50 @@ async function exportLibrary(): Promise<void> {
             清除搜索与筛选
           </button>
         </div>
+        <ul v-else class="record-list">
+          <li v-for="item in characterLibrary.items" :key="item.record.id" class="record-card">
+            <div>
+              <strong>{{ item.record.name }}</strong>
+              <p>{{ getHistoricalSettingLabel(item.record.settingId) }}</p>
+              <span v-if="!isSupportedSetting(item.record.settingId)" class="status-badge">
+                历史建卡环境（当前不支持继续建卡）
+              </span>
+              <span
+                class="status-badge"
+                :class="item.creationStatus"
+              >
+                {{ item.creationStatus === 'complete'
+                  ? '建卡已完成'
+                  : item.creationStatus === 'incomplete'
+                    ? '建卡尚未完成'
+                    : '仅有人物卡资料' }}
+              </span>
+              <small>最后修改：{{ dateFormatter.format(item.record.updatedAt) }}</small>
+            </div>
+            <div class="actions">
+              <RouterLink class="button primary" :to="`/characters/${item.record.id}/sheet`">打开人物卡</RouterLink>
+              <RouterLink
+                v-if="isSupportedSetting(item.record.settingId) && item.creationStatus !== 'missing-session'"
+                class="button"
+                :to="`/characters/${item.record.id}`"
+              >
+                {{ item.creationStatus === 'complete'
+                  ? '修改建卡'
+                  : '继续建卡' }}
+              </RouterLink>
+              <button
+                class="button"
+                type="button"
+                :disabled="exportingCharacterId === item.record.id"
+                @click="exportCharacter(item.record.id)"
+              >{{ exportingCharacterId === item.record.id ? '正在导出……' : '导出' }}</button>
+              <button class="button danger" type="button" @click="removeCharacter(item.record.id, item.record.name)">
+                删除
+              </button>
+            </div>
+          </li>
+        </ul>
       </template>
-      <ul v-if="characterLibrary.visibleCount > 0" class="record-list">
-        <li v-for="item in characterLibrary.items" :key="item.record.id" class="record-card">
-          <div>
-            <strong>{{ item.record.name }}</strong>
-            <p>{{ getHistoricalSettingLabel(item.record.settingId) }}</p>
-            <span v-if="!isSupportedSetting(item.record.settingId)" class="status-badge">
-              历史建卡环境（当前不支持继续建卡）
-            </span>
-            <span
-              class="status-badge"
-              :class="item.creationStatus"
-            >
-              {{ item.creationStatus === 'complete'
-                ? '建卡已完成'
-                : item.creationStatus === 'incomplete'
-                  ? '建卡尚未完成'
-                  : '仅有人物卡资料' }}
-            </span>
-            <small>最后修改：{{ dateFormatter.format(item.record.updatedAt) }}</small>
-          </div>
-          <div class="actions">
-            <RouterLink class="button primary" :to="`/characters/${item.record.id}/sheet`">打开人物卡</RouterLink>
-            <RouterLink
-              v-if="isSupportedSetting(item.record.settingId) && item.creationStatus !== 'missing-session'"
-              class="button"
-              :to="`/characters/${item.record.id}`"
-            >
-              {{ item.creationStatus === 'complete'
-                ? '修改建卡'
-                : '继续建卡' }}
-            </RouterLink>
-            <button
-              class="button"
-              type="button"
-              :disabled="exportingCharacterId === item.record.id"
-              @click="exportCharacter(item.record.id)"
-            >{{ exportingCharacterId === item.record.id ? '正在导出……' : '导出' }}</button>
-            <button class="button danger" type="button" @click="removeCharacter(item.record.id, item.record.name)">
-              删除
-            </button>
-          </div>
-        </li>
-      </ul>
     </section>
 
     <section class="panel page-stack library-backup-panel">
