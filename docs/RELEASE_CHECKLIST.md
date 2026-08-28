@@ -6,16 +6,16 @@
 
 ### Pre-merge RC
 
-- [ ] `package.json` version 精确为 `1.0.0`
-- [ ] 全量 Vitest 与固定 v1 character / library / share compatibility fixtures 通过
-- [ ] production build 通过，artifact 同时包含 `1.0.0` 与 exact RC head SHA
-- [ ] Playwright desktop 1280×900 与 mobile 390×844 的 9 项 production-preview tests 通过
-- [ ] occupation audit 与 Standard weapon audit 通过
-- [ ] generic release compliance 与 `EXPECTED_APP_VERSION=1.0.0` exact compliance 通过
-- [ ] Chaosium 当前 Fan Material Policy / required notice 已重新核对
-- [ ] README、NOTICE、Legal、CHANGELOG 与 v1.0.0 release notes 一致
-- [ ] `git diff --check` 通过
-- [ ] desktop/mobile 真实浏览器 RC QA 通过，normal paths `console.error = 0`、`pageerror = 0`、document horizontal overflow = 0
+- [x] `package.json` version 精确为 `1.0.0`
+- [x] 全量 Vitest 与固定 v1 character / library / share compatibility fixtures 通过
+- [x] production build 通过，artifact 同时包含 `1.0.0` 与 exact RC head SHA
+- [x] Playwright desktop 1280×900 与 mobile 390×844 的 9 项 production-preview tests 通过
+- [x] occupation audit 与 Standard weapon audit 通过
+- [x] generic release compliance 与 `EXPECTED_APP_VERSION=1.0.0` exact compliance 通过
+- [x] Chaosium 当前 Fan Material Policy / required notice 已重新核对
+- [x] README、NOTICE、Legal、CHANGELOG 与 v1.0.0 release notes 一致
+- [x] `git diff --check` 通过
+- [x] desktop/mobile 真实浏览器 RC QA 通过，normal paths `console.error = 0`、`pageerror = 0`、document horizontal overflow = 0
 
 ### Post-merge release closure
 
