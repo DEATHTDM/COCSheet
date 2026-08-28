@@ -5,6 +5,7 @@
 - Audit baseline: `main@a292647e9df9f776dd54735b3867dcfb306fd4e0`
 - Audit date: 2026-08-27
 - Scope: 当前 tracked tree、全 Git history 的文件名与大 blob、production source/build 输入、repository-only tests/audit data、文档与 Issue Forms
+- Release policy recheck: 2026-08-28；官方页面仍标注 Revised: October 13, 2023，required notice 未发生 materially incompatible change
 
 ## Official policy checked
 
@@ -86,4 +87,10 @@
 4. `package.json` 的 `GPL-3.0-only` metadata 已按任务保持不变并限定解释为原创代码；独立复审仍应判断 repository/package 的整体呈现是否可能误导。
 5. Chaosium 政策可单方更新。每个正式 release/tag 前必须重新核对官方页面与 required notice；本次 2026-08-27 快照不能代替未来检查。
 
-在这些问题解决或由 release owner 获得合格意见前，本审计不建议把 Phase 19A 的文案整改表述成“已确认可以发布 v1.0”。
+这些问题仍是风险记录，不因 NOTICE、工程验证或 release-owner 决定而消失。
+
+## J. Release-owner residual risk acceptance
+
+2026-08-28，release owner 明确接受 Phase 19A 已记录的 source-repository、structured game data 以及 GPL 与 fan-material 并置等剩余许可不确定性，用于当前免费、非商业、非官方粉丝 v1.0 release。这些不确定性不再是 Phase 19B 的工程 release blocker，但本决定不是法律意见、权利人授权证明或完全合法／合规断言。
+
+`NOTICE.md`、Legal page 与 required Fan Material notice 继续强制保留；每次正式 release 仍要重新核对当前官方政策。如果项目未来商业化、改变分发方式或加入新的 third-party material，必须重新评估这些许可边界。

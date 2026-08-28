@@ -4,6 +4,8 @@
 
 COCSheet 是中文 Call of Cthulhu 7th Edition 调查员建卡器，也是可持续使用的电子人物卡。它不是对纸质人物卡的简单复制，核心目标是降低 CoC 新玩家第一次建卡时的信息负担，同时保留熟悉规则的玩家需要的直接编辑能力。
 
+当前首个稳定版本目标是 v1.0.0；当前状态是 release candidate，正式发布仍等待 PR 合并、Pages 上线验收、tag 与 GitHub Release。
+
 ## Core user experience
 
 ### 萌新向导模式

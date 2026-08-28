@@ -5,8 +5,15 @@ const legalContent = await readFile(new URL("../src/app/legalContent.ts", import
 const router = await readFile(new URL("../src/app/router/index.ts", import.meta.url), "utf8");
 
 const failures = [];
+const semVerPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+(?:[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/u;
+const expectedAppVersion = process.env.EXPECTED_APP_VERSION;
 
-if (packageMetadata.version !== "0.1.0") failures.push("package.json version must remain 0.1.0");
+if (typeof packageMetadata.version !== "string" || !semVerPattern.test(packageMetadata.version)) {
+  failures.push("package.json version must be a valid SemVer version");
+}
+if (expectedAppVersion !== undefined && packageMetadata.version !== expectedAppVersion) {
+  failures.push(`package.json version must exactly match EXPECTED_APP_VERSION=${expectedAppVersion}`);
+}
 if (packageMetadata.private !== true) failures.push("package.json private must remain true");
 if (packageMetadata.license !== "GPL-3.0-only") {
   failures.push("package.json license must remain GPL-3.0-only for the original software code");
@@ -29,5 +36,8 @@ if (failures.length > 0) {
   console.error(failures.join("\n"));
   process.exitCode = 1;
 } else {
-  console.log("Release compliance static checks passed: version 0.1.0, notice source, and /legal route.");
+  const versionExpectation = expectedAppVersion === undefined
+    ? "valid SemVer"
+    : `exact version ${expectedAppVersion}`;
+  console.log(`Release compliance static checks passed: ${versionExpectation}, notice source, and /legal route.`);
 }

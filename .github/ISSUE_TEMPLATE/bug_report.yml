@@ -14,7 +14,7 @@ body:
     id: version
     attributes:
       label: COCSheet version
-      placeholder: 例如 0.1.0
+      placeholder: 例如 1.0.0
     validations:
       required: true
   - type: input

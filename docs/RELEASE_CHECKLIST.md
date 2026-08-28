@@ -2,6 +2,31 @@
 
 正式发布或创建 tag 前完成以下检查；本页是可复用清单，不记录单次发布日志。
 
+## v1.0.0 RC acceptance
+
+### Pre-merge RC
+
+- [ ] `package.json` version 精确为 `1.0.0`
+- [ ] 全量 Vitest 与固定 v1 character / library / share compatibility fixtures 通过
+- [ ] production build 通过，artifact 同时包含 `1.0.0` 与 exact RC head SHA
+- [ ] Playwright desktop 1280×900 与 mobile 390×844 的 9 项 production-preview tests 通过
+- [ ] occupation audit 与 Standard weapon audit 通过
+- [ ] generic release compliance 与 `EXPECTED_APP_VERSION=1.0.0` exact compliance 通过
+- [ ] Chaosium 当前 Fan Material Policy / required notice 已重新核对
+- [ ] README、NOTICE、Legal、CHANGELOG 与 v1.0.0 release notes 一致
+- [ ] `git diff --check` 通过
+- [ ] desktop/mobile 真实浏览器 RC QA 通过，normal paths `console.error = 0`、`pageerror = 0`、document horizontal overflow = 0
+
+### Post-merge release closure
+
+- [ ] 记录 main exact merge SHA，确认 main Validate success
+- [ ] 确认 Pages artifact build 与 Pages deploy success
+- [ ] live footer 精确为 `v1.0.0` + merge short SHA
+- [ ] live root、Create、Character workflow、Final Sheet、Print、Presets、Backup、Legal 与 unknown route 通过
+- [ ] live normal paths `console.error = 0`、`pageerror = 0`，mobile document horizontal overflow = 0
+- [ ] 仅在上述项目全部通过后创建 annotated 或 lightweight `v1.0.0` tag
+- [ ] 仅在上述项目全部通过后创建 GitHub Release，target 精确等于已验证的 production main commit
+
 ## 自动验证
 
 - [ ] `corepack pnpm test`

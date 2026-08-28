@@ -52,6 +52,12 @@ Home 的调查员搜索、建卡状态筛选与排序只基于已经加载到 `C
 
 公开发布 validation 必须在 production build + Vite preview 上运行 Playwright Chromium，覆盖精简 desktop/mobile 真实路径，并把 console.error、pageerror 与 document-level horizontal overflow 作为失败条件。Pull Request 使用 exact head SHA，main Pages build 使用 exact `github.sha`，同一个 build metadata source 同时服务普通 UI 与诊断。
 
+### R005 — v1.0 residual licensing risk acceptance
+
+Phase 19A 记录的 source repository、structured game data 以及原创代码 GPL 与 fan-material 条件并置等剩余许可不确定性继续保留。Release owner 已明确接受这些已记录风险，用于当前免费、非商业、非官方粉丝 v1.0 release；它们不再是 Phase 19B 的工程发布 blocker。
+
+该决定不是法律意见、权利人授权证明或任何司法辖区的完全合规断言。`NOTICE.md`、Legal page 和当前 required Fan Material notice 仍是强制发布边界，每次正式 release 前仍必须重新核对官方政策。若未来商业化、改变分发方式或引入新的 third-party material，必须重新评估这些边界。
+
 ## Licensing
 
 ### LC001 — Open-source code does not relicense third-party game content
