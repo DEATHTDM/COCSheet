@@ -3,6 +3,22 @@ import { expect, test } from "@playwright/test";
 import { createIncompleteCharacterThroughAttributes } from "./creationWorkflow";
 import { expectCleanPage, expectNoHorizontalOverflow, monitorPageQuality } from "./pageQuality";
 
+test("390×844 footer and Legal page keep the full notice accessible without overflow", async ({ page }) => {
+  const quality = monitorPageQuality(page);
+  await page.goto("/#/");
+  await expect(page.getByRole("link", { name: "法律与许可" })).toBeVisible();
+  await page.getByRole("link", { name: "法律与许可" }).click();
+
+  await expect(page.getByRole("heading", { name: "法律与许可" })).toBeVisible();
+  await expect(page.getByText("prohibited from charging", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查看 Chaosium Fan Material Policy" }))
+    .toHaveAttribute("rel", "noopener noreferrer");
+  await expect(page.getByRole("link", { name: "项目源代码" }))
+    .toHaveAttribute("rel", "noopener noreferrer");
+  await expectNoHorizontalOverflow(page);
+  await expectCleanPage(page, quality);
+});
+
 test("390×844 Home, Create, Editor, and Final Sheet smoke", async ({ page }) => {
   const quality = monitorPageQuality(page);
   await page.goto("/#/");

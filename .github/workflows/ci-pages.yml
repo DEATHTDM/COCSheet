@@ -50,6 +50,9 @@ jobs:
       - name: Run tests
         run: corepack pnpm test
 
+      - name: Validate release compliance boundaries
+        run: corepack pnpm validate:release-compliance
+
       - name: Build application
         env:
           VITE_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

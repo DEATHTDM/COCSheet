@@ -8,6 +8,8 @@ body:
     attributes:
       value: |
         请从实际用户问题出发，而不是仅因为其他工具存在某项功能。涉及 CoC 规则时请提供明确来源。
+
+        请勿上传官方规则书 PDF／页面截图、未经授权的官方 artwork，或大段官方书籍文本。
   - type: textarea
     id: user_problem
     attributes:

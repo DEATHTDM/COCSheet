@@ -10,7 +10,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:e2e": "pnpm build && playwright test"
+    "test:e2e": "pnpm build && playwright test",
+    "validate:release-compliance": "node scripts/validate-release-compliance.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.4",

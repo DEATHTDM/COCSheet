@@ -30,6 +30,8 @@ Guided 模式实时展示当前步骤的权威 readiness 与七步流程位置�
 
 公开版本还必须长期清楚说明浏览器本地数据的保存与丢失风险，且只有用户显式操作才请求浏览器持久存储保护；该保护不得被宣传为备份。未处理运行异常和启动失败必须提供不依赖远端服务的恢复入口。版本诊断只在本地生成，移除 query、分享 token 与动态人物／预设 identity，不读取任何 domain data。发布验证包含 production build + Vite preview 的 Playwright Chromium desktop/mobile smoke。
 
+公开 repository 与网站同时包含作者原创的 open-source software code，以及基于 Call of Cthulhu／Chaosium 出版物整理的 fan/game content。原创代码在适用范围内使用 GPL-3.0-only；第三方商标、规则资料、出版物衍生数据与来源引用不会因此被重新授权为 GPL 或 ORC。网站必须保持非官方、免费与非商业表达，并在每次正式 release 前重新核对 Chaosium 当前 Fan Material Policy 与 required notice。这项许可边界不改变 Pure Frontend、Local First、Zero Server 产品约束。
+
 ## Product constraints
 
 COCSheet 必须保持：

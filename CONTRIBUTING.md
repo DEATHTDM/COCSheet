@@ -26,6 +26,12 @@ corepack pnpm dev
 
 玩家可见 UI 必须遵守 `docs/UI_TERMINOLOGY.md` 与 `docs/UX_QA_CHECKLIST.md`。涉及规则内容时不能凭印象修改；请在 Issue 或 PR 中说明明确的规则来源和页码。
 
+## 内容与许可边界
+
+贡献者不得提交官方规则书扫描件或 PDF、页面截图、官方 artwork／logos、专有字体、大段复制的规则文本，或来源与授权尚未确认的第三方素材。新增或修改 CoC game content 必须同时说明明确规则来源，并核对适用的 Fan Material Policy／内容许可边界；source reference 不是授权证明。
+
+向 repository 提交你拥有权利的原创代码，表示该代码按项目的 GPL-3.0-only 规则处理；这不会让贡献者取得 Chaosium IP 的所有权，也不会把 Chaosium／Call of Cthulhu fan material 重新授权为 GPL 或 ORC open content。具体范围见 `NOTICE.md` 与 `docs/CONTENT_LICENSING_AUDIT.md`。
+
 ## 提交前验证
 
 ```bash
@@ -35,6 +41,7 @@ corepack pnpm exec playwright install chromium
 corepack pnpm test:e2e
 node scripts/validate-occupation-audit.mjs
 node scripts/validate-standard-weapons.mjs
+corepack pnpm validate:release-compliance
 git diff --check
 ```
 

@@ -14,7 +14,20 @@
 - Vitest
 - pnpm
 
-项目使用 `GPL-3.0-only` 许可证。Vite 使用相对 `base`，构建产物不依赖服务器 Rewrite。
+作者拥有权利的原创软件代码在适用范围内使用 `GPL-3.0-only`；bundled Call of Cthulhu／Chaosium fan/game content、商标、出版物衍生数据与 source references 保持独立的第三方权利／Fan Material Policy 边界，详见 `NOTICE.md`。Vite 使用相对 `base`，构建产物不依赖服务器 Rewrite。
+
+## Licensing boundary
+
+许可范围与 domain architecture 正交：
+
+```text
+original application code
+        ↓ GPL-3.0-only where applicable
+bundled CoC fan/game content
+        ↓ separate third-party / Fan Material Policy boundary
+```
+
+Legal 页面从 `src/app/legalContent.ts` 的单一静态 source 渲染当前 required notice，并只提供普通外部链接；运行时不 fetch 政策、不调用 API、不加入 analytics 或 telemetry。许可说明不会改变 `Component → Pinia Store → Repository → Dexie`、Character／CreationSession、rules/content/UI/storage 或 Zero Server 边界。
 
 ## Static delivery
 

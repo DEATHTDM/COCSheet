@@ -15,6 +15,27 @@ const characterFixture = fileURLToPath(new URL(
   import.meta.url,
 ));
 
+test("Home → 法律与许可 → required notice and links → Home", async ({ page }) => {
+  const quality = monitorPageQuality(page);
+  await page.goto("/#/");
+  await expect(page.getByText("非官方粉丝项目", { exact: false })).toBeVisible();
+  await page.getByRole("link", { name: "法律与许可" }).click();
+
+  await expect(page).toHaveURL(/#\/legal$/u);
+  await expect(page.getByRole("heading", { name: "法律与许可" })).toBeVisible();
+  await expect(page.getByText("prohibited from charging", { exact: false })).toBeVisible();
+  await expect(page.getByText("not published, endorsed, or specifically approved", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "项目源代码" }))
+    .toHaveAttribute("href", "https://github.com/DEATHTDM/COCSheet");
+  await expect(page.getByRole("link", { name: "查看 Chaosium Fan Material Policy" }))
+    .toHaveAttribute("href", "https://www.chaosium.com/fan-material-policy/");
+  await expectNoHorizontalOverflow(page);
+
+  await page.getByRole("link", { name: "返回首页" }).click();
+  await expect(page.getByRole("heading", { name: "COCSheet" })).toBeVisible();
+  await expectCleanPage(page, quality);
+});
+
 test("Home → deterministic creation → incomplete Final Sheet → print", async ({ page }) => {
   const quality = monitorPageQuality(page);
   await page.goto("/#/");

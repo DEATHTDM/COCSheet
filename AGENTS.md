@@ -79,3 +79,10 @@ pnpm build
 ## Important
 
 不要根据推测改写 Call of Cthulhu 规则。规则实现必须有明确来源或明确任务要求。若当前代码、旧数据、第三方项目与已确认规则冲突，停止实现并指出冲突。
+
+## Fan material and licensing P0
+
+- 原创软件代码的 GPL 与第三方 game/fan content 权利边界必须分开；不得把 Chaosium／Call of Cthulhu fan material 错误标成 GPL 或 ORC open content。
+- 不得提交规则书扫描件、官方 artwork／logos、专有字体或大段复制的书籍文本。
+- 修改第三方 game content 前必须核对明确来源与适用授权／当前 Fan Material Policy；source reference 本身不是授权证明。
+- 每次正式 release 前必须重新检查 Chaosium 当前 Fan Material Policy 与 required notice，因为政策可能变化。

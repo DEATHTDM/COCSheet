@@ -500,6 +500,28 @@ Status: Completed
 - presentation-only state with no Repository/Dexie search, persistence, schema, portability, dependency or rules change
 - production-preview desktop/mobile interaction, console/pageerror and horizontal-overflow coverage
 
+## Phase 19 — v1.0 Release Readiness
+
+Status: In Progress
+
+### Phase 19A — Fan Material & Licensing Compliance
+
+Status: Completed
+
+- original-code GPL scope separated from third-party/fan game content rights
+- current Chaosium official policy audit, required notice, root NOTICE and `/legal` route
+- repository content/binary/history audit plus conservative unresolved-review record
+- README, contribution rules, agent constraints, Issue Forms and release checklist alignment
+- unchanged version 0.1.0, rules mechanics, dependencies, schemas, Dexie and version-1 formats
+
+### Phase 19B — v1.0 Release & Live Acceptance
+
+Status: Planned
+
+- requires a separate explicit task
+- must not proceed while Phase 19A licensing review questions remain unresolved
+- owns any version bump, tag, GitHub Release and live v1.0 acceptance
+
 ## Later
 
 - field-level coachmarks, automatic focus guidance, and richer visual onboarding
@@ -507,4 +529,4 @@ Status: Completed
 - shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. Phase 18 is complete; no Phase 19 name, order or scope is frozen.
+Later-item ordering is not frozen. Phase 19B scope beyond release/live acceptance is not authorized by this Roadmap entry.

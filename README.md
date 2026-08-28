@@ -1,6 +1,8 @@
 # COCSheet
 
-COCSheet 是面向中文玩家的 Call of Cthulhu 7th Edition 调查员建卡工具与长期电子人物卡。它是纯前端、Local First、Zero Server 应用：无需账号，也不会把人物资料自动上传到服务器。
+COCSheet 是面向中文玩家的非官方 Call of Cthulhu® 7th Edition 调查员建卡工具与长期电子人物卡。它是免费提供访问的非商业粉丝项目，不是 Chaosium Inc. 发布、认可或特别批准的官方产品。
+
+应用保持纯前端、Local First、Zero Server：无需账号，也不会把人物资料自动上传到服务器。当前站点不收费、不销售人物数据，也不提供付费功能。
 
 ## 在线使用
 
@@ -61,4 +63,6 @@ Playwright 运行 production build + Vite preview 的 Chromium desktop/mobile sm
 
 ## 许可证
 
-项目以 [GPL-3.0-only](LICENSE) 授权。第三方依赖分别遵循其自身许可证。
+COCSheet 作者拥有权利的原创软件代码，在适用范围内以 [GPL-3.0-only](LICENSE) 提供。仓库中涉及 Call of Cthulhu、Chaosium 或其他权利人的商标、游戏内容、规则资料、出版物衍生数据与来源引用，不因此获得 GPL 授权；完整边界见 [NOTICE.md](NOTICE.md)。第三方依赖分别遵循其自身许可证。
+
+原创代码的 GPL 权利不表示任何人可以直接把 bundled Chaosium fan material 商业化。商业使用或重新分发者必须自行取得相关许可，或删除、替换不具备相应授权的 bundled fan material。网站使用的官方 Fan Material notice 与当前政策入口见应用内“法律与许可”页面。
