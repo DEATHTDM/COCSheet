@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { expect, test } from "@playwright/test";
 
+import packageMetadata from "../package.json";
 import { createIncompleteCharacterThroughAttributes } from "./creationWorkflow";
 import { expectCleanPage, expectNoHorizontalOverflow, monitorPageQuality } from "./pageQuality";
 
@@ -14,7 +15,7 @@ const characterFixture = fileURLToPath(new URL(
   "../tests/fixtures/v1/cocsheet-character-v1.json",
   import.meta.url,
 ));
-const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? "1.0.0";
+const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? packageMetadata.version;
 const injectedBuildSha = process.env.VITE_BUILD_SHA;
 const expectedBuildLabel = injectedBuildSha && /^[0-9a-f]{7,64}$/iu.test(injectedBuildSha)
   ? injectedBuildSha.toLowerCase().slice(0, 12)
