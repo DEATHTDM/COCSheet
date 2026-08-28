@@ -1,9 +1,9 @@
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { expect, test } from "@playwright/test";
 
-import packageMetadata from "../package.json";
 import { createIncompleteCharacterThroughAttributes } from "./creationWorkflow";
 import { expectCleanPage, expectNoHorizontalOverflow, monitorPageQuality } from "./pageQuality";
 
@@ -15,6 +15,9 @@ const characterFixture = fileURLToPath(new URL(
   "../tests/fixtures/v1/cocsheet-character-v1.json",
   import.meta.url,
 ));
+const packageMetadata = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { readonly version: string };
 const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? packageMetadata.version;
 const injectedBuildSha = process.env.VITE_BUILD_SHA;
 const expectedBuildLabel = injectedBuildSha && /^[0-9a-f]{7,64}$/iu.test(injectedBuildSha)
