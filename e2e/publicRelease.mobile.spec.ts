@@ -1,9 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 
-import packageMetadata from "../package.json";
+import { expect, test } from "@playwright/test";
 import { createIncompleteCharacterThroughAttributes } from "./creationWorkflow";
 import { expectCleanPage, expectNoHorizontalOverflow, monitorPageQuality } from "./pageQuality";
 
+const packageMetadata = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { readonly version: string };
 const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? packageMetadata.version;
 
 test("390×844 footer and Legal page keep the full notice accessible without overflow", async ({ page }) => {
