@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+import packageMetadata from "../package.json";
 import { createIncompleteCharacterThroughAttributes } from "./creationWorkflow";
 import { expectCleanPage, expectNoHorizontalOverflow, monitorPageQuality } from "./pageQuality";
 
-const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? "1.0.0";
+const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? packageMetadata.version;
 
 test("390×844 footer and Legal page keep the full notice accessible without overflow", async ({ page }) => {
   const quality = monitorPageQuality(page);
