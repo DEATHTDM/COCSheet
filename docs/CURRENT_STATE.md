@@ -1,18 +1,29 @@
 # Current State
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 
 ## Current phase
 
-Phase 19A — Fan Material & Licensing Compliance (Completed)
+Phase 19B — v1.0 Release Candidate
 
-公开 repository 与网站现在明确分开原创软件代码的 GPL-3.0-only 范围，以及 Call of Cthulhu／Chaosium 第三方商标、fan/game content、publication-derived data 与 source references 的独立权利边界。新增静态 `/legal`、官方 required notice、root NOTICE、内容审计与 release guard；网站仍免费、非商业、非官方、Zero Server，版本保持 0.1.0。Phase 19A 不构成法律意见，也不表示 v1.0 已获确认可发布；公开 source distribution 与 bundled structured game data 仍需独立许可复审。
+Status: Prepared / Awaiting Merge & Live Acceptance
+
+v1.0.0 release candidate 已完成版本、durable release compliance guard、exact version + SHA CI assertion、发布文档与 production-preview acceptance 收口。Phase 19A 的剩余许可不确定性仍完整记录；release owner 已为当前免费、非商业粉丝 release 明确接受该风险，因此不再将其作为 Phase 19B 的工程 blocker。这不是法律意见或完全合规断言。Pages 合并后部署、live exact-build smoke、v1.0.0 tag 与 GitHub Release 仍待独立发布步骤完成。
 
 ## Git baseline
 
-Phase 19A was created from exact `main@a292647e9df9f776dd54735b3867dcfb306fd4e0`, the merged Phase 18 closure baseline.
+Phase 19B was created from exact `main@1fbde4d672af755bf415601c7a67e6b0bc080a7b`, the merged Phase 19A closure baseline.
 
 ## Implemented
+
+- package application version raised to `1.0.0` while `private: true`, `GPL-3.0-only`, pnpm 11.21.0 and all dependency versions remain unchanged
+- `package.json version + VITE_BUILD_SHA` remains the only build-metadata chain for footer and privacy-safe diagnostics; local development uses `dev`, while Pull Request/main builds use their exact commit SHA
+- release compliance guard now accepts any valid SemVer by default and optionally enforces exact `EXPECTED_APP_VERSION`; v1.0.0 CI acceptance separately asserts the exact release version
+- Pull Request and main static artifact checks assert both version `1.0.0` and their exact injected head/main SHA, while PR Pages artifact/deploy remain skipped
+- `CHANGELOG.md`, user-facing `docs/releases/v1.0.0.md`, README stable-version wording and the v1.0.0 pre/post-merge checklist prepared without a future merge SHA
+- Chaosium Fan Material Policy and required notice rechecked on 2026-08-28 with no materially incompatible change found; NOTICE and Legal remain mandatory
+- Character, CreationSession, CreationPreset, all Record schemas, Dexie version/tables/indexes and `cocsheet-character` / `cocsheet-library` / `cocsheet-kp-preset-share` format version 1 remain unchanged with no migration or writeback
+- post-merge exact-main CI, Pages artifact/deploy, live workflow smoke, tag and GitHub Release remain explicitly pending
 
 - official Chaosium Fan Material Policy, Fan-Use and Licensing Q&A, Trademarks and Copyrights, and BRP ORC information rechecked on 2026-08-27, using only Chaosium official sources
 - exact current required Fan Material notice kept in one static application source and rendered in plainly legible English on the independent `/legal` route, with no runtime policy fetch, API, analytics or telemetry
@@ -21,10 +32,10 @@ Phase 19A was created from exact `main@a292647e9df9f776dd54735b3867dcfb306fd4e0`
 - conservative redistribution guidance: GPL rights in original code do not promise commercial rights in bundled Chaosium material; commercial users must obtain applicable permission or remove/replace the affected bundled material
 - complete tracked-tree audit covering `src/content/standard/**`, `src/coc7/rules/**`, `src/coc7/types/**`, tests, fixtures, audit scripts/data, docs, UI, assets and static build inputs; no long book prose or scenario text found, while structured occupation audit tables remain called out for independent review
 - current tree and full-history filename/blob audit finding no PDF, scan, screenshot, official artwork/logo/sign, map, font, archive or other binary candidate, with no current deletion or history rewrite required
-- release compliance static guard for package version 0.1.0, `private: true`, GPL metadata, required notice clauses and `/legal` route, included in CI validation
+- Phase 19A temporary release compliance guard for package version 0.1.0, `private: true`, GPL metadata, required notice clauses and `/legal` route, included in CI validation before its Phase 19B durable redesign
 - route/page/footer/NotFound-safe unit coverage plus desktop/mobile production-preview E2E for required notice visibility, safe external links, return Home, console/page errors and document overflow
 - unchanged Character, CreationSession, CreationPreset and Record schemas; unchanged Dexie version/tables/indexes, v1 portability/share formats, dependencies and CoC rules mechanics
-- unresolved release review remains explicit: Fan Policy treatment of downloadable public source plus bundled CoC data, the scope of structured catalogs/audit CSV, and GPL/fan-policy distribution compatibility require independent legal/licensor review before v1.0 is described as publishable
+- Phase 19A unresolved release review remains explicit: Fan Policy treatment of downloadable public source plus bundled CoC data, the scope of structured catalogs/audit CSV, and GPL/fan-policy distribution compatibility remain uncertain; Phase 19B records the release owner's explicit risk acceptance for the current free non-commercial fan release without claiming legal certainty
 
 - pure `characterLibraryPresentation` derivation from `CharacterStore.records` plus the existing CreationSession step map, with one creation-status calculation per visible candidate and no Repository/Dexie/N+1 search path
 - trimmed, immediate substring search across Character name, occupation Chinese/English display-name snapshot, residence and birthplace only; English matching is case-insensitive and internal UUIDs, machine IDs, source/provenance and full domain text are excluded
@@ -40,7 +51,7 @@ Phase 19A was created from exact `main@a292647e9df9f776dd54735b3867dcfb306fd4e0`
 - accurate UI contract that persistent storage only reduces automatic eviction risk and never means backup, permanent safety, cloud protection or resistance to explicit clearing/device loss
 - local runtime error state fed by Vue `app.config.errorHandler`, `window error` and `unhandledrejection`, with continued `console.error` plus a Chinese App recovery panel for reload, Home, privacy-safe diagnostics and GitHub feedback
 - mount/bootstrap `try/catch` static DOM fallback independent from Vue Router, Pinia and Dexie, using only safe text nodes and no raw error message/stack presentation
-- single build metadata source combining `package.json` version 0.1.0 with build-time SHA; local fallback is `dev`, ordinary footer uses a 12-character SHA, and diagnostics retain the full injected SHA
+- single build metadata source combining the current `package.json` version with build-time SHA; local fallback is `dev`, ordinary footer uses a 12-character SHA, and diagnostics retain the full injected SHA
 - CI exact metadata injection: Validate builds PR exact head SHA or dispatched/push `github.sha`; Pages builds exact main `github.sha`; static artifact checks assert the expected full SHA is embedded
 - local privacy-safe diagnostics containing version, build SHA, timestamp, userAgent, language, sanitized route and optional runtime error count, with every query removed and Character/Preset dynamic paths normalized so share tokens and UUIDs are absent
 - Clipboard failure-safe readonly manual diagnostics plus no Character, CreationSession, Preset, IndexedDB, localStorage, backup or clipboard reads and no analytics, telemetry, remote logging or crash upload
@@ -346,13 +357,13 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 19A is complete as a documentation/product boundary remediation. Phase 19B remains planned and must not start until the unresolved content-licensing questions receive independent review or explicit release-owner resolution.
+Phase 19B RC is prepared. The next work is a separate post-merge release closure: verify exact merge SHA CI, Pages artifact/deploy and live exact-build workflows, then create the v1.0.0 tag and GitHub Release targeting that verified production commit before marking Phase 19 complete.
 
 ## Known technical risks
 
 - Chaosium Fan Material Policy may change; every release must recheck the official policy and required notice
-- public source distribution plus bundled CoC-specific structured data has not been confirmed by this technical audit as covered by the web-based generator allowance
-- the precise GPL aggregation/distribution treatment of original code beside non-commercial fan material requires independent legal review; NOTICE is disclosure, not a compatibility opinion
+- public source distribution plus bundled CoC-specific structured data has not been confirmed by this technical audit as covered by the web-based generator allowance; release owner explicitly accepts this documented residual risk for the current free non-commercial fan release
+- the precise GPL aggregation/distribution treatment of original code beside non-commercial fan material remains uncertain; release-owner acceptance and NOTICE disclosure are not a legal compatibility opinion, and commercialization or material distribution changes require re-review
 
 - IndexedDB and domain Schema migration
 - future Portable Package and Full Library Backup migrations or advanced conflict-resolution compatibility

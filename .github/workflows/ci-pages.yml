@@ -53,6 +53,12 @@ jobs:
       - name: Validate release compliance boundaries
         run: corepack pnpm validate:release-compliance
 
+      - name: Assert v1.0.0 release candidate version
+        if: github.event_name == 'pull_request' && github.head_ref == 'release/v1.0.0'
+        env:
+          EXPECTED_APP_VERSION: 1.0.0
+        run: corepack pnpm validate:release-compliance
+
       - name: Build application
         env:
           VITE_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -67,6 +73,8 @@ jobs:
             echo "dist/index.html contains a root-relative asset URL."
             exit 1
           fi
+          EXPECTED_APP_VERSION="$(node -p "require('./package.json').version")"
+          grep -R -F "$EXPECTED_APP_VERSION" dist/assets >/dev/null
           grep -R -F "$EXPECTED_BUILD_SHA" dist/assets >/dev/null
 
       - name: Install Playwright Chromium
@@ -123,6 +131,8 @@ jobs:
             echo "dist/index.html contains a root-relative asset URL."
             exit 1
           fi
+          EXPECTED_APP_VERSION="$(node -p "require('./package.json').version")"
+          grep -R -F "$EXPECTED_APP_VERSION" dist/assets >/dev/null
           grep -R -F "$EXPECTED_BUILD_SHA" dist/assets >/dev/null
 
       - name: Configure GitHub Pages

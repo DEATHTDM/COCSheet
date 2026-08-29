@@ -8,6 +8,8 @@ COCSheet 是面向中文玩家的非官方 Call of Cthulhu® 7th Edition 调查�
 
 <https://deathtdm.github.io/COCSheet/>
 
+当前稳定版本：v1.0.0。
+
 ## 当前功能
 
 - CoC 7版标准规则建卡

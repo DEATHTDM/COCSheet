@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +15,14 @@ const characterFixture = fileURLToPath(new URL(
   "../tests/fixtures/v1/cocsheet-character-v1.json",
   import.meta.url,
 ));
+const packageMetadata = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { readonly version: string };
+const expectedAppVersion = process.env.EXPECTED_APP_VERSION ?? packageMetadata.version;
+const injectedBuildSha = process.env.VITE_BUILD_SHA;
+const expectedBuildLabel = injectedBuildSha && /^[0-9a-f]{7,64}$/iu.test(injectedBuildSha)
+  ? injectedBuildSha.toLowerCase().slice(0, 12)
+  : "dev";
 
 test("Home → 法律与许可 → required notice and links → Home", async ({ page }) => {
   const quality = monitorPageQuality(page);
@@ -42,7 +51,9 @@ test("Home → deterministic creation → incomplete Final Sheet → print", asy
   await expect(page.getByRole("heading", { name: "本地数据备份" })).toBeVisible();
   await expect(page.getByText("资料只保存在这个浏览器中")).toBeVisible();
   await expect(page.getByText("建议定期导出完整备份", { exact: false }).first()).toBeVisible();
-  await expect(page.getByText(/COCSheet v0\.1\.0 · 构建 (dev|[0-9a-f]{12})/u)).toBeVisible();
+  await expect(page.getByText(
+    `COCSheet v${expectedAppVersion} · 构建 ${expectedBuildLabel} · 非官方粉丝项目`,
+  )).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   const characterName = "Playwright 测试调查员";

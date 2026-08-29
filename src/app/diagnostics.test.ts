@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import packageMetadata from "../../package.json";
 import { createDiagnosticReport, sanitizeDiagnosticRoute } from "./diagnostics";
 
 const metadata = {
-  version: "0.1.0",
+  version: packageMetadata.version,
   buildSha: "abcdef1234567890",
   shortBuildSha: "abcdef123456",
 };
@@ -36,7 +37,7 @@ describe("privacy-safe diagnostics", () => {
       navigatorInfo: { userAgent: "Browser/1", language: "zh-CN" },
       errorCount: 2,
     });
-    expect(report).toContain("COCSheet version: 0.1.0");
+    expect(report).toContain(`COCSheet version: ${packageMetadata.version}`);
     expect(report).toContain("Build SHA: abcdef1234567890");
     expect(report).toContain("Route: /characters/:id/print");
     expect(report).not.toContain("private-id");

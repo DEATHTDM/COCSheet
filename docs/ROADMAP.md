@@ -514,13 +514,13 @@ Status: Completed
 - README, contribution rules, agent constraints, Issue Forms and release checklist alignment
 - unchanged version 0.1.0, rules mechanics, dependencies, schemas, Dexie and version-1 formats
 
-### Phase 19B — v1.0 Release & Live Acceptance
+### Phase 19B — v1.0 Release Candidate & Live Acceptance
 
-Status: Planned
+Status: Release Candidate Prepared / Awaiting Merge & Live Acceptance
 
-- requires a separate explicit task
-- must not proceed while Phase 19A licensing review questions remain unresolved
-- owns any version bump, tag, GitHub Release and live v1.0 acceptance
+- v1.0.0 version, durable release guard, exact version + SHA CI assertion, release notes and pre-merge RC acceptance are prepared
+- Phase 19A residual licensing uncertainty remains documented; release owner has explicitly accepted it for the free non-commercial fan release, so it is not an engineering blocker for Phase 19B
+- main merge, Pages production deployment, live exact-build acceptance, tag and GitHub Release remain pending and belong to a separate release-closure step
 
 ## Later
 
@@ -529,4 +529,4 @@ Status: Planned
 - shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. Phase 19B scope beyond release/live acceptance is not authorized by this Roadmap entry.
+Later-item ordering is not frozen. Phase 19 remains in progress until merge, Pages deployment, live acceptance, tag and GitHub Release are all complete.
