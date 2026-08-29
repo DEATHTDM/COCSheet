@@ -1,18 +1,18 @@
 # Current State
 
-Last updated: 2026-08-28
+Last updated: 2026-08-29
 
 ## Current phase
 
-Phase 19B — v1.0 Release Candidate
+Post-v1.0.0 — Release Observation & Roadmap Review
 
-Status: Prepared / Awaiting Merge & Live Acceptance
+Status: v1.0.0 Released / Next implementation phase not selected
 
-v1.0.0 release candidate 已完成版本、durable release compliance guard、exact version + SHA CI assertion、发布文档与 production-preview acceptance 收口。Phase 19A 的剩余许可不确定性仍完整记录；release owner 已为当前免费、非商业粉丝 release 明确接受该风险，因此不再将其作为 Phase 19B 的工程 blocker。这不是法律意见或完全合规断言。Pages 合并后部署、live exact-build smoke、v1.0.0 tag 与 GitHub Release 仍待独立发布步骤完成。
+v1.0.0 已于 2026-08-29 完成正式发布闭环。`main`、`v1.0.0` tag、GitHub Release target 与 GitHub Pages production deployment 均锁定 `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；对应 `CI & Pages` run #43 的 Validate、Build Pages artifact 与 Deploy GitHub Pages 均成功。Phase 19A 的剩余许可不确定性继续完整保留，release owner 对当前免费、非商业粉丝 release 的风险接受也继续有效；这不是法律意见或完全合规断言。当前不自动进入 v1.1 功能开发，先观察真实使用反馈并评估下一阶段 Roadmap。
 
 ## Git baseline
 
-Phase 19B was created from exact `main@1fbde4d672af755bf415601c7a67e6b0bc080a7b`, the merged Phase 19A closure baseline.
+Current stable release baseline is exact `main@63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`. The `v1.0.0` tag, GitHub Release target, Pages artifact workflow run #43, and production Pages deployment all resolve to this same commit.
 
 ## Implemented
 
@@ -20,10 +20,10 @@ Phase 19B was created from exact `main@1fbde4d672af755bf415601c7a67e6b0bc080a7b`
 - `package.json version + VITE_BUILD_SHA` remains the only build-metadata chain for footer and privacy-safe diagnostics; local development uses `dev`, while Pull Request/main builds use their exact commit SHA
 - release compliance guard now accepts any valid SemVer by default and optionally enforces exact `EXPECTED_APP_VERSION`; v1.0.0 CI acceptance separately asserts the exact release version
 - Pull Request and main static artifact checks assert both version `1.0.0` and their exact injected head/main SHA, while PR Pages artifact/deploy remain skipped
-- `CHANGELOG.md`, user-facing `docs/releases/v1.0.0.md`, README stable-version wording and the v1.0.0 pre/post-merge checklist prepared without a future merge SHA
+- `CHANGELOG.md`, user-facing `docs/releases/v1.0.0.md`, README stable-version wording and the v1.0.0 release checklist are closed against the exact production commit
 - Chaosium Fan Material Policy and required notice rechecked on 2026-08-28 with no materially incompatible change found; NOTICE and Legal remain mandatory
 - Character, CreationSession, CreationPreset, all Record schemas, Dexie version/tables/indexes and `cocsheet-character` / `cocsheet-library` / `cocsheet-kp-preset-share` format version 1 remain unchanged with no migration or writeback
-- post-merge exact-main CI, Pages artifact/deploy, live workflow smoke, tag and GitHub Release remain explicitly pending
+- post-release closure confirmed exact production identity at `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`: main/tag/Release target match, run #43 Validate + Pages artifact + Pages deploy succeeded, and the GitHub Release is published
 
 - official Chaosium Fan Material Policy, Fan-Use and Licensing Q&A, Trademarks and Copyrights, and BRP ORC information rechecked on 2026-08-27, using only Chaosium official sources
 - exact current required Fan Material notice kept in one static application source and rendered in plainly legible English on the independent `/legal` route, with no runtime policy fetch, API, analytics or telemetry
@@ -357,7 +357,7 @@ Merged in the current enum:
 
 ## Next intended work
 
-Phase 19B RC is prepared. The next work is a separate post-merge release closure: verify exact merge SHA CI, Pages artifact/deploy and live exact-build workflows, then create the v1.0.0 tag and GitHub Release targeting that verified production commit before marking Phase 19 complete.
+v1.0.0 已完成正式发布，Phase 19 关闭。下一步先做 post-release 观察与 Roadmap 评估：收集真实使用问题、区分 bug / polish / feature request、确认是否存在必须优先处理的发布后缺陷，再决定是否开启 v1.0.x 维护或 v1.1 功能阶段；在 Roadmap 明确前不直接堆新功能。
 
 ## Known technical risks
 

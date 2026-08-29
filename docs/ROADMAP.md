@@ -502,7 +502,7 @@ Status: Completed
 
 ## Phase 19 — v1.0 Release Readiness
 
-Status: In Progress
+Status: Completed
 
 ### Phase 19A — Fan Material & Licensing Compliance
 
@@ -514,13 +514,14 @@ Status: Completed
 - README, contribution rules, agent constraints, Issue Forms and release checklist alignment
 - unchanged version 0.1.0, rules mechanics, dependencies, schemas, Dexie and version-1 formats
 
-### Phase 19B — v1.0 Release Candidate & Live Acceptance
+### Phase 19B — v1.0 Release & Live Acceptance
 
-Status: Release Candidate Prepared / Awaiting Merge & Live Acceptance
+Status: Completed
 
-- v1.0.0 version, durable release guard, exact version + SHA CI assertion, release notes and pre-merge RC acceptance are prepared
-- Phase 19A residual licensing uncertainty remains documented; release owner has explicitly accepted it for the free non-commercial fan release, so it is not an engineering blocker for Phase 19B
-- main merge, Pages production deployment, live exact-build acceptance, tag and GitHub Release remain pending and belong to a separate release-closure step
+- v1.0.0 version, durable release guard, exact version + SHA CI assertion, release notes and pre-merge RC acceptance completed
+- exact production baseline is `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`; `CI & Pages` run #43 completed Validate, Pages artifact build and GitHub Pages deployment successfully
+- `v1.0.0` tag and published GitHub Release both target the exact production baseline; the stable release was published on 2026-08-29
+- Phase 19A residual licensing uncertainty remains documented; release owner risk acceptance for the free non-commercial fan release remains in force without becoming a legal-certainty claim
 
 ## Later
 
@@ -529,4 +530,4 @@ Status: Release Candidate Prepared / Awaiting Merge & Live Acceptance
 - shared-Preset QR and short-link refinements
 - advanced import conflict resolution and future file migrations
 
-Later-item ordering is not frozen. Phase 19 remains in progress until merge, Pages deployment, live acceptance, tag and GitHub Release are all complete.
+Later-item ordering is not frozen. Phase 19 is complete with v1.0.0 published. No Phase 20 or v1.1 implementation scope is frozen yet; the next step is post-release observation and Roadmap review before new feature work starts.
