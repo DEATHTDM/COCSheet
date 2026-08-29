@@ -8,11 +8,11 @@ Post-v1.0.0 — Release Observation & Roadmap Review
 
 Status: v1.0.0 Released / Next implementation phase not selected
 
-v1.0.0 已于 2026-08-29 完成正式发布闭环。`main`、`v1.0.0` tag、GitHub Release target 与 GitHub Pages production deployment 均锁定 `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；对应 `CI & Pages` run #43 的 Validate、Build Pages artifact 与 Deploy GitHub Pages 均成功。Phase 19A 的剩余许可不确定性继续完整保留，release owner 对当前免费、非商业粉丝 release 的风险接受也继续有效；这不是法律意见或完全合规断言。当前不自动进入 v1.1 功能开发，先观察真实使用反馈并评估下一阶段 Roadmap。
+v1.0.0 已于 2026-08-29 完成正式发布闭环。固定的 v1.0.0 release snapshot 是 `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；在发布闭环时，`main`、`v1.0.0` tag、GitHub Release target 与 GitHub Pages production deployment 均指向该 commit，对应 `CI & Pages` run #43 的 Validate、Build Pages artifact 与 Deploy GitHub Pages 均成功。发布后 `main` 可以继续前进，不要求移动历史 tag 或 Release。Phase 19A 的剩余许可不确定性继续完整保留，release owner 对当前免费、非商业粉丝 release 的风险接受也继续有效；这不是法律意见或完全合规断言。当前不自动进入 v1.1 功能开发，先观察真实使用反馈并评估下一阶段 Roadmap。
 
 ## Git baseline
 
-Current stable release baseline is exact `main@63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`. The `v1.0.0` tag, GitHub Release target, Pages artifact workflow run #43, and production Pages deployment all resolve to this same commit.
+The fixed v1.0.0 release baseline is commit `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8` (the `main` head at publication time). The `v1.0.0` tag and GitHub Release remain pinned to that commit. Post-release `main` may be ahead because documentation or maintenance work continues; that does not rewrite the historical release snapshot.
 
 ## Implemented
 
@@ -23,7 +23,7 @@ Current stable release baseline is exact `main@63fae7acbc9008cbf8f47253d60a1bbf2
 - `CHANGELOG.md`, user-facing `docs/releases/v1.0.0.md`, README stable-version wording and the v1.0.0 release checklist are closed against the exact production commit
 - Chaosium Fan Material Policy and required notice rechecked on 2026-08-28 with no materially incompatible change found; NOTICE and Legal remain mandatory
 - Character, CreationSession, CreationPreset, all Record schemas, Dexie version/tables/indexes and `cocsheet-character` / `cocsheet-library` / `cocsheet-kp-preset-share` format version 1 remain unchanged with no migration or writeback
-- post-release closure confirmed exact production identity at `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`: main/tag/Release target match, run #43 Validate + Pages artifact + Pages deploy succeeded, and the GitHub Release is published
+- release closure confirmed the v1.0.0 publication snapshot at `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`: release-time main/tag/Release target matched, run #43 Validate + Pages artifact + Pages deploy succeeded, and the GitHub Release is published
 
 - official Chaosium Fan Material Policy, Fan-Use and Licensing Q&A, Trademarks and Copyrights, and BRP ORC information rechecked on 2026-08-27, using only Chaosium official sources
 - exact current required Fan Material notice kept in one static application source and rendered in plainly legible English on the independent `/legal` route, with no runtime policy fetch, API, analytics or telemetry

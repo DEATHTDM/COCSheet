@@ -19,7 +19,7 @@
 
 ### Post-merge release closure
 
-- [x] main exact merge SHA 为 `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；`CI & Pages` run #43 Validate success
+- [x] 发布闭环时的 main exact release SHA 为 `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；`CI & Pages` run #43 Validate success
 - [x] run #43 `github-pages` artifact build 与 Pages deploy success，deployment 的 `pages_build_version` 精确为上述 SHA
 - [x] release-owner live acceptance 确认 footer 为 `v1.0.0` + exact production short SHA
 - [x] release-owner live acceptance 确认 root、Create、Character workflow、Final Sheet、Print、Presets、Backup、Legal 与 unknown route 通过
@@ -27,7 +27,7 @@
 - [x] `v1.0.0` tag 已创建并指向 exact production commit
 - [x] GitHub Release `COCSheet v1.0.0` 已发布，target 精确等于 exact production commit
 
-Closure record: 2026-08-29；Pages artifact `github-pages` digest `sha256:7d28b8662f49ba2e98b134dd0df1e8420c1a568c09d5bfc26bcd630a37d497d1`；GitHub Release published at `2026-08-29T07:56:46Z`.
+Closure record: 2026-08-29；Pages artifact `github-pages` digest `sha256:7d28b8662f49ba2e98b134dd0df1e8420c1a568c09d5bfc26bcd630a37d497d1`；GitHub Release published at `2026-08-29T07:56:46Z`。以上记录描述 v1.0.0 的发布时快照；后续 `main` 前进不要求移动或重建历史 `v1.0.0` tag / Release。
 
 ## 自动验证
 
