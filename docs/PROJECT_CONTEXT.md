@@ -4,7 +4,7 @@
 
 COCSheet 是中文 Call of Cthulhu 7th Edition 调查员建卡器，也是可持续使用的电子人物卡。它不是对纸质人物卡的简单复制，核心目标是降低 CoC 新玩家第一次建卡时的信息负担，同时保留熟悉规则的玩家需要的直接编辑能力。
 
-COCSheet v1.0.0 已于 2026-08-29 正式发布。发布闭环基线为 `main@63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；`v1.0.0` tag、GitHub Release target 与 GitHub Pages production deployment 均指向该 exact commit。当前不自动开启 v1.1 功能开发，下一阶段先做 post-release 观察与 Roadmap 评估。
+COCSheet v1.0.0 已于 2026-08-29 正式发布。v1.0.0 的固定发布快照为 commit `63fae7acbc9008cbf8f47253d60a1bbf2a7356f8`；在发布闭环时，`main`、`v1.0.0` tag、GitHub Release target 与 GitHub Pages production deployment 均指向该 exact commit。发布完成后 `main` 可以继续接受文档或维护提交，而历史 `v1.0.0` tag / Release 不随之移动。当前不自动开启 v1.1 功能开发，下一阶段先做 post-release 观察与 Roadmap 评估。
 
 ## Core user experience
 
